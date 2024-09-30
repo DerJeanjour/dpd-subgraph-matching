@@ -1,2 +1,2 @@
 # Design Pattern Detection
-## Using Code Property Graphs and Subgraph Matching
+Using Code Property Graphs and Subgraph Matching
