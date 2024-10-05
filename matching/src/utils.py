@@ -11,18 +11,21 @@ def get_timestamp():
     return datetime.datetime.now().strftime( "%Y-%m-%dT%H-%M" )
 
 
-def get_device( force_cpu=True ):
+def get_device( force_cpu=False ):
     use_cuda = torch.cuda.is_available()
     use_mps = not use_cuda and torch.backends.mps.is_available()
 
     if not force_cpu and use_cuda:
         device = torch.device( "cuda" )
-    elif not force_cpu and use_mps:
-        device = torch.device( "mps" )
+    #elif not force_cpu and use_mps:
+    #    device = torch.device( "mps" )
     else:
         device = torch.device( "cpu" )
 
     return device
+
+def model_uses_cuda( model: torch.nn.Module ) -> bool:
+    return next(model.parameters()).is_cuda
 
 
 def generate_graph( size: int, directed=False ):

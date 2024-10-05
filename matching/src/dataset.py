@@ -116,5 +116,4 @@ def batch_nx_graphs( graphs, anchors=None ):
 
     batch = Batch.from_data_list( [ DSGraph( g ) for g in graphs ] )
     # batch = augmenter.augment(batch)
-    batch = batch.to( utils.get_device() )
-    return batch
+    return batch.to( utils.get_device() )

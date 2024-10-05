@@ -9,6 +9,7 @@ from model import build_model
 
 
 def validate( args: Args, model: nn.Module, dataset ):
+    model = model.to(utils.get_device())
     loaders = gen_data_loaders( args.val_size, args.batch_size )
     test_pts = [ ]
     for batch_target, batch_neg_target, batch_neg_query in zip( *loaders ):
@@ -64,6 +65,7 @@ def validate( args: Args, model: nn.Module, dataset ):
 
 if __name__ == "__main__":
     args = load_args( Args().model_args_path )
+    args.test = True
     model = build_model( args )
     dataset = get_dataset()
     results = validate( args, model, dataset )

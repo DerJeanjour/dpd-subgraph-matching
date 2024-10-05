@@ -1,4 +1,5 @@
 import os
+import time
 
 import torch
 import torch.multiprocessing as mp
@@ -15,6 +16,8 @@ from test import validate
 
 
 def train( model: nn.Module, dataset, args: Args, in_queue: mp.Queue, out_queue: mp.Queue ):
+
+    model = model.to(utils.get_device())
     optimizer = build_optimizer( model, args )
     clf_opt = optim.Adam( model.clf_model.parameters(), lr=args.lr )
 
@@ -33,6 +36,7 @@ def train( model: nn.Module, dataset, args: Args, in_queue: mp.Queue, out_queue:
             model.zero_grad()
             pos_target, pos_query, neg_target, neg_query = gen_batch( dataset, batch_target, batch_neg_target,
                                                                       batch_neg_query, True )
+
             emb_pos_target, emb_pos_query = model.emb_model( pos_target ), model.emb_model( pos_query )
             emb_neg_target, emb_neg_query = model.emb_model( neg_target ), model.emb_model( neg_query )
 
@@ -60,28 +64,33 @@ def train( model: nn.Module, dataset, args: Args, in_queue: mp.Queue, out_queue:
             pred = pred.argmax( dim=-1 )
             acc = torch.mean( (pred == labels).type( torch.float ) )
 
-            out_queue.put( ("step", (loss.item(), acc)) )
+            out_queue.put( ("step", (loss.cpu().item(), acc.cpu())) )
 
 
 def train_model():
     args = Args()
-    mp.set_start_method( "spawn", force=True )
-    print( f"Starting {args.n_workers} workers ..." )
-    in_queue, out_queue = mp.Queue(), mp.Queue()
+    print( f"Training on {utils.get_device()} device ..." )
 
     if not os.path.exists( os.path.dirname( args.model_path ) ):
         os.makedirs( os.path.dirname( args.model_path ) )
 
-    model = build_model( args )
-    torchinfo.summary( model )
+    if utils.get_device() == "cuda":
+        torch.cuda.empty_cache()
+
+    model = build_model( args ).cpu()
     model.share_memory()
+    torchinfo.summary( model )
+
     dataset = get_dataset()
 
     record_keys = [ "conv_type", "n_layers", "hidden_dim", "margin" ]
     args_str = ".".join( [ "{}={}".format( k, v ) for k, v in sorted( vars( args ).items() ) if k in record_keys ] )
     logger = SummaryWriter( log_dir=f'runs/{args.conv_type}{args.n_layers}_{utils.get_timestamp()}', comment=args_str )
 
+    print( f"Starting {args.n_workers} workers ..." )
+    in_queue, out_queue = mp.Queue(), mp.Queue()
     workers = [ ]
+    mp.set_start_method( "spawn", force=True )
     for i in range( args.n_workers ):
         worker = mp.Process( target=train, args=(model, dataset, args, in_queue, out_queue) )
         worker.start()
@@ -92,7 +101,7 @@ def train_model():
     for epoch in range( epochs ):
 
         print( f"--- Training Epoch {epoch}/{epochs} ---" )
-
+        epoch_start = time.perf_counter()
         epoch_loss = 0
         epoch_acc = 0
 
@@ -128,6 +137,12 @@ def train_model():
         logger.add_scalar( "test/TN", tn, epoch )
         logger.add_scalar( "test/FP", fp, epoch )
         logger.add_scalar( "test/FN", fn, epoch )
+
+        epoch_duration = time.perf_counter() - epoch_start
+        est_remaining_time = epoch_duration * (epochs - epoch)
+
+        print(
+            f"Finished Epoch {epoch} in {epoch_duration:.2f}s [est. time remaining: {(est_remaining_time / 60):.2f}min]" )
 
         torch.save( model.state_dict(), args.model_path )
         save_args( args, args.model_args_path )

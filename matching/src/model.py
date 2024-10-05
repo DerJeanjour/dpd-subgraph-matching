@@ -10,7 +10,7 @@ from args import Args
 
 def build_model( args: Args ) -> nn.Module:
     model = OrderEmbedder( 1, args.hidden_dim, args )
-    model.to( utils.get_device() )
+    model = model.to( utils.get_device() )
     if args.test and args.model_path:
         model.load_state_dict( torch.load( args.model_path, map_location=utils.get_device(), weights_only=False ) )
     return model
