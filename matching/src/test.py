@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import roc_auc_score, confusion_matrix, average_precision_score
 
-import utils
-from args import Args, load_args
-from dataset import gen_batch, gen_data_loaders, get_dataset
-from model import build_model
+from matching.src import utils
+from matching.src.args import Args, load_args
+from matching.src.dataset import gen_batch, gen_data_loaders, get_dataset
+from matching.src.model import build_model
 
 
 def validate( args: Args, model: nn.Module, dataset ):
@@ -70,5 +70,5 @@ if __name__ == "__main__":
     dataset = get_dataset()
     results = validate( args, model, dataset )
     acc, prec, recall, auroc, avg_prec, tn, fp, fn, tp = results
-    print( f"A: {acc:.4f} / P: {prec:.4f} / R: {recall:.4f}. AR: {auroc:.4f} / AP: {avg_prec:.4f}." )
+    print( f"A: {acc:.4f} / P: {prec:.4f} / R: {recall:.4f}. AR: {auroc:.4f} / AP: {avg_prec:.4f}" )
     print( f"TN: {tn} / FP: {fp} / FN: {fn} / TP: {tp}" )

@@ -7,14 +7,14 @@ import torch
 from deepsnap.batch import Batch
 from deepsnap.graph import Graph as DSGraph
 
-import utils
+from matching.src import utils
 
 
-def get_dataset():
+def get_dataset( node_size=100 ):
     task = "graph"
     dataset = [ ]
     for i in range( 10 ):
-        dataset.append( utils.generate_graph( 100 ) )
+        dataset.append( utils.generate_graph( node_size ) )
 
     train_len = int( 0.8 * len( dataset ) )
     train, test = [ ], [ ]

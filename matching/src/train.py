@@ -8,11 +8,11 @@ import torch.optim as optim
 import torchinfo
 from torch.utils.tensorboard import SummaryWriter
 
-import utils
-from args import Args, save_args
-from dataset import get_dataset, gen_batch, gen_data_loaders
-from model import build_model, build_optimizer
-from test import validate
+from matching.src import utils
+from matching.src.args import Args, save_args
+from matching.src.dataset import get_dataset, gen_batch, gen_data_loaders
+from matching.src.model import build_model, build_optimizer
+from matching.src.test import validate
 
 
 def train( model: nn.Module, dataset, args: Args, in_queue: mp.Queue, out_queue: mp.Queue ):
@@ -126,7 +126,7 @@ def train_model():
         print( f"--- Validation Epoch {epoch}/{epochs} ---" )
         results = validate( args, model, dataset )
         acc, prec, recall, auroc, avg_prec, tn, fp, fn, tp = results
-        print( f"A: {acc:.4f} / P: {prec:.4f} / R: {recall:.4f}. AR: {auroc:.4f} / AP: {avg_prec:.4f}." )
+        print( f"A: {acc:.4f} / P: {prec:.4f} / R: {recall:.4f}. AR: {auroc:.4f} / AP: {avg_prec:.4f}" )
         print( f"TN: {tn} / FP: {fp} / FN: {fn} / TP: {tp}" )
         logger.add_scalar( "test/accuracy", acc, epoch )
         logger.add_scalar( "test/precision", prec, epoch )
