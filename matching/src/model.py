@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch_geometric.nn as pyg_nn
 
+from matching.src import feature_preprocess
 from matching.src import utils
 from matching.src.args import Args
 
@@ -74,7 +75,12 @@ class SkipLastGNN( nn.Module ):
         self.dropout = args.dropout
         self.n_layers = args.n_layers
 
-        self.feat_preprocess = None  # TODO check for reason
+        # self.feat_preprocess = None  # TODO check for reason
+        if len( feature_preprocess.FEATURE_AUGMENT ) > 0:
+            self.feat_preprocess = feature_preprocess.Preprocess( input_dim )
+            input_dim = self.feat_preprocess.dim_out
+        else:
+            self.feat_preprocess = None
 
         self.pre_mp = nn.Sequential( nn.Linear( input_dim, hidden_dim ) )
 

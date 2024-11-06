@@ -6,7 +6,7 @@ class Args:
         self.conv_type = 'graph'
         self.method_type = 'order'
         self.dataset = 'syn'
-        self.n_layers = 4
+        self.n_layers = 8 # at least diameter of k-hop neighbourhood
         self.batch_size = 64
         self.hidden_dim = 64
         self.skip = "learnable"

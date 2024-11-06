@@ -7,13 +7,14 @@ import torch
 from deepsnap.batch import Batch
 from deepsnap.graph import Graph as DSGraph
 
+from matching.src import feature_preprocess
 from matching.src import utils
 
 
 def get_dataset( node_size=100 ):
     task = "graph"
     dataset = [ ]
-    for i in range( 10 ):
+    for i in range( 100 ):
         dataset.append( utils.generate_graph( node_size ) )
 
     train_len = int( 0.8 * len( dataset ) )
@@ -107,7 +108,7 @@ def sample_neigh( graphs, size ):
 
 
 def batch_nx_graphs( graphs, anchors=None ):
-    # augmenter = feature_preprocess.FeatureAugment()
+    augmenter = feature_preprocess.FeatureAugment()
 
     if anchors is not None:
         for anchor, g in zip( anchors, graphs ):
@@ -115,5 +116,5 @@ def batch_nx_graphs( graphs, anchors=None ):
                 g.nodes[ v ][ "node_feature" ] = torch.tensor( [ float( v == anchor ) ] )
 
     batch = Batch.from_data_list( [ DSGraph( g ) for g in graphs ] )
-    # batch = augmenter.augment(batch)
+    batch = augmenter.augment( batch )
     return batch.to( utils.get_device() )
