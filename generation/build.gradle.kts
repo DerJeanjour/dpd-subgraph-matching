@@ -29,6 +29,12 @@ dependencies {
     implementation("de.fraunhofer.aisec", "cpg-language-cxx", cpgVersion)
     implementation("de.fraunhofer.aisec", "cpg-neo4j", cpgVersion)
 
+    val graphStreamVersion = "2.0"
+    // https://mvnrepository.com/artifact/org.graphstream
+    implementation("org.graphstream", "gs-core", graphStreamVersion)
+    implementation("org.graphstream", "gs-algo", graphStreamVersion)
+    implementation("org.graphstream", "gs-ui-swing", graphStreamVersion)
+
     // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
     implementation("org.apache.commons:commons-lang3:3.17.0")
     // https://mvnrepository.com/artifact/commons-io/commons-io

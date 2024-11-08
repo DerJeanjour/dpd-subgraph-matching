@@ -11,7 +11,7 @@ import java.net.ConnectException;
 
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
-public class CpgPersistModule<Target> extends PipeModule<TranslationResult, TranslationResult, Target> {
+public class CpgPersistNeo4jModule<Target> extends PipeModule<TranslationResult, TranslationResult, Target> {
 
     @Override
     protected TranslationResult processImpl( final TranslationResult result ) {
