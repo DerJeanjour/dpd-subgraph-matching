@@ -1,10 +1,10 @@
-package de.haw.processing.modules;
+package de.haw.processing.cpg.module;
 
 import de.fraunhofer.aisec.cpg.*;
 import de.fraunhofer.aisec.cpg.frontends.java.JavaLanguage;
 import de.haw.datasets.Dataset;
 import de.haw.datasets.DatasetLoader;
-import de.haw.processing.CpgProcessor;
+import de.haw.processing.pipe.PipeModule;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,12 +12,10 @@ import java.io.File;
 
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
-public class CpgGenerator implements CpgProcessor {
+public class CpgGenerateModule<Target> extends PipeModule<Dataset, TranslationResult, Target> {
 
     @Override
-    public Object process( Object input ) {
-
-        final Dataset dataset = ( Dataset ) input;
+    protected TranslationResult processImpl( final Dataset dataset ) {
 
         log.info( "Parsing dataset {} ...", dataset );
 

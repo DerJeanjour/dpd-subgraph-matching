@@ -1,8 +1,8 @@
-package de.haw.processing.modules;
+package de.haw.processing.cpg.module;
 
 import de.fraunhofer.aisec.cpg.TranslationResult;
 import de.fraunhofer.aisec.cpg_vis_neo4j.Application;
-import de.haw.processing.CpgProcessor;
+import de.haw.processing.pipe.PipeModule;
 import de.haw.utils.ReflectionUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,18 +11,16 @@ import java.net.ConnectException;
 
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
-public class CpcPersistence implements CpgProcessor {
+public class CpgPersistModule<Target> extends PipeModule<TranslationResult, TranslationResult, Target> {
 
     @Override
-    public Object process( Object input ) {
-
-        final TranslationResult result = ( TranslationResult ) input;
+    protected TranslationResult processImpl( final TranslationResult result ) {
 
         log.info( "Persisting parsed results ..." );
-
         if ( result == null ) {
             throw new IllegalArgumentException( "Can't persist null result!" );
         }
+
         final Application neo4j = new Application();
         neo4j.setNeo4jUsername( "neo4j" );
         neo4j.setNeo4jPassword( "password" );
