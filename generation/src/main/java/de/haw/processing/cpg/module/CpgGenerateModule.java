@@ -28,6 +28,8 @@ public class CpgGenerateModule<Target> extends PipeModule<Dataset, TranslationRe
             translationConfiguration = new TranslationConfiguration.Builder().inferenceConfiguration(
                             inferenceConfiguration )
                     .defaultPasses()
+                    //.addIncludesToGraph( false )
+                    //.loadIncludes( false )
                     .registerLanguage( new JavaLanguage() )
                     .sourceLocations( file )
                     .build();

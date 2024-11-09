@@ -14,7 +14,9 @@ public class DatasetLoader {
 
     public static File load( final Dataset dataset ) {
         return switch ( dataset ) {
+            case SELF -> load( "generation/src/main/java/de/haw/" );
             case ANIMAL -> load( BASE_PATH_TEST + "animals/" );
+            case CHESS -> load( BASE_PATH_TEST + "chess/" );
             case QUICK_UML -> load( BASE_PATH_P_MART + "1 - QuickUML 2001/" );
             case LEXI -> load( BASE_PATH_P_MART + "2 - Lexi v0.1.1 alpha/" );
             case J_REFACTORY -> load( BASE_PATH_P_MART + "3 - JRefactory v2.6.24/" );

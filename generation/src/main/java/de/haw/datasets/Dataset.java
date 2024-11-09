@@ -1,7 +1,9 @@
 package de.haw.datasets;
 
 public enum Dataset {
+    SELF,
     ANIMAL,
+    CHESS,
     QUICK_UML,
     LEXI,
     J_REFACTORY,
