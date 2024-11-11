@@ -1,20 +1,14 @@
 package de.haw;
 
-import de.fraunhofer.aisec.cpg.passes.EdgeType;
 import de.haw.datasets.Dataset;
 import de.haw.processing.cpg.CpgProcessor;
-import de.haw.processing.cpg.model.CpgEdgeType;
-import de.haw.processing.cpg.module.CpgEdgeTypeVisualizeModule;
-import de.haw.processing.cpg.module.CpgFilterEdgesModule;
 import de.haw.processing.cpg.module.CpgGenerateModule;
 import de.haw.processing.cpg.module.CpgToGraphModule;
-import de.haw.processing.graph.module.DisplayGraphModule;
+import de.haw.processing.graph.module.PersistToNeo4jModule;
 import de.haw.processing.pipe.PipeBuilder;
 import de.haw.processing.pipe.PipeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
-
-import java.util.Arrays;
 
 @Slf4j
 public class Main {
@@ -24,8 +18,10 @@ public class Main {
         /*
         final CpgProcessor processor = new CpgProcessor();
         final Graph cpg = processor.run( Dataset.ANIMAL );
+
          */
 
+        /*
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
                 .add( CpgGenerateModule.instance() )
                 .add( CpgToGraphModule.instance() )
@@ -35,8 +31,16 @@ public class Main {
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( DisplayGraphModule.instance() )
                 .build();
+         final Graph cpg = pipe.process( Dataset.ANIMAL );
+         */
 
-        final Graph cpg = pipe.process( Dataset.SELF );
+
+        final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
+                .add( CpgGenerateModule.instance() )
+                .add( CpgToGraphModule.instance() )
+                .add( PersistToNeo4jModule.instance() )
+                .build();
+        final Graph cpg = pipe.process( Dataset.QUICK_UML );
 
         log.info( "CPG: nodes {} / edges {}", cpg.getNodeCount(), cpg.getEdgeCount() );
     }

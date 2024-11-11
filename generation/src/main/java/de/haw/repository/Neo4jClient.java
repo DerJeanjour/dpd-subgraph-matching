@@ -1,12 +1,17 @@
 package de.haw.repository;
 
-import de.haw.repository.model.Neo4jGraph;
+import de.haw.repository.model.CpgEdge;
+import de.haw.repository.model.CpgNode;
+import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
 import org.neo4j.ogm.config.Configuration;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.neo4j.ogm.transaction.Transaction;
 
+import java.util.List;
+
+@Slf4j
 public class Neo4jClient implements AutoCloseable {
 
     private final boolean VERIFY_CONNECTION = true;
@@ -30,8 +35,12 @@ public class Neo4jClient implements AutoCloseable {
         this.sessionFactory = new SessionFactory( configuration, PACKAGES );
     }
 
+    public static Neo4jClient instance() {
+        return new Neo4jClient();
+    }
+
     @Override
-    public void close() throws Exception {
+    public void close() {
         this.sessionFactory.close();
     }
 
@@ -41,9 +50,8 @@ public class Neo4jClient implements AutoCloseable {
             if ( purge ) {
                 session.purgeDatabase();
             }
-            final Neo4jGraph neoGraph = Neo4jMapper.map( graph );
-            session.save( neoGraph.getNodes(), depth );
-            session.save( neoGraph.getEdges(), depth );
+            final List<CpgEdge<CpgNode>> cpgEdges = Neo4jMapper.map( graph );
+            session.save( cpgEdges, depth );
             tx.commit();
         }
     }
