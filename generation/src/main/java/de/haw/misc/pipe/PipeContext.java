@@ -11,7 +11,11 @@ public class PipeContext {
 
     public static String CPG_DATASET_KEY = "dataset";
 
-    public static String CPG_DEPTH_KEY = "dataset";
+    public static String CPG_DEPTH_KEY = "depth";
+
+    public static String CPG_DESIGN_PATTERNS_EXISTS = "cpg_dp_exists";
+
+    public static String CPG_DESIGN_PATTERNS = "cpg_dp";
 
     private final Map<String, Object> ctx = new HashMap<>();
 
