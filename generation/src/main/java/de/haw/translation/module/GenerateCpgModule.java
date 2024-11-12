@@ -16,7 +16,9 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
     @Override
     protected TranslationResult processImpl( final File sourceFile, final PipeContext ctx ) {
 
-        log.info( "Translating source file: {}", sourceFile.getName() );
+        log.info(
+                "Translating source file {} of dataset {} ...", sourceFile.getName(),
+                ctx.get( PipeContext.CPG_DATASET_KEY ) );
 
         final InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder().enabled( true ).build();
         TranslationConfiguration translationConfiguration = null;

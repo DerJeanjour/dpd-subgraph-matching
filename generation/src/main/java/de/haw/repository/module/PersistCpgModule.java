@@ -15,7 +15,7 @@ public class PersistCpgModule<Target> extends PipeModule<Graph, Graph, Target> {
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
         final GraphRepository client = GraphRepository.instance();
-        client.writeGraph( graph, ctx.get( "depth", 10, Integer.class ), true );
+        client.writeGraph( graph, ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ), true );
 
         return graph;
     }

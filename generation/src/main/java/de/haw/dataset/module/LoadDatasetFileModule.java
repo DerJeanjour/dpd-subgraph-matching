@@ -15,6 +15,7 @@ public class LoadDatasetFileModule<Target> extends PipeModule<Dataset, File, Tar
 
     @Override
     protected File processImpl( final Dataset dataset, final PipeContext ctx ) {
+        ctx.set( PipeContext.CPG_DATASET_KEY, dataset.name() );
         return DatasetLoader.load( dataset );
     }
 }

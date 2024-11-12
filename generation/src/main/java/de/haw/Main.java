@@ -15,13 +15,13 @@ public class Main {
     public static void main( String[] args ) {
 
         final PipeContext ctx = PipeContext.empty();
-        ctx.set( "depth", 10 );
+        ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
 
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
                 .add( CpgTranslatorProcess.instance() )
                 .add( PersistCpgModule.instance() )
                 .build();
-        final Graph cpg = pipe.process( Dataset.ANIMAL, ctx );
+        final Graph cpg = pipe.process( Dataset.CHESS, ctx );
 
         log.info( "CPG: nodes {} / edges {}", cpg.getNodeCount(), cpg.getEdgeCount() );
     }

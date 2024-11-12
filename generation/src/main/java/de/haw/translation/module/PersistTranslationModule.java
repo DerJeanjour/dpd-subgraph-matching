@@ -25,7 +25,7 @@ public class PersistTranslationModule<Target> extends PipeModule<TranslationResu
         final Application neo4j = new Application();
         neo4j.setNeo4jUsername( "neo4j" );
         neo4j.setNeo4jPassword( "password" );
-        ReflectionUtils.setInt( neo4j, "depth", ctx.get( "depth", 10, Integer.class ) );
+        ReflectionUtils.setInt( neo4j, "depth", ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ) );
 
         try {
             neo4j.pushToNeo4j( result );

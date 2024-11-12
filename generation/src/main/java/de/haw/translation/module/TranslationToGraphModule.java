@@ -6,9 +6,9 @@ import de.fraunhofer.aisec.cpg_vis_neo4j.JsonEdge;
 import de.fraunhofer.aisec.cpg_vis_neo4j.JsonGraph;
 import de.fraunhofer.aisec.cpg_vis_neo4j.JsonNode;
 import de.haw.misc.pipe.PipeContext;
-import de.haw.processing.GraphService;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.misc.utils.ReflectionUtils;
+import de.haw.processing.GraphService;
 import kotlin.Pair;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.List;
 @NoArgsConstructor( staticName = "instance" )
 public class TranslationToGraphModule<Target> extends PipeModule<TranslationResult, Graph, Target> {
 
-    private final boolean PREVENT_SELF_LOOPS = true;
+    private static final boolean PREVENT_SELF_LOOPS = true;
 
     private final GraphService graphService = GraphService.instance();
 
@@ -38,14 +38,14 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
         }
 
         final Application neo4j = new Application();
-        ReflectionUtils.setInt( neo4j, "depth", ctx.get( "depth", 10, Integer.class ) );
+        ReflectionUtils.setInt( neo4j, "depth", ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ) );
 
         final Pair<List<DefaultNodeBuilder>, List<DefaultRelationshipBuilder>> jsonData = neo4j.translateCPGToOGMBuilders(
                 result );
-        return this.toGraph( neo4j.buildJsonGraph( jsonData.getFirst(), jsonData.getSecond() ) );
+        return this.toGraph( neo4j.buildJsonGraph( jsonData.getFirst(), jsonData.getSecond() ), ctx );
     }
 
-    private Graph toGraph( final JsonGraph json ) {
+    private Graph toGraph( final JsonGraph json, final PipeContext ctx ) {
 
         final Graph graph = this.graphService.getEmptyGraph();
 
@@ -57,6 +57,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
             if ( node != null ) {
                 node.setAttributes( jsonNode.getProperties() );
                 node.setAttribute( "labels", jsonNode.getLabels() );
+                node.setAttribute( "dataset", ctx.get( PipeContext.CPG_DATASET_KEY ) );
             }
         }
         for ( JsonEdge jsonEdge : json.getEdges() ) {
@@ -79,6 +80,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
                 if ( StringUtils.isNotBlank( jsonEdge.getType() ) ) {
                     edge.setAttribute( "label", jsonEdge.getType() );
                 }
+                edge.setAttribute( "dataset", ctx.get( PipeContext.CPG_DATASET_KEY ) );
             }
         }
 
