@@ -37,7 +37,7 @@ public class DatasetDesignPatterns {
     }
 
     public Map<String, Integer> getStats() {
-        final Map<String, Integer> stats = new HashMap<>();
+        final Map<String, Integer> stats = new TreeMap<>();
 
         int roleCount = 0;
         int patternCount = 0;
@@ -46,22 +46,22 @@ public class DatasetDesignPatterns {
             final List<DesignPattern> patterns = this.getAllByType( type );
             stats.put( type + "_count", patterns.size() );
 
+            int patternRoleCount = 0;
             for ( final DesignPattern pattern : patterns ) {
                 patternCount++;
 
                 for ( final DesignPatternRole role : pattern.getRoles() ) {
                     roleCount++;
-                    /*
-                    final String roleTagStat = role.getTag() + "_count";
+                    patternRoleCount++;
+                    final String roleTagStat = type + "_" + role.getTag() + "_count";
                     if ( stats.containsKey( roleTagStat ) ) {
                         stats.put( roleTagStat, stats.get( roleTagStat ) + 1 );
                         continue;
                     }
                     stats.put( roleTagStat, 1 );
-
-                     */
                 }
             }
+            stats.put( type + "_role_count", patternRoleCount );
         }
 
         stats.put( "pattern_count", patternCount );
