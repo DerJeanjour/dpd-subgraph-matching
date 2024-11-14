@@ -20,7 +20,6 @@ public class CpgTranslatorProcess<Target> extends PipeModule<Dataset, Graph, Tar
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
                 .add( LoadDatasetFileModule.instance() )
                 .add( GenerateCpgModule.instance() )
-                //.add( PersistTranslationModule.instance() )
                 .add( TranslationToGraphModule.instance() )
                 .build();
 

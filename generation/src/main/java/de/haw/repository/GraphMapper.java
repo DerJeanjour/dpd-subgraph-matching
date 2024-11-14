@@ -20,10 +20,12 @@ public class GraphMapper {
 
     public static List<CpgEdge<CpgNode>> map( final Graph graph ) {
         final Map<Long, CpgNode> cpgNodes = map( graph.nodes() );
-        return graph.edges()
+        final List<CpgEdge<CpgNode>> edges = graph.edges()
                 .map( edge -> map( edge, cpgNodes ) )
                 .filter( Objects::nonNull )
                 .collect( Collectors.toList() );
+        cpgNodes.forEach( ( key, node ) -> node.setId( null ) );
+        return edges;
     }
 
     private static Map<Long, CpgNode> map( final Stream<Node> nodes ) {
@@ -52,7 +54,7 @@ public class GraphMapper {
 
     private static CpgEdge<CpgNode> map( final Edge edge, final Map<Long, CpgNode> cpgNodes ) {
         final CpgEdge<CpgNode> cpgEdge = new CpgEdge<>();
-        cpgEdge.setId( mapId( edge ) );
+        //cpgEdge.setId( mapId( edge ) );
 
         final Map<String, Object> attr = GraphService.instance().getAttributes( edge );
         cpgEdge.setProperties( mapAttr( attr ) );

@@ -47,9 +47,11 @@ public class GraphRepository implements AutoCloseable {
     public void writeGraph( final Graph graph, final int depth, final boolean purge ) {
         Session session = sessionFactory.openSession();
         try ( Transaction tx = session.beginTransaction() ) {
+
             if ( purge ) {
                 session.purgeDatabase();
             }
+
             final List<CpgEdge<CpgNode>> cpgEdges = GraphMapper.map( graph );
             session.save( cpgEdges, depth );
             tx.commit();
