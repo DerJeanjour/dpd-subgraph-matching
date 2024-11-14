@@ -24,14 +24,15 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
 
         final InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder().enabled( true ).build();
         TranslationConfiguration translationConfiguration = null;
+
         try {
             //.addIncludesToGraph( false )
             //.loadIncludes( false )
             translationConfiguration = new TranslationConfiguration.Builder().inferenceConfiguration(
                             inferenceConfiguration )
                     .defaultPasses()
-                    //.registerPass( JvmClassMappingKt.getKotlinClass( ControlDependenceGraphPass.class ) )
-                    //.registerPass( JvmClassMappingKt.getKotlinClass( ProgramDependenceGraphPass.class ) )
+                    .registerPass( JvmClassMappingKt.getKotlinClass( ControlDependenceGraphPass.class ) )
+                    .registerPass( JvmClassMappingKt.getKotlinClass( ProgramDependenceGraphPass.class ) )
                     .registerLanguage( new JavaLanguage() )
                     .sourceLocations( sourceFile )
                     .build();

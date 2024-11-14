@@ -8,6 +8,7 @@ import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.module.DisplayGraphModule;
 import de.haw.repository.module.PersistCpgModule;
 import de.haw.translation.module.GenerateCpgModule;
+import de.haw.translation.module.PersistTranslationModule;
 import de.haw.translation.module.TranslationToGraphAlternative;
 import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
@@ -29,8 +30,9 @@ public class Main {
                 //.add( CpgTranslatorProcess.instance() )
                 .add( LoadDatasetFileModule.instance() )
                 .add( GenerateCpgModule.instance() )
-                //.add( TranslationToGraphModule.instance() )
-                .add( TranslationToGraphAlternative.instance() )
+                //.add( PersistTranslationModule.instance() )
+                .add( TranslationToGraphModule.instance() )
+                //.add( TranslationToGraphAlternative.instance() )
                 //.add( CpgLabelPatternsModule.instance() )
                 .add( PersistCpgModule.instance() )
                 //.add( DisplayGraphModule.instance() )
