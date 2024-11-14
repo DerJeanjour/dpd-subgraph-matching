@@ -94,7 +94,7 @@ public class GraphUi {
         return getFillColorParam( GraphUi.buildColorValue( Color.GRAY ) );
     }
 
-    private static String getFillColorParam( final String color ) {
+    public static String getFillColorParam( final String color ) {
         return buildStyleProperty( PARAM_FILL_COLOR, color );
     }
 

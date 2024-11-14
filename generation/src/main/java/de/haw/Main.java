@@ -5,14 +5,16 @@ import de.haw.dataset.module.LoadDatasetFileModule;
 import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
+import de.haw.processing.module.CpgEdgeTypeVisualizeModule;
+import de.haw.processing.module.CpgFilterEdgesModule;
 import de.haw.processing.module.DisplayGraphModule;
-import de.haw.repository.module.PersistCpgModule;
+import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.module.GenerateCpgModule;
-import de.haw.translation.module.PersistTranslationModule;
-import de.haw.translation.module.TranslationToGraphAlternative;
 import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
+
+import java.util.Arrays;
 
 @Slf4j
 public class Main {
@@ -27,15 +29,16 @@ public class Main {
 
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
                 //.add( AttachPatternsToContext.instance() )
-                //.add( CpgTranslatorProcess.instance() )
                 .add( LoadDatasetFileModule.instance() )
                 .add( GenerateCpgModule.instance() )
                 //.add( PersistTranslationModule.instance() )
                 .add( TranslationToGraphModule.instance() )
                 //.add( TranslationToGraphAlternative.instance() )
                 //.add( CpgLabelPatternsModule.instance() )
-                .add( PersistCpgModule.instance() )
-                //.add( DisplayGraphModule.instance() )
+                //.add( CpgFilterEdgesModule.byTypes( Arrays.asList( CpgEdgeType.CONTROL_DEPENDENCE_GRAPH ), false ) )
+                .add( CpgEdgeTypeVisualizeModule.instance() )
+                .add( DisplayGraphModule.instance() )
+                //.add( PersistCpgModule.instance() )
                 .build();
         final Graph cpg = pipe.process( dataset, ctx );
 

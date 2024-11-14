@@ -100,7 +100,7 @@ public class GraphMapper {
             return Optional.empty();
         }
         for ( CpgEdgeType edgeType : CpgEdgeType.values() ) {
-            if ( type.startsWith( edgeType.getValue() ) ) {
+            if ( type.equals( edgeType.getValue() ) ) {
                 return Optional.of( edgeType );
             }
         }

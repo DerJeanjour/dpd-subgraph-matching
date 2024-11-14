@@ -1,13 +1,15 @@
 package de.haw.processing.module;
 
 import de.haw.misc.pipe.PipeContext;
-import de.haw.repository.model.CpgEdgeType;
-import de.haw.processing.visualize.GraphUi;
 import de.haw.misc.pipe.PipeModule;
+import de.haw.processing.visualize.GraphUi;
+import de.haw.repository.model.CpgEdgeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
+
+import java.awt.*;
 
 @Slf4j
 @RequiredArgsConstructor( staticName = "instance" )
@@ -23,7 +25,7 @@ public class CpgEdgeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
             final String type = edge.getAttribute( "type", String.class );
             for ( CpgEdgeType edgeType : CpgEdgeType.values() ) {
 
-                if ( type.startsWith( edgeType.getValue() ) ) {
+                if ( type.equals( edgeType.getValue() ) ) {
                     this.markEdgeByType( edge, edgeType );
                 }
 
@@ -39,6 +41,10 @@ public class CpgEdgeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
             case ABSTRACT_SYNTAX_TREE -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.greenFill() );
             case DATA_FLOW_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.blueFill() );
             case EVALUATION_ORDER_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.redFill() );
+            case CONTROL_DEPENDENCE_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE,
+                    GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.MAGENTA ) ) );
+            case PROGRAM_DEPENDENCY_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE,
+                    GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.CYAN ) ) );
         }
     }
 

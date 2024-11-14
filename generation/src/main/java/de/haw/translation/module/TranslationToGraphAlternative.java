@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Deprecated
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
 public class TranslationToGraphAlternative<Target> extends PipeModule<TranslationResult, Graph, Target> {

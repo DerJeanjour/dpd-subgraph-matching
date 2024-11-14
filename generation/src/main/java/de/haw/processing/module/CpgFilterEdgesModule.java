@@ -36,7 +36,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
             final String type = edge.getAttribute( "type", String.class );
 
             final boolean shouldIncludeEdge = this.edgeTypes.stream()
-                    .anyMatch( edgeType -> type.startsWith( edgeType.getValue() ) );
+                    .anyMatch( edgeType -> type.equals( edgeType.getValue() ) );
             if ( shouldIncludeEdge ) {
 
                 typesIncludedExplicitly.add( type );

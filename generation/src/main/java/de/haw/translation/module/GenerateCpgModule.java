@@ -26,14 +26,15 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
         TranslationConfiguration translationConfiguration = null;
 
         try {
-            //.addIncludesToGraph( false )
-            //.loadIncludes( false )
             translationConfiguration = new TranslationConfiguration.Builder().inferenceConfiguration(
                             inferenceConfiguration )
                     .defaultPasses()
                     .registerPass( JvmClassMappingKt.getKotlinClass( ControlDependenceGraphPass.class ) )
                     .registerPass( JvmClassMappingKt.getKotlinClass( ProgramDependenceGraphPass.class ) )
+                    //.registerPass( JvmClassMappingKt.getKotlinClass( PrepareSerialization.class ) ) // AST but is expensive
                     .registerLanguage( new JavaLanguage() )
+                    //.addIncludesToGraph( false )
+                    //.loadIncludes( false )
                     .sourceLocations( sourceFile )
                     .build();
         } catch ( ConfigurationException e ) {
