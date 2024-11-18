@@ -70,6 +70,9 @@ public class GraphMapper {
         cpgEdge.setTarget( cpgTargetNode );
 
         switch ( edgeType.get() ) {
+            case SCOPE -> {
+                cpgSourceNode.getScope().add( cpgEdge );
+            }
             case ABSTRACT_SYNTAX_TREE -> {
                 cpgSourceNode.getNextAstEdges().add( cpgEdge );
             }

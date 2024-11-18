@@ -8,10 +8,7 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.MultiGraph;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
@@ -73,6 +70,21 @@ public class GraphService {
             attr.put( key, element.getAttribute( key ) );
         }
         return attr;
+    }
+
+    public <T> Optional<T> getAttr( final Element element, final String key, final Class<T> clazz ) {
+        if ( !element.hasAttribute( key, clazz ) ) {
+            return Optional.empty();
+        }
+        return Optional.of( element.getAttribute( key, clazz ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public void addLabel( final Node node, final String label ) {
+        final Set<String> labels = this.getAttr( node, "labels", Set.class ).orElse( Collections.emptySet() );
+        labels.add( label );
+        node.setAttribute( "labels", labels );
+
     }
 
     private String genId( final String prefix ) {

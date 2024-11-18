@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum CpgEdgeType {
+    SCOPE( "SCOPE" ),
     ABSTRACT_SYNTAX_TREE( "AST" ),
     DATA_FLOW_GRAPH( "DFG" ),
     EVALUATION_ORDER_GRAPH( "EOG" ),

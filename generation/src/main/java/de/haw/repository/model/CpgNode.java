@@ -24,10 +24,8 @@ public class CpgNode {
 
     /* RELATIONSHIPS */
 
-    /*
     @Relationship( value = "SCOPE", direction = Relationship.Direction.OUTGOING )
-    private CpgEdge<CpgNode> scope;
-     */
+    private List<CpgEdge<CpgNode>> scope = new ArrayList<>();
 
     @Relationship( value = "AST", direction = Relationship.Direction.OUTGOING )
     private List<CpgEdge<CpgNode>> nextAstEdges = new ArrayList<>();
@@ -55,6 +53,5 @@ public class CpgNode {
 
     @Relationship( value = "PDG", direction = Relationship.Direction.OUTGOING )
     private List<CpgEdge<CpgNode>> nextPdgEdge = new ArrayList<>();
-
 
 }

@@ -3,6 +3,7 @@ package de.haw.translation.module;
 import de.fraunhofer.aisec.cpg.*;
 import de.fraunhofer.aisec.cpg.frontends.java.JavaLanguage;
 import de.fraunhofer.aisec.cpg.passes.ControlDependenceGraphPass;
+import de.fraunhofer.aisec.cpg.passes.PrepareSerialization;
 import de.fraunhofer.aisec.cpg.passes.ProgramDependenceGraphPass;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
@@ -33,8 +34,8 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
                     .registerPass( JvmClassMappingKt.getKotlinClass( ProgramDependenceGraphPass.class ) )
                     //.registerPass( JvmClassMappingKt.getKotlinClass( PrepareSerialization.class ) ) // AST but is expensive
                     .registerLanguage( new JavaLanguage() )
-                    //.addIncludesToGraph( false )
-                    //.loadIncludes( false )
+                    .addIncludesToGraph( false )
+                    .loadIncludes( false )
                     .sourceLocations( sourceFile )
                     .build();
         } catch ( ConfigurationException e ) {
