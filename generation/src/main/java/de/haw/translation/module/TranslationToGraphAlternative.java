@@ -44,7 +44,7 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         walkerDFG.registerOnNodeVisit( ( node, parent ) -> {
             this.addNode( graph, node, ctx );
             node.getNextDFG().forEach( next -> {
-                this.addEdge( graph, node, next, CpgEdgeType.DATA_FLOW_GRAPH, ctx );
+                this.addEdge( graph, node, next, CpgEdgeType.DFG, ctx );
             } );
             return null;
         } );
@@ -54,7 +54,7 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         walkerPDG.registerOnNodeVisit( ( node, parent ) -> {
             this.addNode( graph, node, ctx );
             node.getNextPDG().forEach( next -> {
-                this.addEdge( graph, node, next, CpgEdgeType.PROGRAM_DEPENDENCY_GRAPH, ctx );
+                this.addEdge( graph, node, next, CpgEdgeType.PDG, ctx );
             } );
             return null;
         } );
@@ -64,7 +64,7 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         walkerEOG.registerOnNodeVisit( ( node, parent ) -> {
             this.addNode( graph, node, ctx );
             node.getNextEOG().forEach( next -> {
-                this.addEdge( graph, node, next, CpgEdgeType.EVALUATION_ORDER_GRAPH, ctx );
+                this.addEdge( graph, node, next, CpgEdgeType.EOG, ctx );
             } );
             return null;
         } );
@@ -74,7 +74,7 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         walkerCDG.registerOnNodeVisit( ( node, parent ) -> {
             this.addNode( graph, node, ctx );
             node.getNextCDG().forEach( next -> {
-                this.addEdge( graph, node, next, CpgEdgeType.CONTROL_DEPENDENCE_GRAPH, ctx );
+                this.addEdge( graph, node, next, CpgEdgeType.CDG, ctx );
             } );
             return null;
         } );
@@ -84,29 +84,29 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         walkerAST.registerOnNodeVisit( ( node, parent ) -> {
             this.addNode( graph, node, ctx );
             node.getAstChildren().forEach( next -> {
-                this.addEdge( graph, node, next, CpgEdgeType.ABSTRACT_SYNTAX_TREE, ctx );
+                this.addEdge( graph, node, next, CpgEdgeType.AST, ctx );
             } );
             node.getNextDFG().forEach( next -> {
-                boolean added = this.addEdge( graph, node, next, CpgEdgeType.DATA_FLOW_GRAPH, ctx );
-                if( !added ) {
+                boolean added = this.addEdge( graph, node, next, CpgEdgeType.DFG, ctx );
+                if ( !added ) {
                     walkerDFG.iterate( next );
                 }
             } );
             node.getNextPDG().forEach( next -> {
-                boolean added = this.addEdge( graph, node, next, CpgEdgeType.PROGRAM_DEPENDENCY_GRAPH, ctx );
-                if( !added ) {
+                boolean added = this.addEdge( graph, node, next, CpgEdgeType.PDG, ctx );
+                if ( !added ) {
                     walkerPDG.iterate( next );
                 }
             } );
             node.getNextEOG().forEach( next -> {
-                boolean added = this.addEdge( graph, node, next, CpgEdgeType.EVALUATION_ORDER_GRAPH, ctx );
-                if( !added ) {
+                boolean added = this.addEdge( graph, node, next, CpgEdgeType.EOG, ctx );
+                if ( !added ) {
                     walkerEOG.iterate( next );
                 }
             } );
             node.getNextCDG().forEach( next -> {
-                boolean added = this.addEdge( graph, node, next, CpgEdgeType.CONTROL_DEPENDENCE_GRAPH, ctx );
-                if( !added ) {
+                boolean added = this.addEdge( graph, node, next, CpgEdgeType.CDG, ctx );
+                if ( !added ) {
                     walkerCDG.iterate( next );
                 }
             } );
@@ -142,8 +142,8 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         }
 
         final Edge graphEdge = graph.addEdge( edgeId, sourceId, targetId, true );
-        graphEdge.setAttribute( "label", edgeType.getValue() );
-        graphEdge.setAttribute( "type", edgeType.getValue() );
+        graphEdge.setAttribute( "label", edgeType.name() );
+        graphEdge.setAttribute( "type", edgeType.name() );
         graphEdge.setAttribute( "dataset", ctx.get( PipeContext.CPG_DATASET_KEY ) );
         return true;
     }

@@ -32,6 +32,10 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
         final DatasetDesignPatterns dps = ctx.get( PipeContext.CPG_DESIGN_PATTERNS, null, DatasetDesignPatterns.class );
         graph.nodes().forEach( node -> {
 
+            if( !graphService.hasLabel( node, "Declaration" ) ) {
+                return;
+            }
+
             final String className = this.getClassName( node );
             final Map<DesignPatterType, DesignPatternRole> classRoles = this.getRolesClass( className, dps );
             for ( DesignPatterType dpType : classRoles.keySet() ) {

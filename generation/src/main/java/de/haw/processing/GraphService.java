@@ -84,7 +84,12 @@ public class GraphService {
         final Set<String> labels = this.getAttr( node, "labels", Set.class ).orElse( Collections.emptySet() );
         labels.add( label );
         node.setAttribute( "labels", labels );
+    }
 
+    @SuppressWarnings( "unchecked" )
+    public boolean hasLabel( final Node node, final String label ) {
+        final Set<String> labels = this.getAttr( node, "labels", Set.class ).orElse( Collections.emptySet() );
+        return labels.contains( label );
     }
 
     private String genId( final String prefix ) {

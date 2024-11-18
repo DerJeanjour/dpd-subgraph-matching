@@ -25,7 +25,7 @@ public class CpgEdgeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
             final String type = edge.getAttribute( "type", String.class );
             for ( CpgEdgeType edgeType : CpgEdgeType.values() ) {
 
-                if ( type.equals( edgeType.getValue() ) ) {
+                if ( type.equals( edgeType.name() ) ) {
                     this.markEdgeByType( edge, edgeType );
                 }
 
@@ -38,12 +38,12 @@ public class CpgEdgeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
 
     protected void markEdgeByType( final Edge edge, final CpgEdgeType edgeType ) {
         switch ( edgeType ) {
-            case ABSTRACT_SYNTAX_TREE -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.greenFill() );
-            case DATA_FLOW_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.blueFill() );
-            case EVALUATION_ORDER_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.redFill() );
-            case CONTROL_DEPENDENCE_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE,
+            case AST -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.greenFill() );
+            case DFG -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.blueFill() );
+            case EOG -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.redFill() );
+            case CDG -> edge.setAttribute( GraphUi.ATTR_STYLE,
                     GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.MAGENTA ) ) );
-            case PROGRAM_DEPENDENCY_GRAPH -> edge.setAttribute( GraphUi.ATTR_STYLE,
+            case PDG -> edge.setAttribute( GraphUi.ATTR_STYLE,
                     GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.CYAN ) ) );
         }
     }
