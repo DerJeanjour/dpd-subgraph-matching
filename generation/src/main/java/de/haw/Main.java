@@ -38,6 +38,7 @@ public class Main {
 
                 .add( MarkScopeModule.instance() )
                 .add( MarkPatternsModule.instance() )
+                .add( IsolateMarkedPatternsModule.instance() )
 
                 //.add( CpgFilterEdgesModule.byTypes( Arrays.asList( CpgEdgeType.CONTROL_DEPENDENCE_GRAPH ), false ) )
                 //.add( CpgEdgeTypeVisualizeModule.instance() )
