@@ -27,13 +27,27 @@ public abstract class GraphProcessTraverser<T> {
 
         private final Node parent;
 
+        private final Edge edge;
+
         private final T message;
 
         private final int depth;
 
     }
 
-    private final Set<String> visitedNodes = new HashSet<>();
+    @Data
+    @RequiredArgsConstructor( staticName = "of" )
+    protected static class TraversalContext {
+
+        private final Edge edge;
+
+        private final Node parent;
+
+        private final int depth;
+
+    }
+
+    private final Set<String> visitedEdges = new HashSet<>();
 
     public void traverse( final Node startNode ) {
         this.traverse( startNode, -1 );
@@ -42,36 +56,39 @@ public abstract class GraphProcessTraverser<T> {
     public void traverse( final Node startNode, final int maxDepth ) {
 
         final Deque<ProcessData<T>> queue = new ArrayDeque<>();
-        queue.push( ProcessData.of( startNode, null, null, 0 ) );
+        this.next( startNode )
+                .forEach( next -> queue.push(
+                        ProcessData.of( startNode, next.getOpposite( startNode ), next, null, 0 ) ) );
 
         while ( !queue.isEmpty() ) {
 
             final ProcessData<T> processData = queue.pop();
             final Node node = processData.getNode();
-            final Node parent = processData.getParent();
             final T inputData = processData.getMessage();
-            final int processDepth = processData.getDepth();
+            final TraversalContext ctx = TraversalContext.of(
+                    processData.getEdge(), processData.getParent(), processData.getDepth() );
 
-            if ( maxDepth >= 0 && processDepth >= maxDepth ) {
+            if ( maxDepth >= 0 && ctx.getDepth() >= maxDepth ) {
                 continue;
             }
 
-            this.visitedNodes.add( node.getId() );
-            final OutputData<T> output = this.process( node, parent, inputData );
-            if( !output.isProceed() ) {
+            final OutputData<T> output = this.process( node, inputData, ctx );
+            this.visitedEdges.add( ctx.getEdge().getId() );
+            if ( !output.isProceed() ) {
                 continue;
             }
 
-            this.next( node ).forEach( edge -> {
-                if ( !this.visitedNodes.contains( edge.getTargetNode().getId() ) ) {
-                    queue.push( ProcessData.of( edge.getTargetNode(), node, output.getMessage(), processDepth + 1 ) );
+            this.next( node ).forEach( next -> {
+                if ( !this.visitedEdges.contains( next.getId() ) ) {
+                    queue.push( ProcessData.of( next.getOpposite( node ), node, next, output.getMessage(),
+                            ctx.getDepth() + 1 ) );
                 }
             } );
         }
 
     }
 
-    protected abstract OutputData<T> process( final Node node, final Node parent, final T message );
+    protected abstract OutputData<T> process( final Node node, final T message, final TraversalContext ctx );
 
     protected abstract List<Edge> next( final Node node );
 
