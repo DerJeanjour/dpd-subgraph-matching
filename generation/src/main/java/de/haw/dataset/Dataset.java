@@ -6,9 +6,15 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum Dataset {
+
+    // own
     SELF( "generation" ),
     ANIMAL( "animals" ),
     CHESS( "chess" ),
+    // pattern examples
+    ABSTRACT_FACTORY_EXAMPLE( "abstractfactory" ),
+    SINGLETON_EXAMPLE( "singleton" ),
+    // p-mart
     QUICK_UML( "1 - QuickUML 2001" ),
     LEXI( "2 - Lexi v0.1.1 alpha" ),
     J_REFACTORY( "3 - JRefactory v2.6.24" ),
@@ -17,7 +23,9 @@ public enum Dataset {
     J_HOT_DRAW( "6 - JHotDraw v5.1" ),
     MAPPER_XML( "8 - MapperXML v1.9.7" ),
     NUTCH( "10 - Nutch v0.4" ),
-    PMD( "11 - PMD v1.8" );
+    PMD( "11 - PMD v1.8" ),
+    // dpdf-corpus
+    DPDF( "" );
 
     private final String name;
 }

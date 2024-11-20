@@ -37,6 +37,9 @@ dependencies {
     implementation("org.graphstream", "gs-algo", graphStreamVersion)
     implementation("org.graphstream", "gs-ui-swing", graphStreamVersion)
 
+    // https://mvnrepository.com/artifact/com.opencsv/opencsv
+    implementation("com.opencsv:opencsv:5.9")
+
     // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
     implementation("org.apache.commons:commons-lang3:3.17.0")
     // https://mvnrepository.com/artifact/commons-io/commons-io

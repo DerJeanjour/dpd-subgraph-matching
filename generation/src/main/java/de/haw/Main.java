@@ -9,7 +9,6 @@ import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.module.*;
 import de.haw.repository.module.PersistCpgModule;
 import de.haw.translation.module.GenerateCpgModule;
-import de.haw.translation.module.PersistTranslationModule;
 import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
@@ -19,7 +18,7 @@ public class Main {
 
     public static void main( String[] args ) {
 
-        final Dataset dataset = Dataset.J_UNIT; // J_UNIT is small
+        final Dataset dataset = Dataset.SINGLETON_EXAMPLE;
 
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
@@ -36,9 +35,11 @@ public class Main {
                 .add( TranslationToGraphModule.instance() )
                 //.add( TranslationToGraphAlternative.instance() )
 
+
                 .add( MarkScopeModule.instance() )
                 .add( MarkPatternsModule.instance() )
-                .add( IsolateMarkedPatternsModule.instance() )
+                //.add( IsolateMarkedPatternsModule.instance() )
+                .add( RemoveBlacklistNodesModule.instance() )
 
                 //.add( CpgFilterEdgesModule.byTypes( Arrays.asList( CpgEdgeType.CONTROL_DEPENDENCE_GRAPH ), false ) )
                 //.add( CpgEdgeTypeVisualizeModule.instance() )

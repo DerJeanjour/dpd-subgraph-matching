@@ -1,22 +1,16 @@
 package de.haw.dataset.module;
 
 import de.haw.dataset.Dataset;
-import de.haw.dataset.model.*;
+import de.haw.dataset.model.DatasetDesignPatterns;
+import de.haw.dataset.reader.PatternReader;
+import de.haw.dataset.reader.PatternReaderCsv;
+import de.haw.dataset.reader.PatternReaderXml;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
@@ -35,82 +29,31 @@ public class ReadPatternsModule<Target> extends PipeModule<File, DatasetDesignPa
         final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
                 .orElseThrow( IllegalStateException::new );
 
-        final DatasetDesignPatterns datasetPatterns = DatasetDesignPatterns.of( dataset );
-        final Document xml = this.readFile( file );
+        return this.getReader( file ).read( dataset, file );
+    }
 
-        for ( final Element program : getChilds( xml.getDocumentElement(), "program" ) ) {
-            final String programName = program.getElementsByTagName( "name" ).item( 0 ).getTextContent();
-            if ( !dataset.getName().equals( programName ) ) {
-                continue;
-            }
+    private PatternReader getReader( final File file ) {
+        final String extension = getFileExtension( file );
+        return switch ( extension ) {
+            case "xml" -> PatternReaderXml.instance();
+            case "csv" -> PatternReaderCsv.instance();
+            default -> throw new IllegalArgumentException( "extension not supported: " + extension );
+        };
+    }
 
-            for ( final Element pattern : getChilds( program, "designPattern" ) ) {
-                final String patternName = pattern.getAttribute( "name" );
-                final Optional<DesignPatterType> patternType = this.mapPatternType( patternName );
-                if ( patternType.isEmpty() ) {
-                    continue;
-                }
-
-                for ( final Element patternInstance : getChilds( pattern, "microArchitecture" ) ) {
-                    final String instanceId = patternInstance.getAttribute( "number" );
-                    final DesignPattern designPattern = DesignPattern.of( patternType.get(), instanceId );
-                    datasetPatterns.add( designPattern );
-
-                    for ( final Element entity : getChilds( patternInstance, "entity" ) ) {
-
-                        final Element role = ( Element ) entity.getParentNode();
-                        final String roleTag = role.getNodeName();
-                        final RoleClassType roleClassType = this.mapRoleClassType( role.getAttribute( "roleKind" ) )
-                                .orElse( null );
-                        final String location = entity.getTextContent();
-
-                        designPattern.getRoles()
-                                .add( DesignPatternRole.builder()
-                                        .tag( roleTag )
-                                        .classType( roleClassType )
-                                        .location( location )
-                                        .build() );
-
-                    }
-
-                }
-
-            }
-
+    public static String getFileExtension( File file ) {
+        if ( file == null || !file.exists() ) {
+            throw new IllegalArgumentException( "File must not be null and should exist" );
         }
+        String fileName = file.getName();
+        int lastDotIndex = fileName.lastIndexOf( '.' );
 
-        return datasetPatterns;
-    }
-
-    private List<Element> getChilds( final Element element, final String tag ) {
-        final List<Element> nodes = new ArrayList<>();
-        final NodeList childs = element.getElementsByTagName( tag );
-        for ( int i = 0; i < childs.getLength(); i++ ) {
-            nodes.add( ( Element ) childs.item( i ) );
+        // Check if there is a dot and it is not the first character
+        if ( lastDotIndex > 0 && lastDotIndex < fileName.length() - 1 ) {
+            return fileName.substring( lastDotIndex + 1 );
         }
-        return nodes;
-    }
-
-    private Optional<DesignPatterType> mapPatternType( final String patternName ) {
-        return Arrays.stream( DesignPatterType.values() )
-                .filter( dpt -> dpt.getName().equals( patternName ) )
-                .findFirst();
-    }
-
-    private Optional<RoleClassType> mapRoleClassType( final String classTypeName ) {
-        return Arrays.stream( RoleClassType.values() )
-                .filter( type -> type.getName().equals( classTypeName ) )
-                .findFirst();
-    }
-
-    private Document readFile( final File file ) {
-        try {
-            final DocumentBuilder docBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            return docBuilder.parse( file );
-        } catch ( Exception e ) {
-            log.error( "Couldn't read design pattern file: {} ...", e.getMessage() );
-            throw new IllegalStateException( e );
-        }
+        // No extension found
+        return "";
     }
 
 }

@@ -1,0 +1,2 @@
+GJC: https://groups.inf.ed.ac.uk/cup/javaGithub/
+Patterns: https://github.com/najamnazar/designpatterndetection/blob/main/input-1300.csv
