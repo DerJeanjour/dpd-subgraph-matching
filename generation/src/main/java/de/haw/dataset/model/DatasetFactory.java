@@ -12,6 +12,11 @@ public class DatasetFactory {
     public static final Dataset ANIMAL = get( DatasetProject.ANIMAL );
     public static final Dataset CHESS = get( DatasetProject.CHESS );
     public static final Dataset ABSTRACT_FACTORY_EXAMPLE = get( DatasetProject.ABSTRACT_FACTORY_EXAMPLE );
+    public static final Dataset ADAPTER_EXAMPLE = get( DatasetProject.ADAPTER_EXAMPLE );
+    public static final Dataset BUILDER_EXAMPLE = get( DatasetProject.BUILDER_EXAMPLE );
+    public static final Dataset FACADE_EXAMPLE = get( DatasetProject.FACADE_EXAMPLE );
+    public static final Dataset FACTORY_METHOD_EXAMPLE = get( DatasetProject.FACTORY_METHOD_EXAMPLE );
+    public static final Dataset OBSERVER_EXAMPLE = get( DatasetProject.OBSERVER_EXAMPLE );
     public static final Dataset SINGLETON_EXAMPLE = get( DatasetProject.SINGLETON_EXAMPLE );
     public static final Dataset QUICK_UML = get( DatasetProject.QUICK_UML );
     public static final Dataset LEXI = get( DatasetProject.LEXI );
@@ -30,6 +35,11 @@ public class DatasetFactory {
             case ANIMAL -> "animals";
             case CHESS -> "chess";
             case ABSTRACT_FACTORY_EXAMPLE -> "abstractfactory";
+            case ADAPTER_EXAMPLE -> "adapter";
+            case BUILDER_EXAMPLE -> "builder";
+            case FACADE_EXAMPLE -> "facade";
+            case FACTORY_METHOD_EXAMPLE -> "factorymethod";
+            case OBSERVER_EXAMPLE -> "observer";
             case SINGLETON_EXAMPLE -> "singleton";
             case QUICK_UML -> "1 - QuickUML 2001";
             case LEXI -> "2 - Lexi v0.1.1 alpha";
