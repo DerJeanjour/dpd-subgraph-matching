@@ -1,6 +1,6 @@
 package de.haw.processing.module;
 
-import de.haw.dataset.model.DesignPatterType;
+import de.haw.dataset.model.DesignPatternType;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.traversal.ScopedSubgraphCopyTraverser;
@@ -31,7 +31,7 @@ public class IsolateMarkedPatternsModule<Target> extends PipeModule<Graph, Graph
             if ( scopedName.isEmpty() || StringUtils.isBlank( scopedName.get() ) ) {
                 return;
             }
-            final List<DesignPatterType> patternTypes = this.getPatternTypes( node );
+            final List<DesignPatternType> patternTypes = this.getPatternTypes( node );
             if ( patternTypes.isEmpty() ) {
                 return;
             }
@@ -42,8 +42,8 @@ public class IsolateMarkedPatternsModule<Target> extends PipeModule<Graph, Graph
         return isolatedPatternGraph;
     }
 
-    private List<DesignPatterType> getPatternTypes( final Node node ) {
-        return Arrays.stream( DesignPatterType.values() )
+    private List<DesignPatternType> getPatternTypes( final Node node ) {
+        return Arrays.stream( DesignPatternType.values() )
                 .filter( dpt -> this.graphService.hasLabel( node, dpt.name() ) )
                 .toList();
     }

@@ -40,7 +40,7 @@ public class PatternReaderCsv implements PatternReader {
             }
             final DatasetDesignPatterns datasetPatterns = datasetDesignPatterns.get( dataset.get().getName() );
 
-            final DesignPatterType type = this.mapPatternType( entry.getPatternName() );
+            final DesignPatternType type = this.mapPatternType( entry.getPatternName() );
             if ( type == null ) {
                 return;
             }
@@ -51,20 +51,20 @@ public class PatternReaderCsv implements PatternReader {
         return datasetDesignPatterns.values().stream().toList();
     }
 
-    private DesignPatterType mapPatternType( final String patternName ) {
+    private DesignPatternType mapPatternType( final String patternName ) {
         return switch ( patternName ) {
-            case "AbstractFactory" -> DesignPatterType.ABSTRACT_FACTORY;
-            case "Builder" -> DesignPatterType.BUILDER;
-            case "Observer" -> DesignPatterType.OBSERVER;
-            case "Singleton" -> DesignPatterType.SINGLETON;
-            case "Adapter" -> DesignPatterType.ADAPTER;
-            case "FactoryMethod" -> DesignPatterType.FACTORY_METHOD;
-            case "Visitor" -> DesignPatterType.VISITOR;
-            case "Decorator" -> DesignPatterType.DECORATOR;
-            case "Prototype" -> DesignPatterType.PROTOTYPE;
-            case "Facade" -> DesignPatterType.FACADE;
-            case "Memento" -> DesignPatterType.MEMENTO;
-            case "Proxy" -> DesignPatterType.PROXY;
+            case "AbstractFactory" -> DesignPatternType.ABSTRACT_FACTORY;
+            case "Builder" -> DesignPatternType.BUILDER;
+            case "Observer" -> DesignPatternType.OBSERVER;
+            case "Singleton" -> DesignPatternType.SINGLETON;
+            case "Adapter" -> DesignPatternType.ADAPTER;
+            case "FactoryMethod" -> DesignPatternType.FACTORY_METHOD;
+            case "Visitor" -> DesignPatternType.VISITOR;
+            case "Decorator" -> DesignPatternType.DECORATOR;
+            case "Prototype" -> DesignPatternType.PROTOTYPE;
+            case "Facade" -> DesignPatternType.FACADE;
+            case "Memento" -> DesignPatternType.MEMENTO;
+            case "Proxy" -> DesignPatternType.PROXY;
             default -> null;
         };
     }

@@ -22,7 +22,7 @@ public class Main {
 
     public static void main( String[] args ) {
 
-        //DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
+        DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.P_MART ) );
         //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
 
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
