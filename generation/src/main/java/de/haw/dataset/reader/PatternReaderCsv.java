@@ -8,16 +8,14 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
 public class PatternReaderCsv implements PatternReader {
-    @Override
-    public DatasetDesignPatterns read( final Dataset dataset, final File file ) {
 
-        final DatasetDesignPatterns datasetPatterns = DatasetDesignPatterns.of( dataset );
+    @Override
+    public List<DatasetDesignPatterns> read( final List<Dataset> datasets, final File file ) {
 
         final List<CsvDesignPattern> entries;
         try {
@@ -27,10 +25,21 @@ public class PatternReaderCsv implements PatternReader {
             throw new RuntimeException( e );
         }
 
+        final Map<String, DatasetDesignPatterns> datasetDesignPatterns = new HashMap<>();
         entries.forEach( entry -> {
-            if ( !entry.getProjectName().equals( dataset.getProjectName() ) ) {
+
+            final Optional<Dataset> dataset = datasets.stream()
+                    .filter( ds -> ds.getProjectName().equals( entry.getProjectName() ) )
+                    .findFirst();
+            if ( dataset.isEmpty() ) {
                 return;
             }
+
+            if ( !datasetDesignPatterns.containsKey( dataset.get().getName() ) ) {
+                datasetDesignPatterns.put( dataset.get().getName(), DatasetDesignPatterns.of( dataset.get() ) );
+            }
+            final DatasetDesignPatterns datasetPatterns = datasetDesignPatterns.get( dataset.get().getName() );
+
             final DesignPatterType type = this.mapPatternType( entry.getPatternName() );
             if ( type == null ) {
                 return;
@@ -38,7 +47,8 @@ public class PatternReaderCsv implements PatternReader {
             datasetPatterns.add( DesignPattern.of( type, entry.getClassName() ) );
         } );
 
-        return datasetPatterns;
+
+        return datasetDesignPatterns.values().stream().toList();
     }
 
     private DesignPatterType mapPatternType( final String patternName ) {

@@ -18,7 +18,7 @@ public class LoadPatternFileModule<Target> extends PipeModule<Dataset, File, Tar
         File file = null;
         boolean exists = true;
         try {
-            file = DesignPatternLoader.load( dataset );
+            file = DesignPatternLoader.load( dataset.getType() );
         } catch ( IllegalArgumentException e ) {
             exists = false;
         }

@@ -2,11 +2,7 @@ package de.haw.dataset;
 
 import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetDesignPatterns;
-import de.haw.dataset.module.LoadPatternFileModule;
-import de.haw.dataset.module.ReadPatternsModule;
-import de.haw.misc.pipe.PipeBuilder;
-import de.haw.misc.pipe.PipeContext;
-import de.haw.misc.pipe.PipeModule;
+import de.haw.dataset.module.BulkDesignPatternLoading;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -23,21 +19,12 @@ public class DesignPatternStatAggregator {
         final Map<String, DatasetDesignPatterns> datasetDesignPatterns = new HashMap<>();
         final Map<String, Map<String, Integer>> datasetStats = new HashMap<>();
 
-        for ( final Dataset dataset : datasets ) {
+        final List<DatasetDesignPatterns> datasetsPatterns = BulkDesignPatternLoading.load( datasets );
+        for ( DatasetDesignPatterns datasetPatterns : datasetsPatterns ) {
 
-            final PipeContext ctx = PipeContext.empty();
-            ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
-            final PipeModule<Dataset, ?, DatasetDesignPatterns> pipe = PipeBuilder.<Dataset, DatasetDesignPatterns>builder()
-                    .add( LoadPatternFileModule.instance() )
-                    .add( ReadPatternsModule.instance() )
-                    .build();
-
-            final DatasetDesignPatterns datasetPatterns = pipe.process( dataset, ctx );
-            if ( datasetPatterns == null ) {
-                continue;
-            }
-
+            final Dataset dataset = datasetPatterns.getDataset();
             final Map<String, Integer> stats = datasetPatterns.getStats();
+
             datasetStats.put( dataset.getName(), stats );
             datasetDesignPatterns.put( dataset.getName(), datasetPatterns );
 
@@ -49,7 +36,6 @@ public class DesignPatternStatAggregator {
                 }
                 aggregated.put( key, value );
             } );
-
         }
 
         return aggregated;

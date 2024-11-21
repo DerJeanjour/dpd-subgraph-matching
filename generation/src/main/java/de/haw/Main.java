@@ -15,14 +15,18 @@ import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
 
+import java.util.Arrays;
+
 @Slf4j
 public class Main {
 
     public static void main( String[] args ) {
 
-        DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
+        //DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
+        //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
 
-        final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
+        //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
+        final Dataset dataset = DatasetFactory.SINGLETON_EXAMPLE;
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );

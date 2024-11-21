@@ -29,10 +29,10 @@ public class ReadPatternsModule<Target> extends PipeModule<File, DatasetDesignPa
         final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
                 .orElseThrow( IllegalStateException::new );
 
-        return this.getReader( file ).read( dataset, file );
+        return getReader( file ).read( dataset, file );
     }
 
-    private PatternReader getReader( final File file ) {
+    public static PatternReader getReader( final File file ) {
         final String extension = getFileExtension( file );
         return switch ( extension ) {
             case "xml" -> PatternReaderXml.instance();

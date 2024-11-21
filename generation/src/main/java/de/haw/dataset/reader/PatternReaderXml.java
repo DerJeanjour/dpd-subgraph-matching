@@ -21,47 +21,56 @@ import java.util.Optional;
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
 public class PatternReaderXml implements PatternReader {
+
     @Override
-    public DatasetDesignPatterns read( final Dataset dataset, final File file ) {
+    public List<DatasetDesignPatterns> read( final List<Dataset> datasets, final File file ) {
 
-        final DatasetDesignPatterns datasetPatterns = DatasetDesignPatterns.of( dataset );
+        final List<DatasetDesignPatterns> datasetsPatterns = new ArrayList<>();
+
         final Document xml = this.readFile( file );
-
         for ( final Element program : getChilds( xml.getDocumentElement(), "program" ) ) {
             final String programName = program.getElementsByTagName( "name" ).item( 0 ).getTextContent();
-            if ( !dataset.getProjectName().equals( programName ) ) {
+
+            final Optional<Dataset> dataset = datasets.stream()
+                    .filter( ds -> ds.getProjectName().equals( programName ) )
+                    .findFirst();
+
+            if ( dataset.isEmpty() ) {
                 continue;
             }
 
-            for ( final Element pattern : getChilds( program, "designPattern" ) ) {
-                final String patternName = pattern.getAttribute( "name" );
-                final Optional<DesignPatterType> patternType = this.mapPatternType( patternName );
-                if ( patternType.isEmpty() ) {
-                    continue;
+            final DatasetDesignPatterns datasetPatterns = DatasetDesignPatterns.of( dataset.get() );
+            findPatternsFor( datasetPatterns, program );
+            datasetsPatterns.add( datasetPatterns );
+        }
+
+        return datasetsPatterns;
+    }
+
+    private void findPatternsFor( final DatasetDesignPatterns datasetPatterns, final Element program ) {
+        for ( final Element pattern : getChilds( program, "designPattern" ) ) {
+
+            final String patternName = pattern.getAttribute( "name" );
+            final Optional<DesignPatterType> patternType = this.mapPatternType( patternName );
+            if ( patternType.isEmpty() ) {
+                continue;
+            }
+
+            for ( final Element patternInstance : getChilds( pattern, "microArchitecture" ) ) {
+                final String instanceId = patternInstance.getAttribute( "number" );
+                for ( final Element entity : getChilds( patternInstance, "entity" ) ) {
+
+                    final Element role = ( Element ) entity.getParentNode();
+                    final String roleTag = role.getNodeName();
+                    final String className = entity.getTextContent();
+
+                    final DesignPattern designPattern = DesignPattern.of( patternType.get(), className );
+                    datasetPatterns.add( designPattern );
+
                 }
-
-                for ( final Element patternInstance : getChilds( pattern, "microArchitecture" ) ) {
-                    final String instanceId = patternInstance.getAttribute( "number" );
-
-
-                    for ( final Element entity : getChilds( patternInstance, "entity" ) ) {
-
-                        final Element role = ( Element ) entity.getParentNode();
-                        final String roleTag = role.getNodeName();
-                        final String className = entity.getTextContent();
-
-                        final DesignPattern designPattern = DesignPattern.of( patternType.get(), className );
-                        datasetPatterns.add( designPattern );
-
-                    }
-
-                }
-
             }
 
         }
-
-        return datasetPatterns;
     }
 
     private List<Element> getChilds( final Element element, final String tag ) {
