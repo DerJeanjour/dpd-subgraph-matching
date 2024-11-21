@@ -34,15 +34,20 @@ public class FileUtils {
         return toAbsolutePath( "" );
     }
 
-    public static List<String> getDirectoriesInDir( final String path ) {
+    public static List<String> getDirectoryNamesInDir( final String path ) {
+        return getDirectoriesInDir( path ).stream().map( File::getName ).toList();
+    }
+
+    public static List<String> getDirectoryPathsInDir( final String path ) {
+        return getDirectoriesInDir( path ).stream().map( File::getAbsolutePath ).toList();
+    }
+
+    public static List<File> getDirectoriesInDir( final String path ) {
         final File rootFile = get( path );
         if ( rootFile.listFiles() == null || !rootFile.isDirectory() ) {
             return Collections.emptyList();
         }
-        return Stream.of( Objects.requireNonNull( rootFile.listFiles() ) )
-                .filter( File::isDirectory )
-                .map( File::getAbsolutePath )
-                .toList();
+        return Stream.of( Objects.requireNonNull( rootFile.listFiles() ) ).filter( File::isDirectory ).toList();
     }
 
 }

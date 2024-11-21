@@ -1,27 +1,28 @@
 package de.haw;
 
-import de.haw.dataset.Dataset;
+import de.haw.dataset.DesignPatternStatAggregator;
+import de.haw.dataset.model.Dataset;
+import de.haw.dataset.model.DatasetFactory;
+import de.haw.dataset.model.DatasetType;
 import de.haw.dataset.module.AttachPatternsToContext;
 import de.haw.dataset.module.LoadDatasetFileModule;
 import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.module.*;
-import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.module.GenerateCpgModule;
 import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
-
-import java.util.Arrays;
 
 @Slf4j
 public class Main {
 
     public static void main( String[] args ) {
 
-        final Dataset dataset = Dataset.SINGLETON_EXAMPLE;
+        DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
 
+        final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
@@ -49,8 +50,8 @@ public class Main {
                 .add( DisplayGraphModule.instance() )
 
                 //.add( PersistCpgModule.instance() )
-
                 .build();
+
         final Graph cpg = pipe.process( dataset, ctx );
 
         log.info( "CPG: nodes {} / edges {}", cpg.getNodeCount(), cpg.getEdgeCount() );

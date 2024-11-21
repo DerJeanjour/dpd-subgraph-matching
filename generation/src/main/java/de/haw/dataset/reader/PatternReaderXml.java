@@ -1,6 +1,6 @@
 package de.haw.dataset.reader;
 
-import de.haw.dataset.Dataset;
+import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetDesignPatterns;
 import de.haw.dataset.model.DesignPatterType;
 import de.haw.dataset.model.DesignPattern;
@@ -29,7 +29,7 @@ public class PatternReaderXml implements PatternReader {
 
         for ( final Element program : getChilds( xml.getDocumentElement(), "program" ) ) {
             final String programName = program.getElementsByTagName( "name" ).item( 0 ).getTextContent();
-            if ( !dataset.getName().equals( programName ) ) {
+            if ( !dataset.getProjectName().equals( programName ) ) {
                 continue;
             }
 

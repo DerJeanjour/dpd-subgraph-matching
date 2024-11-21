@@ -1,6 +1,6 @@
 package de.haw.dataset.module;
 
-import de.haw.dataset.Dataset;
+import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetDesignPatterns;
 import de.haw.dataset.reader.PatternReader;
 import de.haw.dataset.reader.PatternReaderCsv;

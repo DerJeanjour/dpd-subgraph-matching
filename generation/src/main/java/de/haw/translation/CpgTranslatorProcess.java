@@ -1,6 +1,6 @@
 package de.haw.translation;
 
-import de.haw.dataset.Dataset;
+import de.haw.dataset.model.Dataset;
 import de.haw.dataset.module.LoadDatasetFileModule;
 import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;

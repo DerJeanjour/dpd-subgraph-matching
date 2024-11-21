@@ -1,6 +1,5 @@
 package de.haw.dataset.model;
 
-import de.haw.dataset.Dataset;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

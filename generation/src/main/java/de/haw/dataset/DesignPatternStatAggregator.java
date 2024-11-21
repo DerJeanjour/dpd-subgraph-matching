@@ -1,5 +1,6 @@
 package de.haw.dataset;
 
+import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetDesignPatterns;
 import de.haw.dataset.module.LoadPatternFileModule;
 import de.haw.dataset.module.ReadPatternsModule;
@@ -9,21 +10,20 @@ import de.haw.misc.pipe.PipeModule;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 @Slf4j
 public class DesignPatternStatAggregator {
 
-    public static Map<String, Integer> aggregateStats() {
+    public static Map<String, Integer> aggregateStats( final List<Dataset> datasets ) {
 
         final Map<String, Integer> aggregated = new TreeMap<>();
+        final Map<String, DatasetDesignPatterns> datasetDesignPatterns = new HashMap<>();
+        final Map<String, Map<String, Integer>> datasetStats = new HashMap<>();
 
-        final Map<Dataset, DatasetDesignPatterns> datasetDesignPatterns = new HashMap<>();
-
-        final Map<Dataset, Map<String, Integer>> datasetStats = new HashMap<>();
-
-        for ( final Dataset dataset : Dataset.values() ) {
+        for ( final Dataset dataset : datasets ) {
 
             final PipeContext ctx = PipeContext.empty();
             ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
@@ -38,8 +38,8 @@ public class DesignPatternStatAggregator {
             }
 
             final Map<String, Integer> stats = datasetPatterns.getStats();
-            datasetStats.put( dataset, stats );
-            datasetDesignPatterns.put( dataset, datasetPatterns );
+            datasetStats.put( dataset.getName(), stats );
+            datasetDesignPatterns.put( dataset.getName(), datasetPatterns );
 
             stats.forEach( ( key, value ) -> {
                 if ( aggregated.containsKey( key ) ) {

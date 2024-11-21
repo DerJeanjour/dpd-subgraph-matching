@@ -1,7 +1,7 @@
 package de.haw.dataset.module;
 
-import de.haw.dataset.Dataset;
 import de.haw.dataset.DatasetLoader;
+import de.haw.dataset.model.Dataset;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import lombok.NoArgsConstructor;
@@ -15,7 +15,7 @@ public class LoadDatasetFileModule<Target> extends PipeModule<Dataset, File, Tar
 
     @Override
     protected File processImpl( final Dataset dataset, final PipeContext ctx ) {
-        ctx.set( PipeContext.CPG_DATASET_KEY, dataset.name() );
+        ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         return DatasetLoader.load( dataset );
     }
 }

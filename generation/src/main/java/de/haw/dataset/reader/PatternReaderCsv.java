@@ -1,10 +1,6 @@
 package de.haw.dataset.reader;
 
-import de.haw.dataset.Dataset;
-import de.haw.dataset.model.CsvDesignPattern;
-import de.haw.dataset.model.DatasetDesignPatterns;
-import de.haw.dataset.model.DesignPatterType;
-import de.haw.dataset.model.DesignPattern;
+import de.haw.dataset.model.*;
 import de.haw.misc.utils.CsvUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +28,7 @@ public class PatternReaderCsv implements PatternReader {
         }
 
         entries.forEach( entry -> {
-            if( !entry.getProjectName().equals( dataset.getName() ) ) {
+            if ( !entry.getProjectName().equals( dataset.getProjectName() ) ) {
                 return;
             }
             final DesignPatterType type = this.mapPatternType( entry.getPatternName() );
