@@ -5,6 +5,7 @@ import de.fraunhofer.aisec.cpg_vis_neo4j.Application;
 import de.fraunhofer.aisec.cpg_vis_neo4j.JsonEdge;
 import de.fraunhofer.aisec.cpg_vis_neo4j.JsonGraph;
 import de.fraunhofer.aisec.cpg_vis_neo4j.JsonNode;
+import de.haw.dataset.model.Dataset;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.misc.utils.ReflectionUtils;
@@ -47,6 +48,8 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
 
     private Graph toGraph( final JsonGraph json, final PipeContext ctx ) {
 
+        final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
+                .orElseThrow( IllegalStateException::new );
         final Graph graph = this.graphService.getEmptyGraph();
 
         for ( JsonNode jsonNode : json.getNodes() ) {
@@ -57,7 +60,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
             if ( node != null ) {
                 node.setAttributes( jsonNode.getProperties() );
                 node.setAttribute( "labels", jsonNode.getLabels() );
-                node.setAttribute( "dataset", ctx.get( PipeContext.CPG_DATASET_KEY ) );
+                node.setAttribute( "dataset", dataset.getName() );
             }
         }
         for ( JsonEdge jsonEdge : json.getEdges() ) {
@@ -80,7 +83,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
                 if ( StringUtils.isNotBlank( jsonEdge.getType() ) ) {
                     edge.setAttribute( "label", jsonEdge.getType() );
                 }
-                edge.setAttribute( "dataset", ctx.get( PipeContext.CPG_DATASET_KEY ) );
+                edge.setAttribute( "dataset", dataset.getName() );
             }
         }
 

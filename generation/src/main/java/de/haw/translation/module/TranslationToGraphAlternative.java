@@ -5,6 +5,7 @@ import de.fraunhofer.aisec.cpg.graph.Component;
 import de.fraunhofer.aisec.cpg.graph.Node;
 import de.fraunhofer.aisec.cpg.helpers.SubgraphWalker;
 import de.fraunhofer.aisec.cpg.processing.strategy.Strategy;
+import de.haw.dataset.model.Dataset;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.GraphService;
@@ -118,6 +119,8 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
 
     private void addNode( final Graph graph, final Node node, final PipeContext ctx ) {
         // TODO maybe label node also by walker ???
+        final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
+                .orElseThrow( IllegalStateException::new );
         final String nodeId = this.genId( node );
         MultiNode graphNode = ( MultiNode ) graph.getNode( nodeId );
         if ( graphNode == null ) {
@@ -125,12 +128,16 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         }
         graphNode.setAttribute( "labels", this.getLabels( node ) );
         graphNode.setAttribute( "code", node.getCode() );
-        graphNode.setAttribute( "dataset", ctx.get( PipeContext.CPG_DATASET_KEY ) );
+        graphNode.setAttribute( "dataset", dataset.getName() );
     }
 
     private boolean addEdge(
             final Graph graph, final Node source, final Node target, final CpgEdgeType edgeType,
             final PipeContext ctx ) {
+
+        final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
+                .orElseThrow( IllegalStateException::new );
+
         this.addNode( graph, target, ctx );
         final String edgeId = this.genId();
         final String sourceId = this.genId( source );
@@ -144,7 +151,7 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         final Edge graphEdge = graph.addEdge( edgeId, sourceId, targetId, true );
         graphEdge.setAttribute( "label", edgeType.name() );
         graphEdge.setAttribute( "type", edgeType.name() );
-        graphEdge.setAttribute( "dataset", ctx.get( PipeContext.CPG_DATASET_KEY ) );
+        graphEdge.setAttribute( "dataset", dataset.getName() );
         return true;
     }
 
