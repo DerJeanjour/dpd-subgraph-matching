@@ -1,5 +1,6 @@
 package de.haw.processing.visualize;
 
+import org.graphstream.graph.Element;
 import org.graphstream.graph.Graph;
 
 import java.awt.*;
@@ -104,6 +105,22 @@ public class GraphUi {
 
     public static String buildColorValue( final Color color ) {
         return "rgb(" + color.getRed() + ", " + color.getGreen() + ", " + color.getBlue() + ")";
+    }
+
+    public static String getSizeParam( final int px ) {
+        return buildStyleProperty( PARAM_SIZE, px + "px" );
+    }
+
+    public static void addStyleParam( final Element element, final String styleParam ) {
+        if ( !element.hasAttribute( ATTR_STYLE, String.class ) ) {
+            element.setAttribute( ATTR_STYLE, styleParam );
+            return;
+        }
+        element.setAttribute( ATTR_STYLE, element.getAttribute( ATTR_STYLE, String.class ) + styleParam );
+    }
+
+    public static void clearStyle( final Element element ) {
+        element.removeAttribute( ATTR_STYLE );
     }
 
     public static void display( final Graph graph, final boolean showLabels ) {

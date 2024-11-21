@@ -1,9 +1,7 @@
 package de.haw.processing.module;
 
 import de.haw.dataset.model.DatasetDesignPatterns;
-import de.haw.dataset.model.DesignPatterType;
 import de.haw.dataset.model.DesignPattern;
-import de.haw.dataset.model.DesignPatternRole;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.GraphService;
@@ -14,10 +12,7 @@ import org.apache.commons.math3.util.Pair;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 @Slf4j
 @RequiredArgsConstructor( staticName = "instance" )
@@ -31,33 +26,28 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
             return graph;
         }
 
-
         final GraphService graphService = GraphService.instance();
         final DatasetDesignPatterns dps = ctx.get( PipeContext.CPG_DESIGN_PATTERNS, null, DatasetDesignPatterns.class );
         final Map<String, Integer> stats = new HashMap<>();
-        final Map<String, Integer> groundTruthStats = this.getGroundTruthStats( dps );
+
         graph.nodes().forEach( node -> {
 
+            // TODO maybe RecordDeclaration ???
             if ( !graphService.hasLabel( node, "Declaration" ) ) {
                 return;
             }
 
             final String className = this.getClassName( node );
-            final Map<DesignPatterType, DesignPatternRole> classRoles = this.getRolesClass( className, dps, stats );
-            for ( DesignPatterType dpType : classRoles.keySet() ) {
-                final DesignPatternRole role = classRoles.get( dpType );
-                node.setAttribute( "pattern." + dpType.name(), role.getTag() );
-                graphService.addLabel( node, dpType.name() );
-            }
+            final List<DesignPattern> patterns = this.getPatterns( className, dps );
+            patterns.forEach( dp -> {
+                graphService.addLabel( node, dp.getType().name() );
+                this.incrementStat( stats, this.formatStatKey( dp ) );
+                this.incrementStat( stats, "total" );
+            } );
 
         } );
 
-        final Map<String, Pair<Integer, Integer>> resultStats = new TreeMap<>();
-        groundTruthStats.keySet().forEach( key -> {
-            final int groundTruthValue = groundTruthStats.get( key );
-            final int actualValue = stats.getOrDefault( key, 0 );
-            resultStats.put( key, Pair.create( groundTruthValue, actualValue ) );
-        } );
+        final Map<String, Pair<Integer, Integer>> resultStats = this.getStatResults( dps, stats );
         log.info( "Result stats of marking design patterns: {}", resultStats );
 
         return graph;
@@ -70,35 +60,38 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
         return null;
     }
 
-    private Map<DesignPatterType, DesignPatternRole> getRolesClass(
-            final String className, final DatasetDesignPatterns datasetDps, final Map<String, Integer> stats ) {
-        final Map<DesignPatterType, DesignPatternRole> classRoles = new HashMap<>();
+    private List<DesignPattern> getPatterns( final String className, final DatasetDesignPatterns datasetDps ) {
+        final List<DesignPattern> patterns = new ArrayList<>();
         if ( StringUtils.isBlank( className ) ) {
-            return classRoles;
+            return patterns;
         }
         datasetDps.getPatterns().values().forEach( dps -> dps.forEach( dp -> {
-            Optional<DesignPatternRole> classRole = dp.getRoles()
-                    .stream()
-                    .filter( role -> role.getLocation().equals( className ) )
-                    .findAny();
-            classRole.ifPresent( designPatternRole -> {
-                classRoles.put( dp.getType(), classRole.get() );
-                this.incrementStat( stats, this.formatStatKey( dp, classRole.get() ) );
-                this.setStat( stats, this.formatStatKey( dp ), 1 );
-            } );
-
+            if ( className.endsWith( dp.getClassName() ) ) {
+                patterns.add( dp );
+            }
         } ) );
+        return patterns;
+    }
 
-        return classRoles;
+    private Map<String, Pair<Integer, Integer>> getStatResults(
+            final DatasetDesignPatterns dps, final Map<String, Integer> stats ) {
+        final Map<String, Integer> groundTruthStats = this.getGroundTruthStats( dps );
+        final Map<String, Pair<Integer, Integer>> resultStats = new TreeMap<>();
+        groundTruthStats.keySet().forEach( key -> {
+            final int groundTruthValue = groundTruthStats.get( key );
+            final int actualValue = stats.getOrDefault( key, 0 );
+            resultStats.put( key, Pair.create( groundTruthValue, actualValue ) );
+        } );
+        return resultStats;
     }
 
     private Map<String, Integer> getGroundTruthStats( final DatasetDesignPatterns datasetDps ) {
-        final Map<String, Integer> groundTruth = new HashMap<>();
+        final Map<String, Integer> gt = new HashMap<>();
         datasetDps.getPatterns().values().forEach( dps -> dps.forEach( dp -> {
-            this.setStat( groundTruth, this.formatStatKey( dp ), 1 );
-            dp.getRoles().forEach( role -> this.incrementStat( groundTruth, this.formatStatKey( dp, role ), 1 ) );
+            this.incrementStat( gt, this.formatStatKey( dp ) );
+            this.incrementStat( gt, "total" );
         } ) );
-        return groundTruth;
+        return gt;
 
     }
 
@@ -119,11 +112,7 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
     }
 
     private String formatStatKey( final DesignPattern pattern ) {
-        return pattern.getType().name() + "_" + pattern.getId();
-    }
-
-    private String formatStatKey( final DesignPattern pattern, final DesignPatternRole patterRole ) {
-        return this.formatStatKey( pattern ) + "_" + patterRole.getTag();
+        return pattern.getType().name();
     }
 
 }

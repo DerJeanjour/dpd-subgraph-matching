@@ -20,13 +20,13 @@ public class DatasetDesignPatterns {
         if ( !this.patterns.containsKey( pattern.getType() ) ) {
             this.patterns.put( pattern.getType(), new ArrayList<>() );
         }
-        if ( this.getPattern( pattern.getType(), pattern.getId() ).isEmpty() ) {
+        if ( this.getPattern( pattern.getType(), pattern.getClassName() ).isEmpty() ) {
             this.patterns.get( pattern.getType() ).add( pattern );
         }
     }
 
-    public Optional<DesignPattern> getPattern( final DesignPatterType type, final String id ) {
-        return this.getAllByType( type ).stream().filter( dp -> id.equals( dp.getId() ) ).findFirst();
+    public Optional<DesignPattern> getPattern( final DesignPatterType type, final String className ) {
+        return this.getAllByType( type ).stream().filter( dp -> className.equals( dp.getClassName() ) ).findFirst();
     }
 
     public List<DesignPattern> getAllByType( final DesignPatterType type ) {
@@ -38,34 +38,13 @@ public class DatasetDesignPatterns {
 
     public Map<String, Integer> getStats() {
         final Map<String, Integer> stats = new TreeMap<>();
-
-        int roleCount = 0;
         int patternCount = 0;
         for ( final DesignPatterType type : this.patterns.keySet() ) {
-
             final List<DesignPattern> patterns = this.getAllByType( type );
             stats.put( type + "_count", patterns.size() );
-
-            int patternRoleCount = 0;
-            for ( final DesignPattern pattern : patterns ) {
-                patternCount++;
-
-                for ( final DesignPatternRole role : pattern.getRoles() ) {
-                    roleCount++;
-                    patternRoleCount++;
-                    final String roleTagStat = type + "_" + role.getTag() + "_count";
-                    if ( stats.containsKey( roleTagStat ) ) {
-                        stats.put( roleTagStat, stats.get( roleTagStat ) + 1 );
-                        continue;
-                    }
-                    stats.put( roleTagStat, 1 );
-                }
-            }
-            stats.put( type + "_role_count", patternRoleCount );
+            patternCount += patterns.size();
         }
-
         stats.put( "pattern_count", patternCount );
-        stats.put( "role_count", roleCount );
         return stats;
     }
 

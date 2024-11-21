@@ -1,7 +1,10 @@
 package de.haw.dataset.reader;
 
 import de.haw.dataset.Dataset;
-import de.haw.dataset.model.*;
+import de.haw.dataset.model.CsvDesignPattern;
+import de.haw.dataset.model.DatasetDesignPatterns;
+import de.haw.dataset.model.DesignPatterType;
+import de.haw.dataset.model.DesignPattern;
 import de.haw.misc.utils.CsvUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
@@ -30,21 +32,14 @@ public class PatternReaderCsv implements PatternReader {
         }
 
         entries.forEach( entry -> {
+            if( !entry.getProjectName().equals( dataset.getName() ) ) {
+                return;
+            }
             final DesignPatterType type = this.mapPatternType( entry.getPatternName() );
             if ( type == null ) {
                 return;
             }
-            if ( !datasetPatterns.getPatterns().containsKey( type ) ) {
-                datasetPatterns.getPatterns().put( type, new ArrayList<>() );
-            }
-            final DesignPattern pattern = DesignPattern.of( type, UUID.randomUUID().toString() );
-            pattern.getRoles()
-                    .add( DesignPatternRole.builder()
-                            .location( entry.getClassName() )
-                            .tag( "role" )
-                            .classType( RoleClassType.CLASS )
-                            .build() );
-            datasetPatterns.getPatterns().get( type ).add( pattern );
+            datasetPatterns.add( DesignPattern.of( type, entry.getClassName() ) );
         } );
 
         return datasetPatterns;

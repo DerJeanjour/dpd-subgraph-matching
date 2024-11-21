@@ -9,29 +9,24 @@ import org.apache.commons.lang3.StringUtils;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
 @Slf4j
 @RequiredArgsConstructor( staticName = "instance" )
 public class MarkScopeModule<Target> extends PipeModule<Graph, Graph, Target> {
 
+    private final GraphService graphService = GraphService.instance();
+
     @Override
     @SuppressWarnings( "unchecked" )
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
-        final GraphService graphService = GraphService.instance();
         graph.nodes().forEach( node -> {
-            final Collection<String> labels = graphService.getAttr( node, "labels", Set.class )
-                    .orElse( Collections.emptySet() );
-            if ( labels.isEmpty() || !labels.contains( "Scope" ) || StringUtils.isBlank(
-                    node.getAttribute( "scopedName", String.class ) ) ) {
+            final String scopeName = node.getAttribute( "scopedName", String.class );
+            // TODO better propagate RecordScope ???
+            if ( !this.graphService.hasLabel( node, "Scope" ) || StringUtils.isBlank( scopeName ) ) {
                 return;
             }
             for ( int i = 0; i < node.getInDegree(); i++ ) {
                 final Node child = node.getEnteringEdge( i ).getSourceNode();
-                child.setAttribute( "scopedName", node.getAttribute( "scopedName" ) );
+                child.setAttribute( "scopedName", scopeName );
             }
         } );
         return graph;

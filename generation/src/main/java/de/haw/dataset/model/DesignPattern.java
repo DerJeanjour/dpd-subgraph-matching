@@ -12,8 +12,6 @@ public class DesignPattern {
 
     private final DesignPatterType type;
 
-    private final String id;
-
-    private final List<DesignPatternRole> roles = new ArrayList<>();
+    private final String className;
 
 }

@@ -1,7 +1,9 @@
 package de.haw.dataset.reader;
 
 import de.haw.dataset.Dataset;
-import de.haw.dataset.model.*;
+import de.haw.dataset.model.DatasetDesignPatterns;
+import de.haw.dataset.model.DesignPatterType;
+import de.haw.dataset.model.DesignPattern;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
@@ -40,23 +42,16 @@ public class PatternReaderXml implements PatternReader {
 
                 for ( final Element patternInstance : getChilds( pattern, "microArchitecture" ) ) {
                     final String instanceId = patternInstance.getAttribute( "number" );
-                    final DesignPattern designPattern = DesignPattern.of( patternType.get(), instanceId );
-                    datasetPatterns.add( designPattern );
+
 
                     for ( final Element entity : getChilds( patternInstance, "entity" ) ) {
 
                         final Element role = ( Element ) entity.getParentNode();
                         final String roleTag = role.getNodeName();
-                        final RoleClassType roleClassType = this.mapRoleClassType( role.getAttribute( "roleKind" ) )
-                                .orElse( null );
-                        final String location = entity.getTextContent();
+                        final String className = entity.getTextContent();
 
-                        designPattern.getRoles()
-                                .add( DesignPatternRole.builder()
-                                        .tag( roleTag )
-                                        .classType( roleClassType )
-                                        .location( location )
-                                        .build() );
+                        final DesignPattern designPattern = DesignPattern.of( patternType.get(), className );
+                        datasetPatterns.add( designPattern );
 
                     }
 
@@ -81,12 +76,6 @@ public class PatternReaderXml implements PatternReader {
     private Optional<DesignPatterType> mapPatternType( final String patternName ) {
         return Arrays.stream( DesignPatterType.values() )
                 .filter( dpt -> dpt.getName().equals( patternName ) )
-                .findFirst();
-    }
-
-    private Optional<RoleClassType> mapRoleClassType( final String classTypeName ) {
-        return Arrays.stream( RoleClassType.values() )
-                .filter( type -> type.getName().equals( classTypeName ) )
                 .findFirst();
     }
 

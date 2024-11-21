@@ -7,11 +7,13 @@ import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.module.*;
-import de.haw.repository.module.PersistCpgModule;
+import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.module.GenerateCpgModule;
 import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
+
+import java.util.Arrays;
 
 @Slf4j
 public class Main {
@@ -41,11 +43,12 @@ public class Main {
                 //.add( IsolateMarkedPatternsModule.instance() )
                 .add( RemoveBlacklistNodesModule.instance() )
 
-                //.add( CpgFilterEdgesModule.byTypes( Arrays.asList( CpgEdgeType.CONTROL_DEPENDENCE_GRAPH ), false ) )
-                //.add( CpgEdgeTypeVisualizeModule.instance() )
-                //.add( DisplayGraphModule.instance() )
+                //.add( CpgFilterEdgesModule.byTypes( Arrays.asList( CpgEdgeType.PDG ), false ) )
+                .add( CpgEdgeTypeVisualizeModule.instance() )
+                .add( CpgNodeTypeVisualizeModule.instance() )
+                .add( DisplayGraphModule.instance() )
 
-                .add( PersistCpgModule.instance() )
+                //.add( PersistCpgModule.instance() )
 
                 .build();
         final Graph cpg = pipe.process( dataset, ctx );

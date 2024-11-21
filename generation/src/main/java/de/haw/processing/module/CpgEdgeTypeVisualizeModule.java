@@ -37,14 +37,38 @@ public class CpgEdgeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
     }
 
     protected void markEdgeByType( final Edge edge, final CpgEdgeType edgeType ) {
+
         switch ( edgeType ) {
-            case AST -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.greenFill() );
-            case DFG -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.blueFill() );
-            case EOG -> edge.setAttribute( GraphUi.ATTR_STYLE, GraphUi.redFill() );
-            case CDG -> edge.setAttribute( GraphUi.ATTR_STYLE,
-                    GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.MAGENTA ) ) );
-            case PDG -> edge.setAttribute( GraphUi.ATTR_STYLE,
-                    GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.CYAN ) ) );
+            case AST -> {
+                GraphUi.clearStyle( edge );
+                GraphUi.addStyleParam( edge, GraphUi.getSizeParam( 2 ) );
+                GraphUi.addStyleParam( edge, GraphUi.greenFill() );
+            }
+            case DFG -> {
+                GraphUi.clearStyle( edge );
+                GraphUi.addStyleParam( edge, GraphUi.getSizeParam( 2 ) );
+                GraphUi.addStyleParam( edge, GraphUi.blueFill() );
+            }
+            case EOG -> {
+                GraphUi.clearStyle( edge );
+                GraphUi.addStyleParam( edge, GraphUi.getSizeParam( 2 ) );
+                GraphUi.addStyleParam( edge, GraphUi.redFill() );
+            }
+            case CDG -> {
+                GraphUi.clearStyle( edge );
+                GraphUi.addStyleParam( edge, GraphUi.getSizeParam( 2 ) );
+                GraphUi.addStyleParam( edge, GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.MAGENTA ) ) );
+            }
+            case PDG -> {
+                GraphUi.clearStyle( edge );
+                GraphUi.addStyleParam( edge, GraphUi.getSizeParam( 2 ) );
+                GraphUi.addStyleParam( edge, GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.CYAN ) ) );
+            }
+            default -> {
+                GraphUi.clearStyle( edge );
+                GraphUi.addStyleParam( edge, GraphUi.getSizeParam( 1 ) );
+                GraphUi.addStyleParam( edge, GraphUi.grayFill() );
+            }
         }
     }
 
