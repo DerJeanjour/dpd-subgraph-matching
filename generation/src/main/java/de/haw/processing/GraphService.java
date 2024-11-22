@@ -1,7 +1,9 @@
 package de.haw.processing;
 
+import de.haw.translation.CpgConst;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Element;
 import org.graphstream.graph.Graph;
@@ -81,15 +83,25 @@ public class GraphService {
 
     @SuppressWarnings( "unchecked" )
     public void addLabel( final Node node, final String label ) {
-        final Set<String> labels = this.getAttr( node, "labels", Set.class ).orElse( Collections.emptySet() );
+        final Set<String> labels = this.getAttr( node, CpgConst.NODE_ATTR_LABELS, Set.class )
+                .orElse( Collections.emptySet() );
         labels.add( label );
-        node.setAttribute( "labels", labels );
+        node.setAttribute( CpgConst.NODE_ATTR_LABELS, labels );
     }
 
     @SuppressWarnings( "unchecked" )
     public boolean hasLabel( final Node node, final String label ) {
-        final Set<String> labels = this.getAttr( node, "labels", Set.class ).orElse( Collections.emptySet() );
+        final Set<String> labels = this.getAttr( node, CpgConst.NODE_ATTR_LABELS, Set.class )
+                .orElse( Collections.emptySet() );
         return labels.contains( label );
+    }
+
+    public boolean hasAttr( final Element element, final String key ) {
+        final var attr = element.getAttribute( key );
+        if ( attr instanceof String ) {
+            return StringUtils.isNotBlank( ( String ) attr );
+        }
+        return attr != null;
     }
 
     private String genId( final String prefix ) {

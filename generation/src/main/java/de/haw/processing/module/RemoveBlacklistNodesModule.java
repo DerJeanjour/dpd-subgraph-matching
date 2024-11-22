@@ -18,14 +18,14 @@ public class RemoveBlacklistNodesModule<Target> extends PipeModule<Graph, Graph,
 
     private final GraphService graphService = GraphService.instance();
 
-    final List<String> labelBlacklist = Arrays.asList( "JavaLanguage" );
+    private final static List<String> LABEL_BLACKLIST = Arrays.asList( "JavaLanguage" );
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
         final Set<String> nodeIdsToRemove = new HashSet<>();
         graph.nodes().forEach( node -> {
-            if ( labelBlacklist.stream().anyMatch( label -> this.graphService.hasLabel( node, label ) ) ) {
+            if ( LABEL_BLACKLIST.stream().anyMatch( label -> this.graphService.hasLabel( node, label ) ) ) {
                 nodeIdsToRemove.add( node.getId() );
             }
         } );

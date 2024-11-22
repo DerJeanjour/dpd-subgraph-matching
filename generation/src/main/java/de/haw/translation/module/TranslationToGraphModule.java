@@ -10,6 +10,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.misc.utils.ReflectionUtils;
 import de.haw.processing.GraphService;
+import de.haw.translation.CpgConst;
 import kotlin.Pair;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,8 +60,8 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
             }
             if ( node != null ) {
                 node.setAttributes( jsonNode.getProperties() );
-                node.setAttribute( "labels", jsonNode.getLabels() );
-                node.setAttribute( "dataset", dataset.getName() );
+                node.setAttribute( CpgConst.NODE_ATTR_LABELS, jsonNode.getLabels() );
+                node.setAttribute( CpgConst.NODE_ATTR_DATASET, dataset.getName() );
             }
         }
         for ( JsonEdge jsonEdge : json.getEdges() ) {
@@ -79,11 +80,11 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
             }
             if ( edge != null ) {
                 edge.setAttributes( jsonEdge.getProperties() );
-                edge.setAttribute( "type", jsonEdge.getType() );
+                edge.setAttribute( CpgConst.EDGE_ATTR_TYPE, jsonEdge.getType() );
                 if ( StringUtils.isNotBlank( jsonEdge.getType() ) ) {
-                    edge.setAttribute( "label", jsonEdge.getType() );
+                    edge.setAttribute( CpgConst.EDGE_ATTR_LABEL, jsonEdge.getType() );
                 }
-                edge.setAttribute( "dataset", dataset.getName() );
+                edge.setAttribute( CpgConst.EDGE_ATTR_DATASET, dataset.getName() );
             }
         }
 

@@ -5,6 +5,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.traversal.ScopedSubgraphCopyTraverser;
 import de.haw.processing.GraphService;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -27,7 +28,7 @@ public class IsolateMarkedPatternsModule<Target> extends PipeModule<Graph, Graph
         final Graph isolatedPatternGraph = this.graphService.getEmptyGraph();
         graph.nodes().forEach( node -> {
 
-            final Optional<String> scopedName = this.graphService.getAttr( node, "scopedName", String.class );
+            final Optional<String> scopedName = this.graphService.getAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
             if ( scopedName.isEmpty() || StringUtils.isBlank( scopedName.get() ) ) {
                 return;
             }

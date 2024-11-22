@@ -4,7 +4,9 @@ import de.haw.dataset.model.DatasetDesignPatterns;
 import de.haw.dataset.model.DesignPattern;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
+import de.haw.misc.utils.NameUtils;
 import de.haw.processing.GraphService;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +20,10 @@ import java.util.*;
 @RequiredArgsConstructor( staticName = "instance" )
 public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target> {
 
+    private final static String TOTAL_STAT = "total";
+
+    private final GraphService graphService = GraphService.instance();
+
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
@@ -26,23 +32,21 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
             return graph;
         }
 
-        final GraphService graphService = GraphService.instance();
         final DatasetDesignPatterns dps = ctx.get( PipeContext.CPG_DESIGN_PATTERNS, null, DatasetDesignPatterns.class );
         final Map<String, Integer> stats = new HashMap<>();
 
         graph.nodes().forEach( node -> {
 
-            // TODO maybe RecordDeclaration ???
-            if ( !graphService.hasLabel( node, "Declaration" ) ) {
+            if ( !this.graphService.hasLabel( node, CpgConst.NODE_LABEL_DECLARATION_RECORD ) ) {
                 return;
             }
 
             final String className = this.getClassName( node );
             final List<DesignPattern> patterns = this.getPatterns( className, dps );
             patterns.forEach( dp -> {
-                graphService.addLabel( node, dp.getType().name() );
+                this.graphService.addLabel( node, dp.getType().name() );
                 this.incrementStat( stats, this.formatStatKey( dp ) );
-                this.incrementStat( stats, "total" );
+                this.incrementStat( stats, TOTAL_STAT );
             } );
 
         } );
@@ -54,19 +58,19 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
     }
 
     private String getClassName( final Node node ) {
-        if ( StringUtils.isNotBlank( node.getAttribute( "scopedName", String.class ) ) ) {
-            return node.getAttribute( "scopedName", String.class );
+        if ( this.graphService.hasAttr( node, CpgConst.NODE_ATTR_NAME_FULL ) ) {
+            return node.getAttribute( CpgConst.NODE_ATTR_NAME_FULL, String.class );
         }
         return null;
     }
 
-    private List<DesignPattern> getPatterns( final String className, final DatasetDesignPatterns datasetDps ) {
+    private List<DesignPattern> getPatterns( final String scopedClassname, final DatasetDesignPatterns datasetDps ) {
         final List<DesignPattern> patterns = new ArrayList<>();
-        if ( StringUtils.isBlank( className ) ) {
+        if ( StringUtils.isBlank( scopedClassname ) || !NameUtils.isScopedClassName( scopedClassname, "." ) ) {
             return patterns;
         }
         datasetDps.getPatterns().values().forEach( dps -> dps.forEach( dp -> {
-            if ( className.endsWith( dp.getClassName() ) ) {
+            if ( NameUtils.extractClassName( scopedClassname ).equals( dp.getClassName() ) ) {
                 patterns.add( dp );
             }
         } ) );
@@ -89,7 +93,7 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
         final Map<String, Integer> gt = new HashMap<>();
         datasetDps.getPatterns().values().forEach( dps -> dps.forEach( dp -> {
             this.incrementStat( gt, this.formatStatKey( dp ) );
-            this.incrementStat( gt, "total" );
+            this.incrementStat( gt, TOTAL_STAT );
         } ) );
         return gt;
 

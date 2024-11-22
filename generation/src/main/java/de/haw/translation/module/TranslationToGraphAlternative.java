@@ -10,6 +10,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.GraphService;
 import de.haw.repository.model.CpgEdgeType;
+import de.haw.translation.CpgConst;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Edge;
@@ -126,9 +127,9 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         if ( graphNode == null ) {
             graphNode = ( MultiNode ) graph.addNode( nodeId );
         }
-        graphNode.setAttribute( "labels", this.getLabels( node ) );
-        graphNode.setAttribute( "code", node.getCode() );
-        graphNode.setAttribute( "dataset", dataset.getName() );
+        graphNode.setAttribute( CpgConst.NODE_ATTR_LABELS, this.getLabels( node ) );
+        graphNode.setAttribute( CpgConst.NODE_ATTR_CODE, node.getCode() );
+        graphNode.setAttribute( CpgConst.NODE_ATTR_DATASET, dataset.getName() );
     }
 
     private boolean addEdge(
@@ -149,9 +150,9 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
         }
 
         final Edge graphEdge = graph.addEdge( edgeId, sourceId, targetId, true );
-        graphEdge.setAttribute( "label", edgeType.name() );
-        graphEdge.setAttribute( "type", edgeType.name() );
-        graphEdge.setAttribute( "dataset", dataset.getName() );
+        graphEdge.setAttribute( CpgConst.EDGE_ATTR_LABEL, edgeType.name() );
+        graphEdge.setAttribute( CpgConst.EDGE_ATTR_TYPE, edgeType.name() );
+        graphEdge.setAttribute( CpgConst.EDGE_ATTR_DATASET, dataset.getName() );
         return true;
     }
 

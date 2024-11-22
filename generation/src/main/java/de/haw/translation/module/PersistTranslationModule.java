@@ -14,6 +14,10 @@ import java.net.ConnectException;
 @NoArgsConstructor( staticName = "instance" )
 public class PersistTranslationModule<Target> extends PipeModule<TranslationResult, TranslationResult, Target> {
 
+    private final static String NEO4J_DEFAULT_USER = "neo4j";
+
+    private final static String NEO4J_DEFAULT_PASSWORD = "password";
+
     @Override
     protected TranslationResult processImpl( final TranslationResult result, final PipeContext ctx ) {
 
@@ -23,8 +27,8 @@ public class PersistTranslationModule<Target> extends PipeModule<TranslationResu
         }
 
         final Application neo4j = new Application();
-        neo4j.setNeo4jUsername( "neo4j" );
-        neo4j.setNeo4jPassword( "password" );
+        neo4j.setNeo4jUsername( NEO4J_DEFAULT_USER );
+        neo4j.setNeo4jPassword( NEO4J_DEFAULT_PASSWORD );
         ReflectionUtils.setInt( neo4j, "depth", ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ) );
 
         try {

@@ -4,6 +4,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.visualize.GraphUi;
 import de.haw.repository.model.CpgEdgeType;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Edge;
@@ -22,7 +23,7 @@ public class CpgEdgeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
 
         graph.edges().forEach( edge -> {
 
-            final String type = edge.getAttribute( "type", String.class );
+            final String type = edge.getAttribute( CpgConst.EDGE_ATTR_TYPE, String.class );
             for ( CpgEdgeType edgeType : CpgEdgeType.values() ) {
 
                 if ( type.equals( edgeType.name() ) ) {

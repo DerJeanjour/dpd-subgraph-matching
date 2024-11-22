@@ -4,6 +4,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.repository.model.CpgEdgeType;
 import de.haw.processing.GraphService;
 import de.haw.misc.pipe.PipeModule;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
@@ -33,7 +34,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
 
         graph.edges().forEach( edge -> {
 
-            final String type = edge.getAttribute( "type", String.class );
+            final String type = edge.getAttribute( CpgConst.EDGE_ATTR_TYPE, String.class );
 
             final boolean shouldIncludeEdge = this.edgeTypes.stream()
                     .anyMatch( edgeType -> type.equals( edgeType.name() ) );
@@ -62,7 +63,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
 
                 if ( sourceNodeExists && targetNodeExists ) {
 
-                    final String type = edge.getAttribute( "type", String.class );
+                    final String type = edge.getAttribute( CpgConst.EDGE_ATTR_TYPE, String.class );
                     typesIncludedImplicitly.add( type );
                     this.graphService.copyEdgeToGraph( filtered, edge );
                 }

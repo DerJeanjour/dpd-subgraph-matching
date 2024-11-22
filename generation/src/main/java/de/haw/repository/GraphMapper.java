@@ -4,6 +4,7 @@ import de.haw.repository.model.CpgEdgeType;
 import de.haw.processing.GraphService;
 import de.haw.repository.model.CpgEdge;
 import de.haw.repository.model.CpgNode;
+import de.haw.translation.CpgConst;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.graphstream.graph.Edge;
@@ -43,8 +44,8 @@ public class GraphMapper {
         cpgNode.setId( mapId( node ) );
 
         final Map<String, Object> attr = GraphService.instance().getAttributes( node );
-        if ( attr.containsKey( "labels" ) ) {
-            cpgNode.setLabels( ( Collection<String> ) node.getAttribute( "labels" ) );
+        if ( attr.containsKey( CpgConst.NODE_ATTR_LABELS ) ) {
+            cpgNode.setLabels( ( Collection<String> ) node.getAttribute( CpgConst.NODE_ATTR_LABELS ) );
         }
 
         cpgNode.setProperties( mapAttr( attr ) );
@@ -147,7 +148,7 @@ public class GraphMapper {
     }
 
     private static Optional<CpgEdgeType> mapEdgeType( final Edge edge ) {
-        final String type = edge.getAttribute( "type", String.class );
+        final String type = edge.getAttribute( CpgConst.EDGE_ATTR_TYPE, String.class );
         if ( StringUtils.isBlank( type ) ) {
             return Optional.empty();
         }

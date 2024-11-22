@@ -4,6 +4,7 @@ import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetDesignPatterns;
 import de.haw.dataset.model.DesignPattern;
 import de.haw.dataset.model.DesignPatternType;
+import de.haw.misc.utils.NameUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
@@ -89,7 +90,7 @@ public class PatternReaderXml implements PatternReader {
 
             final Element role = ( Element ) entity.getParentNode();
             final String roleTag = role.getNodeName();
-            final String className = entity.getTextContent();
+            final String className = NameUtils.extractClassName( entity.getTextContent() );
 
             if ( !ROLES_TO_COUNT.containsKey( type ) ) {
                 continue;

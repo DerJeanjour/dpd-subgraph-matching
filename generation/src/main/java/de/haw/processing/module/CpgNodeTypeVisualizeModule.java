@@ -4,6 +4,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.GraphService;
 import de.haw.processing.visualize.GraphUi;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
@@ -24,17 +25,17 @@ public class CpgNodeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
     }
 
     private void setNodeStyle( final Node node ) {
-        if ( this.graphService.hasLabel( node, "Scope" ) ) {
+        if ( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_SCOPE ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.blueFill() );
             GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
         }
-        if ( this.graphService.hasLabel( node, "RecordDeclaration" ) ) {
+        if ( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_DECLARATION_RECORD ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.redFill() );
             GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
         }
-        if( this.graphService.hasLabel( node, "TranslationUnitDeclaration" ) ) {
+        if( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_TRANSLATION_UNIT ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.YELLOW ) ) );
             GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );

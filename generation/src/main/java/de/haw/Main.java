@@ -10,6 +10,7 @@ import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.module.*;
+import de.haw.repository.module.PersistCpgModule;
 import de.haw.translation.module.GenerateCpgModule;
 import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,7 @@ public class Main {
         //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
 
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        final Dataset dataset = DatasetFactory.SINGLETON_EXAMPLE;
+        final Dataset dataset = DatasetFactory.OBSERVER_EXAMPLE;
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
@@ -38,7 +39,6 @@ public class Main {
 
                 .add( GenerateCpgModule.instance() )
                 //.add( PersistTranslationModule.instance() )
-
                 .add( TranslationToGraphModule.instance() )
                 //.add( TranslationToGraphAlternative.instance() )
 
@@ -49,11 +49,13 @@ public class Main {
                 .add( RemoveBlacklistNodesModule.instance() )
 
                 //.add( CpgFilterEdgesModule.byTypes( Arrays.asList( CpgEdgeType.PDG ), false ) )
+                /*
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( CpgNodeTypeVisualizeModule.instance() )
                 .add( DisplayGraphModule.instance() )
+                 */
 
-                //.add( PersistCpgModule.instance() )
+                .add( PersistCpgModule.instance() )
                 .build();
 
         final Graph cpg = pipe.process( dataset, ctx );

@@ -3,6 +3,7 @@ package de.haw.processing.module;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.GraphService;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -19,14 +20,14 @@ public class MarkScopeModule<Target> extends PipeModule<Graph, Graph, Target> {
     @SuppressWarnings( "unchecked" )
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
         graph.nodes().forEach( node -> {
-            final String scopeName = node.getAttribute( "scopedName", String.class );
-            // TODO better propagate RecordScope ???
-            if ( !this.graphService.hasLabel( node, "Scope" ) || StringUtils.isBlank( scopeName ) ) {
+            final String scopeName = node.getAttribute( CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
+            if ( !this.graphService.hasLabel( node, CpgConst.NODE_LABEL_SCOPE_NAME ) || StringUtils.isBlank(
+                    scopeName ) ) {
                 return;
             }
             for ( int i = 0; i < node.getInDegree(); i++ ) {
                 final Node child = node.getEnteringEdge( i ).getSourceNode();
-                child.setAttribute( "scopedName", scopeName );
+                child.setAttribute( CpgConst.NODE_ATTR_NAME_SCOPED, scopeName );
             }
         } );
         return graph;

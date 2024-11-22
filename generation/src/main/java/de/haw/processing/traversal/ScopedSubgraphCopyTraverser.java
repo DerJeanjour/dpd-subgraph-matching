@@ -1,6 +1,7 @@
 package de.haw.processing.traversal;
 
 import de.haw.processing.GraphService;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Edge;
@@ -21,8 +22,8 @@ public class ScopedSubgraphCopyTraverser extends GraphProcessTraverser<Void> {
     @Override
     protected OutputData<Void> process( final Node node, final Void data, final TraversalContext ctx ) {
 
-        final Optional<String> nodeScope = this.graphService.getAttr( node, "scopedName", String.class );
-        final Optional<String> parentScope = this.graphService.getAttr( ctx.getParent(), "scopedName", String.class );
+        final Optional<String> nodeScope = this.graphService.getAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
+        final Optional<String> parentScope = this.graphService.getAttr( ctx.getParent(), CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
 
         if ( nodeScope.isEmpty() || parentScope.isEmpty() || !nodeScope.equals( parentScope ) ) {
             return OutputData.of( null, false );
