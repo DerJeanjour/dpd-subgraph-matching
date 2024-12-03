@@ -1,9 +1,7 @@
 package de.haw;
 
-import de.haw.dataset.DesignPatternStatAggregator;
 import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetFactory;
-import de.haw.dataset.model.DatasetType;
 import de.haw.dataset.module.AttachPatternsToContext;
 import de.haw.dataset.module.LoadDatasetFileModule;
 import de.haw.misc.pipe.PipeBuilder;
@@ -16,8 +14,6 @@ import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
 
-import java.util.Arrays;
-
 @Slf4j
 public class Main {
 
@@ -27,7 +23,7 @@ public class Main {
         //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
 
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        final Dataset dataset = DatasetFactory.OBSERVER_EXAMPLE;
+        final Dataset dataset = DatasetFactory.FACTORY_METHOD_EXAMPLE;
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
@@ -46,9 +42,11 @@ public class Main {
                 .add( MarkScopeModule.instance() )
                 .add( MarkPatternsModule.instance() )
                 //.add( IsolateMarkedPatternsModule.instance() )
-                .add( RemoveBlacklistNodesModule.instance() )
+                .add( RemoveBlacklistElementsModule.instance() )
+                .add( FilterInternalScopeModule.instance() )
+                .add( SimplifyCpgModule.instance() )
+                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.getMain(), false ) )
 
-                //.add( CpgFilterEdgesModule.byTypes( Arrays.asList( CpgEdgeType.PDG ), false ) )
                 /*
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( CpgNodeTypeVisualizeModule.instance() )

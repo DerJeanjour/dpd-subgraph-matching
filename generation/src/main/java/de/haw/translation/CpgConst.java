@@ -24,11 +24,17 @@ public class CpgConst {
 
     public static final String NODE_ATTR_DATASET = "dataset";
 
+    public static final String NODE_ATTR_NAME = "name";
+
     public static final String NODE_ATTR_NAME_SCOPED = "scopedName";
 
     public static final String NODE_ATTR_NAME_LOCAL = "localName";
 
     public static final String NODE_ATTR_NAME_FULL = "fullName";
+
+    public static final String NODE_ATTR_INFERRED = "isInferred";
+
+    public static final String NODE_ATTR_IMPLICIT = "isImplicit";
 
     public static final String EDGE_ATTR_LABEL = "label";
 

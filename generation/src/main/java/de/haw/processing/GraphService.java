@@ -1,5 +1,6 @@
 package de.haw.processing;
 
+import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.CpgConst;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -89,11 +90,26 @@ public class GraphService {
         node.setAttribute( CpgConst.NODE_ATTR_LABELS, labels );
     }
 
-    @SuppressWarnings( "unchecked" )
     public boolean hasLabel( final Node node, final String label ) {
-        final Set<String> labels = this.getAttr( node, CpgConst.NODE_ATTR_LABELS, Set.class )
-                .orElse( Collections.emptySet() );
-        return labels.contains( label );
+        return this.getLabels( node ).contains( label );
+    }
+
+    public boolean hasAnyLabel( final Node node, final List<String> searchLabels ) {
+        return this.getLabels( node ).stream().anyMatch( searchLabels::contains );
+    }
+
+    public boolean isType( final Edge edge, final CpgEdgeType type ) {
+        final Optional<String> edgeType = this.getAttr( edge, CpgConst.EDGE_ATTR_TYPE, String.class );
+        return edgeType.orElse( "" ).equals( type.name() );
+    }
+
+    public boolean isType( final Edge edge, final List<CpgEdgeType> types ) {
+        return types.stream().anyMatch( type -> this.isType( edge, type ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public Set<String> getLabels( final Node node ) {
+        return this.getAttr( node, CpgConst.NODE_ATTR_LABELS, Set.class ).orElse( Collections.emptySet() );
     }
 
     public boolean hasAttr( final Element element, final String key ) {

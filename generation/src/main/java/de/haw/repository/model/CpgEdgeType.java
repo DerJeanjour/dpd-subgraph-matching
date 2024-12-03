@@ -1,5 +1,8 @@
 package de.haw.repository.model;
 
+import java.util.Arrays;
+import java.util.List;
+
 public enum CpgEdgeType {
 
     AST,
@@ -71,6 +74,10 @@ public enum CpgEdgeType {
     TRY_BLOCK,
     TYPE,
     TYPE_OBSERVERS,
-    USAGE
+    USAGE;
+
+    public static List<CpgEdgeType> getMain() {
+        return Arrays.asList( AST, CDG, DFG, EOG, PDG );
+    }
 
 }

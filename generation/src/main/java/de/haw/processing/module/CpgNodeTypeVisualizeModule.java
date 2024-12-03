@@ -1,5 +1,6 @@
 package de.haw.processing.module;
 
+import de.haw.dataset.model.DesignPatternType;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.GraphService;
@@ -35,9 +36,14 @@ public class CpgNodeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph,
             GraphUi.addStyleParam( node, GraphUi.redFill() );
             GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
         }
-        if( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_TRANSLATION_UNIT ) ) {
+        if ( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_TRANSLATION_UNIT ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.YELLOW ) ) );
+            GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
+        }
+        if ( this.graphService.hasAnyLabel( node, DesignPatternType.getLabels() ) ) {
+            GraphUi.clearStyle( node );
+            GraphUi.addStyleParam( node, GraphUi.greenFill() );
             GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
         }
     }

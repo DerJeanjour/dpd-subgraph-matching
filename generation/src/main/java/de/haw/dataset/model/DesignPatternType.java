@@ -3,6 +3,9 @@ package de.haw.dataset.model;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Getter
 @RequiredArgsConstructor
 public enum DesignPatternType {
@@ -41,4 +44,9 @@ public enum DesignPatternType {
     STRATEGY( "Strategy" );
 
     private final String name;
+
+    public static List<String> getLabels() {
+        return Arrays.stream( DesignPatternType.values() ).map( DesignPatternType::name ).toList();
+    }
+
 }
