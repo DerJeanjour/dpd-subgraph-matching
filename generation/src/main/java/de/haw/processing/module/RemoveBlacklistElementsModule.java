@@ -36,7 +36,7 @@ public class RemoveBlacklistElementsModule<Target> extends PipeModule<Graph, Gra
 
         final Set<String> edgeIdsToRemove = new HashSet<>();
         graph.edges().forEach( edge -> {
-            if ( this.GS.isType( edge, EDGE_TYPE_BLACKLIST ) ) {
+            if ( this.GS.isAnyType( edge, EDGE_TYPE_BLACKLIST ) ) {
                 edgeIdsToRemove.add( edge.getId() );
             }
         } );

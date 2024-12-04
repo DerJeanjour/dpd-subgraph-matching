@@ -103,7 +103,7 @@ public class GraphService {
         return edgeType.orElse( "" ).equals( type.name() );
     }
 
-    public boolean isType( final Edge edge, final List<CpgEdgeType> types ) {
+    public boolean isAnyType( final Edge edge, final List<CpgEdgeType> types ) {
         return types.stream().anyMatch( type -> this.isType( edge, type ) );
     }
 
