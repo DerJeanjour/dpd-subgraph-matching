@@ -1,0 +1,975 @@
+{
+  "neo4j.experimentalFeatures": {
+    "showSelf": {
+      "name": "showSelf",
+      "on": true,
+      "displayName": "Show experimental features",
+      "tooltip": "Show feature section in settings drawer"
+    }
+  },
+  "neo4j.documents": [
+    {
+      "folder": "basics",
+      "content": "// Connect to DBMS\n:server connect",
+      "versionRange": "0.0.0",
+      "isStatic": true
+    },
+    {
+      "folder": "basics",
+      "content": "// Hello World!\nCREATE (database:Database {name:\"Neo4j\"})-[r:SAYS]->(message:Message {name:\"Hello World!\"}) RETURN database, message, r",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "basics",
+      "content": "// Get some data\nMATCH (n1)-[r]->(n2) RETURN r, n1, n2 LIMIT 25",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "basics",
+      "not_executable": true,
+      "content": "// Create an index\n// Replace:\n//   'LabelName' with label to index\n//   'propertyKey' with property to be indexed\nCREATE INDEX ON :<LabelName>(<propertyKey>)",
+      "versionRange": ">=3 <4",
+      "isStatic": true
+    },
+    {
+      "folder": "basics",
+      "not_executable": true,
+      "content": "// Create an index\n// Replace:\n//   'IndexName' with name of index (optional)\n//   'LabelName' with label to index\n//   'propertyName' with property to be indexed\nCREATE INDEX [IndexName] \nFOR (n:LabelName)\nON (n.propertyName)\n",
+      "versionRange": ">=4",
+      "isStatic": true
+    },
+    {
+      "folder": "basics",
+      "not_executable": true,
+      "content": "// Create unique property constraint\n// Replace:\n//   'LabelName' with node label\n//   'propertyKey' with property that should be unique\nCREATE CONSTRAINT ON (n:<LabelName>) ASSERT n.<propertyKey> IS UNIQUE",
+      "versionRange": ">=3 <4.4",
+      "isStatic": true
+    },
+    {
+      "folder": "basics",
+      "not_executable": true,
+      "content": "// Create unique property constraint\n// Replace:\n//   'ConstraintName' with name of constraint (optional)\n//   'LabelName' with node label\n//   'propertyKey' with property that should be unique\nCREATE CONSTRAINT [ConstraintName]\nFOR (n:<LabelName>)\nREQUIRE n.<propertyKey> IS UNIQUE",
+      "versionRange": ">=4.4",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// Count all nodes\nMATCH (n)\nRETURN count(n)",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// Count all relationships\nMATCH ()-->() RETURN count(*);",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// What kind of nodes exist\n// Sample some nodes, reporting on property and relationship counts per node.\nMATCH (n) WHERE rand() <= 0.1\nRETURN\nDISTINCT labels(n),\ncount(*) AS SampleSize,\navg(size(keys(n))) as Avg_PropertyCount,\nmin(size(keys(n))) as Min_PropertyCount,\nmax(size(keys(n))) as Max_PropertyCount,\navg(size( (n)-[]-() ) ) as Avg_RelationshipCount,\nmin(size( (n)-[]-() ) ) as Min_RelationshipCount,\nmax(size( (n)-[]-() ) ) as Max_RelationshipCount",
+      "versionRange": ">=3 <5",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// What kind of nodes exist\n// Sample some nodes, reporting on property and relationship counts per node.\nMATCH (n) WHERE rand() <= 0.1\nRETURN\nDISTINCT labels(n),\ncount(*) AS SampleSize,\navg(size(keys(n))) as Avg_PropertyCount,\nmin(size(keys(n))) as Min_PropertyCount,\nmax(size(keys(n))) as Max_PropertyCount,\navg(count{ (n)-[]-() } ) as Avg_RelationshipCount,\nmin(count{ (n)-[]-() } ) as Min_RelationshipCount,\nmax(count{ (n)-[]-() } ) as Max_RelationshipCount\n",
+      "versionRange": ">=5",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// What is related, and how\nCALL db.schema.visualization()",
+      "versionRange": ">=4",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// What is related, and how\nCALL db.schema()",
+      "versionRange": ">=3 <4",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// List node labels\nCALL db.labels()",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// List relationship types\nCALL db.relationshipTypes()",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "profile",
+      "content": "// Display constraints and indexes\n:schema",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "graphs",
+      "content": "// Movie Graph\n:play movie-graph",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "graphs",
+      "content": "// Northwind Graph\n:play northwind-graph",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "content": "// List procedures\nCALL dbms.procedures()",
+      "versionRange": ">=3 <5",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "content": "// List procedures\nSHOW PROCEDURES",
+      "versionRange": ">=5",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "content": "// List functions\nCALL dbms.functions()",
+      "versionRange": ">=3 <5",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "content": "// List functions\nSHOW FUNCTIONS",
+      "versionRange": ">=5",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "content": "// Show meta-graph\nCALL db.schema.visualization()",
+      "versionRange": ">=4",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "content": "// Show meta-graph\nCALL db.schema()",
+      "versionRange": ">=3 <4",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "content": "// List running queries\nCALL dbms.listQueries()",
+      "versionRange": ">=3 <5",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "not_executable": true,
+      "content": "// Wait for index to come online\n// E.g. db.awaitIndex(\":Person(name)\")\nCALL db.awaitIndex(<param>)",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "folder": "procedures",
+      "not_executable": true,
+      "content": "// Schedule resampling of an index\n// E.g. db.resampleIndex(\":Person(name)\")\nCALL db.resampleIndex(<param>)",
+      "versionRange": ">=3",
+      "isStatic": true
+    },
+    {
+      "id": "09ed68ef-dd65-46ae-a7b6-c2f501fd2b73",
+      "content": "//Delete All\nMATCH (n)\nDETACH DELETE n"
+    },
+    {
+      "id": "650fe112-aebe-4e7a-a039-efa4ccdb5614",
+      "content": "//Show Main CFG Path\nMATCH (n:METHOD {NAME: \"main\"})\nWITH n\nMATCH path = (n)-[:CFG*]->(node)\nRETURN nodes(path) AS nodes, relationships(path) AS edges",
+      "folder": "95615fca-8d4e-4f15-929d-823a30f871a1"
+    },
+    {
+      "id": "8b391160-9c05-42e4-8143-74b4ad815de8",
+      "content": "//Show Main AST Path\nMATCH (n:METHOD {NAME: \"main\"})\nWITH n\nMATCH path = (n)-[:AST*]->(node)\nRETURN nodes(path) AS nodes, relationships(path) AS edges",
+      "folder": "95615fca-8d4e-4f15-929d-823a30f871a1"
+    },
+    {
+      "id": "c14ec1c6-7046-487c-bbb1-35b7bf6da45c",
+      "content": "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *"
+    },
+    {
+      "id": "4eda370f-9596-481b-8271-df28c4c49dde",
+      "content": "//Show All Internal\nMATCH (n {IS_EXTERNAL: false})\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+      "folder": "95615fca-8d4e-4f15-929d-823a30f871a1"
+    },
+    {
+      "id": "743a3d90-34f5-4cd9-9ca4-0b06c6957278",
+      "content": "//Show CDG\nMATCH p=()-[r:CDG]->() RETURN p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "cc5b1b30-7a47-4ea9-8054-b940f446374e",
+      "content": "//Show DFG\nMATCH p=()-[r:DFG]->() RETURN p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "3f629614-b783-4758-899a-2fe7efab4321",
+      "content": "//Show EOG\nMATCH p=()-[r:EOG]->() RETURN p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "0d1a8a52-c4b9-4b11-9de8-7fd000d1a973",
+      "content": "//Show PDG\nMATCH p=()-[r:PDG]->() RETURN p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "090995b8-68d3-4d1e-847e-bc3b3484509d",
+      "content": "//Show AST\nMATCH p=()-[r:AST]->() RETURN p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "1694feb2-adfe-4551-8252-8383cb2a70a7",
+      "content": "// Show Scopes\nMATCH (s:Scope)-[r]-(connectedNode)\nRETURN s, r, connectedNode",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "b2f45f44-286d-467b-a036-2a11eb48235b",
+      "content": "// Show Observer\nMATCH (n:OBSERVER)-[r]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "37a42325-1300-4bff-80ca-8bcb99ccdfb6",
+      "content": "// Show Scope Structure\nMATCH (n:Scope)-[r:PARENT]-(m) RETURN *",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "de964254-faa4-447b-95d2-a769374af494",
+      "content": "// Show Singleton\nMATCH (n:SINGLETON)-[r]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "83c18969-6dc5-44d1-ad7c-263883a4887b",
+      "content": "//Show DFG and PDF\nMATCH p=()-[r]->()\nWHERE r:DFG OR r:PDG\nRETURN p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "55c485d3-1b0c-4aea-aec8-5139bde93c37",
+      "content": "// Show Factory Method\nMATCH (n:FACTORY_METHOD)-[r]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "9d369b88-87cd-4609-a608-267e5e23de68",
+      "content": "// Show Facade\nMATCH (n:FACADE)-[r]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "73095551-eb63-4993-a339-0038806d18c4",
+      "content": "// Show Adapter\nMATCH (n:ADAPTER)-[r]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "5c10a80f-75e4-49fc-ab6c-2f7a0aa1898e",
+      "content": "// Show Builder\nMATCH (n:BUILDER)-[r]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "d9fe76b8-47c2-407e-8145-3092421c0e17",
+      "content": "// Show Abstract Factory\nMATCH (n:ABSTRACT_FACTORY)-[r]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "51ba8b56-5234-4523-91f1-687f15ecde20",
+      "content": "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "6aaa1899-fa98-443a-9a39-e9c2a8cab5c6",
+      "content": "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "edc8fd65-1e0a-4d3d-9546-84ff6f6a3864",
+      "content": "// Show Abstract Factory (2NH)\nMATCH (n:ABSTRACT_FACTORY)-[r*1..2]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "6e16b36b-2f74-46ba-bd3b-d5af720012d3",
+      "content": "// Show Observer (2NH)\nMATCH (n:OBSERVER)-[r*1..2]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "a8d8431b-5b60-4e00-bd8f-130f1d92f22a",
+      "content": "// Show Builder (2NH)\nMATCH (n:BUILDER)-[r*1..2]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "a9632e01-e24d-4fe3-a941-ebf2c46a6b7f",
+      "content": "// Show Singleton (2NH)\nMATCH (n:SINGLETON)-[r*1..2]-(m) RETURN *",
+      "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    }
+  ],
+  "neo4j.history": [
+    "// Show Singleton (2NH)\nMATCH (n:SINGLETON)-[r*1..3]-(m) RETURN *",
+    "// Show Singleton (2NH)\nMATCH (n:SINGLETON)-[r*1..2]-(m) RETURN *",
+    "// Show Builder\nMATCH (n:BUILDER)-[r*1..2]-(m) RETURN *",
+    "// Show Observer (2NH)\nMATCH (n:OBSERVER)-[r*1..2]-(m) RETURN *",
+    "// Show Abstract Factory\nMATCH (n:ABSTRACT_FACTORY)-[r*1..2]-(m) RETURN *",
+    "// Show Abstract Factory\nMATCH (n:ABSTRACT_FACTORY)-[r:*1..2]-(m) RETURN *",
+    "// Show Abstract Factory\nMATCH (n:ABSTRACT_FACTORY)-[r]-(m) RETURN *",
+    "MATCH (n:ABSTRACT_FACTORY) RETURN n LIMIT 25",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "// Show Observer\nMATCH (n:OBSERVER)-[r]-(m) RETURN *",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r"
+  ],
+  "neo4j.settings": {
+    "maxHistory": 30,
+    "theme": "dark",
+    "initCmd": ":play start",
+    "playImplicitInitCommands": true,
+    "initialNodeDisplay": "500",
+    "maxNeighbours": 100,
+    "showSampleScripts": true,
+    "browserSyncDebugServer": null,
+    "maxRows": 1000,
+    "maxFieldItems": 500,
+    "autoComplete": false,
+    "scrollToTop": true,
+    "maxFrames": 15,
+    "codeFontLigatures": false,
+    "useBoltRouting": false,
+    "editorLint": false,
+    "enableMultiStatementMode": true,
+    "connectionTimeout": 30000,
+    "showPerformanceOverlay": false,
+    "allowCrashReports": false,
+    "allowUserStats": false,
+    "showWheelZoomInfo": false,
+    "useReadTransactions": false
+  },
+  "neo4j.folders": [
+    {
+      "id": "basics",
+      "name": "Basic Queries",
+      "isStatic": true,
+      "versionRange": ""
+    },
+    {
+      "id": "graphs",
+      "name": "Example Graphs",
+      "isStatic": true,
+      "versionRange": ""
+    },
+    {
+      "id": "profile",
+      "name": "Data Profiling",
+      "isStatic": true,
+      "versionRange": ""
+    },
+    {
+      "id": "procedures",
+      "name": "Common Procedures",
+      "isStatic": true,
+      "versionRange": ""
+    },
+    {
+      "id": "95615fca-8d4e-4f15-929d-823a30f871a1",
+      "name": "Joel"
+    },
+    {
+      "id": "91929755-f6af-4fc0-be13-c458527647be",
+      "name": "Patterns"
+    },
+    {
+      "id": "3e93aa01-885e-4173-92a6-7a2e2ed317b8",
+      "name": "Graphs"
+    }
+  ],
+  "neo4j.syncConsent": {
+    "consented": false,
+    "optedOut": false
+  },
+  "neo4j.connections": {
+    "allConnectionIds": [
+      "$$discovery"
+    ],
+    "connectionsById": {
+      "$$discovery": {
+        "SSOProviders": [],
+        "id": "$$discovery",
+        "name": "$$discovery",
+        "type": "bolt",
+        "db": "neo4j",
+        "host": "neo4j://localhost:7687",
+        "neo4jVersion": "5.20.0",
+        "supportsMultiDb": false,
+        "password": "password",
+        "authenticationMethod": "NATIVE",
+        "username": "neo4j",
+        "authEnabled": true,
+        "SSOError": "No SSO providers found"
+      }
+    },
+    "activeConnection": "$$discovery",
+    "connectionState": 1,
+    "lastUpdate": 1733322860056,
+    "useDb": "neo4j",
+    "lastUseDb": "neo4j"
+  },
+  "neo4j.grass": {
+    "node": {
+      "diameter": "50px",
+      "color": "#A5ABB6",
+      "border-color": "#9AA1AC",
+      "border-width": "2px",
+      "text-color-internal": "#FFFFFF",
+      "font-size": "10px"
+    },
+    "relationship": {
+      "color": "#A5ABB6",
+      "shaft-width": "1px",
+      "font-size": "8px",
+      "padding": "3px",
+      "text-color-external": "#000000",
+      "text-color-internal": "#FFFFFF",
+      "caption": "<type>"
+    },
+    "node.FIELD_IDENTIFIER": {
+      "color": "#C990C0",
+      "border-color": "#b261a5",
+      "text-color-internal": "#FFFFFF",
+      "defaultCaption": "<id>",
+      "caption": "{CANONICAL_NAME}"
+    },
+    "node.BLOCK": {
+      "color": "#F79767",
+      "border-color": "#f36924",
+      "text-color-internal": "#FFFFFF",
+      "defaultCaption": "<id>",
+      "caption": "{TYPE_FULL_NAME}"
+    },
+    "node.NAMESPACE_BLOCK": {
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34",
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.META_DATA": {
+      "color": "#F16667",
+      "border-color": "#eb2728",
+      "text-color-internal": "#FFFFFF",
+      "defaultCaption": "<id>",
+      "caption": "{LANGUAGE}"
+    },
+    "node.FILE": {
+      "color": "#D9C8AE",
+      "border-color": "#c0a378",
+      "text-color-internal": "#2A2C34",
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.METHOD": {
+      "color": "#8DCC93",
+      "border-color": "#5db665",
+      "text-color-internal": "#2A2C34",
+      "defaultCaption": "<id>",
+      "caption": "{NAME}",
+      "diameter": "80px"
+    },
+    "node.CONFIG_FILE": {
+      "color": "#ECB5C9",
+      "border-color": "#da7298",
+      "text-color-internal": "#2A2C34",
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.NAMESPACE": {
+      "color": "#4C8EDA",
+      "border-color": "#2870c2",
+      "text-color-internal": "#FFFFFF",
+      "defaultCaption": "<id>",
+      "caption": "{ORDER}"
+    },
+    "node.CALL": {
+      "color": "#FFC454",
+      "border-color": "#d7a013",
+      "text-color-internal": "#2A2C34",
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.IDENTIFIER": {
+      "color": "#DA7194",
+      "border-color": "#cc3c6c",
+      "text-color-internal": "#FFFFFF",
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.METHOD_PARAMETER_IN": {
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF",
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.TYPE": {
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.METHOD_RETURN": {
+      "defaultCaption": "<id>",
+      "caption": "{TYPE_FULL_NAME}",
+      "diameter": "80px"
+    },
+    "node.RETURN": {
+      "defaultCaption": "<id>",
+      "caption": "{ORDER}"
+    },
+    "node.TYPE_DECL": {
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.MODIFIER": {
+      "defaultCaption": "<id>",
+      "caption": "{ORDER}"
+    },
+    "node.LOCAL": {
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.METHOD_PARAMETER_OUT": {
+      "defaultCaption": "<id>",
+      "caption": "{NAME}"
+    },
+    "node.LITERAL": {
+      "defaultCaption": "<id>",
+      "caption": "{TYPE_FULL_NAME}"
+    },
+    "relationship.CFG": {
+      "shaft-width": "5px"
+    },
+    "relationship.AST": {
+      "caption": "<type>",
+      "shaft-width": "8px",
+      "color": "#8DCC93",
+      "border-color": "#5db665",
+      "text-color-internal": "#2A2C34"
+    },
+    "node.UNKNOWN": {
+      "defaultCaption": "<id>",
+      "caption": "{PARSER_TYPE_NAME}"
+    },
+    "node.TYPE_REF": {
+      "caption": "{TYPE_FULL_NAME}"
+    },
+    "node.CallExpression": {
+      "caption": "{name}"
+    },
+    "node.ConstructorDeclaration": {
+      "caption": "{name}"
+    },
+    "node.Node": {
+      "defaultCaption": "<id>",
+      "caption": "{name}"
+    },
+    "node.Statement": {
+      "defaultCaption": "<id>"
+    },
+    "node.Expression": {
+      "defaultCaption": "<id>"
+    },
+    "node.ConstructExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.Declaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.ValueDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.FunctionDeclaration": {
+      "defaultCaption": "<id>",
+      "diameter": "50px",
+      "color": "#FFC454",
+      "border-color": "#d7a013",
+      "text-color-internal": "#2A2C34"
+    },
+    "node.MethodDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.JavaLanguage": {
+      "defaultCaption": "<id>"
+    },
+    "node.Block": {
+      "defaultCaption": "<id>",
+      "diameter": "50px"
+    },
+    "node.NameScope": {
+      "caption": "{name}",
+      "diameter": "50px"
+    },
+    "node.FunctionScope": {
+      "caption": "{scopedName}"
+    },
+    "node.ReturnStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.VariableDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.ObjectType": {
+      "defaultCaption": "<id>",
+      "color": "#F79767",
+      "border-color": "#f36924",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.Type": {
+      "defaultCaption": "<id>"
+    },
+    "node.ParameterDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.RecordScope": {
+      "defaultCaption": "<id>",
+      "diameter": "50px",
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34"
+    },
+    "node.Scope": {
+      "defaultCaption": "<id>",
+      "caption": "{scopedName}",
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34",
+      "diameter": "50px"
+    },
+    "node.StructureDeclarationScope": {
+      "defaultCaption": "<id>"
+    },
+    "node.ValueDeclarationScope": {
+      "defaultCaption": "<id>"
+    },
+    "node.Reference": {
+      "defaultCaption": "<id>"
+    },
+    "node.RecordDeclaration": {
+      "defaultCaption": "<id>",
+      "diameter": "80px",
+      "color": "#F16667",
+      "border-color": "#eb2728",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.GlobalScope": {
+      "defaultCaption": "<id>",
+      "diameter": "80px"
+    },
+    "node.TranslationUnitDeclaration": {
+      "defaultCaption": "<id>",
+      "diameter": "65px",
+      "color": "#FFC454",
+      "border-color": "#d7a013",
+      "text-color-internal": "#2A2C34"
+    },
+    "node.BlockScope": {
+      "defaultCaption": "<id>",
+      "caption": "{scopedName}"
+    },
+    "node.LoopScope": {
+      "defaultCaption": "<id>",
+      "caption": "{scopedName}"
+    },
+    "node.ForEachStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.NamespaceDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.IfStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.Literal": {
+      "defaultCaption": "<id>"
+    },
+    "node.MemberCallExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.MemberExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.BinaryOperator": {
+      "defaultCaption": "<id>"
+    },
+    "node.FieldDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.NewExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.DeclarationStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.UnknownType": {
+      "defaultCaption": "<id>"
+    },
+    "node.Component": {
+      "defaultCaption": "<id>",
+      "color": "#4C8EDA",
+      "border-color": "#2870c2",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.TryScope": {
+      "defaultCaption": "<id>"
+    },
+    "node.TryStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.CatchClause": {
+      "defaultCaption": "<id>"
+    },
+    "node.Neo4jEntity": {
+      "defaultCaption": "<id>",
+      "caption": "{id}"
+    },
+    "node.Neo4jNode": {
+      "defaultCaption": "<id>"
+    },
+    "node.StringType": {
+      "defaultCaption": "<id>"
+    },
+    "node.IncludeDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.IncompleteType": {
+      "defaultCaption": "<id>"
+    },
+    "node.FunctionType": {
+      "defaultCaption": "<id>"
+    },
+    "node.NumericType": {
+      "defaultCaption": "<id>"
+    },
+    "node.BooleanType": {
+      "defaultCaption": "<id>"
+    },
+    "node.PointerType": {
+      "defaultCaption": "<id>"
+    },
+    "node.CastExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.AssignExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.CpgNode": {
+      "defaultCaption": "<id>"
+    },
+    "relationship.DFG": {
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34",
+      "shaft-width": "8px"
+    },
+    "relationship.EOG": {
+      "color": "#F16667",
+      "border-color": "#eb2728",
+      "text-color-internal": "#FFFFFF",
+      "shaft-width": "8px"
+    },
+    "relationship.AST_NODE": {
+      "color": "#D9C8AE",
+      "border-color": "#c0a378",
+      "text-color-internal": "#2A2C34",
+      "shaft-width": "1px",
+      "caption": "<type>"
+    },
+    "node.ForStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.LambdaExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.UnaryOperator": {
+      "defaultCaption": "<id>"
+    },
+    "node.ShortCircuitOperator": {
+      "defaultCaption": "<id>"
+    },
+    "node.WhileStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.ConditionalExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.NewArrayExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.SubscriptExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.CaseStatement": {
+      "defaultCaption": "<id>"
+    },
+    "relationship.CDG": {
+      "color": "#ECB5C9",
+      "border-color": "#da7298",
+      "text-color-internal": "#2A2C34",
+      "shaft-width": "5px"
+    },
+    "relationship.PDG": {
+      "color": "#C990C0",
+      "border-color": "#b261a5",
+      "text-color-internal": "#FFFFFF",
+      "shaft-width": "8px"
+    },
+    "node.ContinueStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.ProblemExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.SynchronizedStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.OBSERVER": {
+      "defaultCaption": "<id>",
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.ITERATOR": {
+      "defaultCaption": "<id>",
+      "color": "#FFC454",
+      "border-color": "#d7a013",
+      "text-color-internal": "#2A2C34"
+    },
+    "node.InitializerListExpression": {
+      "defaultCaption": "<id>"
+    },
+    "node.COMPOSITE": {
+      "defaultCaption": "<id>",
+      "color": "#C990C0",
+      "border-color": "#b261a5",
+      "text-color-internal": "#FFFFFF",
+      "diameter": "50px"
+    },
+    "node.DECORATOR": {
+      "defaultCaption": "<id>"
+    },
+    "node.IntegerType": {
+      "defaultCaption": "<id>"
+    },
+    "node.BreakStatement": {
+      "defaultCaption": "<id>"
+    },
+    "node.SINGLETON": {
+      "defaultCaption": "<id>",
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.FACTORY_METHOD": {
+      "defaultCaption": "<id>",
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.BUILDER": {
+      "defaultCaption": "<id>",
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.FACADE": {
+      "defaultCaption": "<id>",
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.ABSTRACT_FACTORY": {
+      "defaultCaption": "<id>",
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.ADAPTER": {
+      "defaultCaption": "<id>",
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "node.EnumDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.EnumConstantDeclaration": {
+      "defaultCaption": "<id>"
+    },
+    "node.ANNOTATION": {
+      "caption": "{NAME}"
+    },
+    "node.CONTROL_STRUCTURE": {
+      "caption": "{PARSER_TYPE_NAME}"
+    },
+    "node.BINDING": {
+      "caption": "{NAME}"
+    },
+    "node.MEMBER": {
+      "caption": "{NAME}"
+    },
+    "relationship.METHODS": {
+      "color": "#FFC454",
+      "border-color": "#d7a013",
+      "text-color-internal": "#2A2C34"
+    },
+    "relationship.FIELDS": {
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34"
+    },
+    "relationship.SUPER_TYPE_DECLARATIONS": {
+      "color": "#569480",
+      "border-color": "#447666",
+      "text-color-internal": "#FFFFFF"
+    },
+    "relationship.RECORD_DECLARATION": {
+      "color": "#F16667",
+      "border-color": "#eb2728",
+      "text-color-internal": "#FFFFFF"
+    },
+    "relationship.OVERRIDES": {
+      "color": "#8DCC93",
+      "border-color": "#5db665",
+      "text-color-internal": "#2A2C34"
+    },
+    "node.FloatingPointType": {
+      "defaultCaption": "<id>"
+    }
+  },
+  "neo4j.udc": {
+    "lastSnapshot": 1733300906,
+    "uuid": "4be9ad52-1e14-45c5-b186-81337876f848",
+    "consentBannerShownCount": 6,
+    "allowUserStatsInDesktop": false,
+    "allowCrashReportsInDesktop": false,
+    "segmentKey": "oHSyew3ytP1f1zgLPB4xJJnIYjgGUZXV"
+  },
+  "neo4j.guides": {
+    "currentGuide": null,
+    "remoteGuides": []
+  }
+}
