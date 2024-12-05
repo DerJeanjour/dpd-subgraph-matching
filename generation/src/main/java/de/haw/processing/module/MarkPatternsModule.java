@@ -22,7 +22,7 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
 
     private final static String TOTAL_STAT = "total";
 
-    private final GraphService graphService = GraphService.instance();
+    private final GraphService GS = GraphService.instance();
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
@@ -37,14 +37,14 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
 
         graph.nodes().forEach( node -> {
 
-            if ( !this.graphService.hasLabel( node, CpgConst.NODE_LABEL_DECLARATION_RECORD ) ) {
+            if ( !this.GS.hasLabel( node, CpgConst.NODE_LABEL_DECLARATION_RECORD ) ) {
                 return;
             }
 
             final String className = this.getClassName( node );
             final List<DesignPattern> patterns = this.getPatterns( className, dps );
             patterns.forEach( dp -> {
-                this.graphService.addLabel( node, dp.getType().name() );
+                this.GS.addLabel( node, dp.getType().name() );
                 this.incrementStat( stats, this.formatStatKey( dp ) );
                 this.incrementStat( stats, TOTAL_STAT );
             } );
@@ -58,7 +58,7 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
     }
 
     private String getClassName( final Node node ) {
-        if ( this.graphService.hasAttr( node, CpgConst.NODE_ATTR_NAME_FULL ) ) {
+        if ( this.GS.hasAttr( node, CpgConst.NODE_ATTR_NAME_FULL ) ) {
             return node.getAttribute( CpgConst.NODE_ATTR_NAME_FULL, String.class );
         }
         return null;

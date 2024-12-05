@@ -2,9 +2,9 @@ package de.haw.processing.module;
 
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
+import de.haw.processing.GraphService;
 import de.haw.processing.visualize.GraphUi;
 import de.haw.repository.model.CpgEdgeType;
-import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Edge;
@@ -16,28 +16,22 @@ import java.awt.*;
 @RequiredArgsConstructor( staticName = "instance" )
 public class CpgEdgeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph, Target> {
 
+    private final GraphService GS = GraphService.instance();
+
+
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
         log.info( "Marking cpg edges by type with color ..." );
 
-        graph.edges().forEach( edge -> {
-
-            final String type = edge.getAttribute( CpgConst.EDGE_ATTR_TYPE, String.class );
-            for ( CpgEdgeType edgeType : CpgEdgeType.values() ) {
-
-                if ( type.equals( edgeType.name() ) ) {
-                    this.markEdgeByType( edge, edgeType );
-                }
-
-            }
-
-        } );
+        graph.edges().filter( edge -> this.GS.isAnyType( edge, CpgEdgeType.ALL ) ).forEach( this::markEdgeByType );
 
         return graph;
     }
 
-    protected void markEdgeByType( final Edge edge, final CpgEdgeType edgeType ) {
+    private void markEdgeByType( final Edge edge ) {
+
+        final CpgEdgeType edgeType = this.GS.getType( edge );
 
         switch ( edgeType ) {
             case AST -> {

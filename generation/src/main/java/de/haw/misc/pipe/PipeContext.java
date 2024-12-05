@@ -17,6 +17,18 @@ public class PipeContext {
 
     public static String CPG_DESIGN_PATTERNS = "cpg_dp";
 
+    /**
+     * Node value has to be double
+     */
+    public static String NODE_SIZE_ATTR = "nodeSizeAttr";
+
+    /**
+     * Node value has to be double
+     */
+    public static String NODE_SIZE_SCALE = "nodeSizeScale";
+
+    public static String RECORD_PATHS = "ssspRecords";
+
     private final Map<String, Object> ctx = new HashMap<>();
 
     public void set( final String key, final Object value ) {

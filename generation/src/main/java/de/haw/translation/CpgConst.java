@@ -26,6 +26,8 @@ public class CpgConst {
 
     public static final String NODE_ATTR_NAME = "name";
 
+    public static final String NODE_ATTR_NAME_SCOPED_RECORD = "scopedRecordName";
+
     public static final String NODE_ATTR_NAME_SCOPED = "scopedName";
 
     public static final String NODE_ATTR_NAME_LOCAL = "localName";
@@ -41,5 +43,7 @@ public class CpgConst {
     public static final String EDGE_ATTR_TYPE = "type";
 
     public static final String EDGE_ATTR_DATASET = "dataset";
+
+    public static final String EDGE_ATTR_DISTANCE = "distance";
 
 }

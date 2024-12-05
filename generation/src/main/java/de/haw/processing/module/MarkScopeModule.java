@@ -11,17 +11,18 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
 @Slf4j
+@Deprecated
 @RequiredArgsConstructor( staticName = "instance" )
 public class MarkScopeModule<Target> extends PipeModule<Graph, Graph, Target> {
 
-    private final GraphService graphService = GraphService.instance();
+    private final GraphService GS = GraphService.instance();
 
     @Override
     @SuppressWarnings( "unchecked" )
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
         graph.nodes().forEach( node -> {
             final String scopeName = node.getAttribute( CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
-            if ( !this.graphService.hasLabel( node, CpgConst.NODE_LABEL_SCOPE_NAME ) || StringUtils.isBlank(
+            if ( !this.GS.hasLabel( node, CpgConst.NODE_LABEL_SCOPE_NAME ) || StringUtils.isBlank(
                     scopeName ) ) {
                 return;
             }

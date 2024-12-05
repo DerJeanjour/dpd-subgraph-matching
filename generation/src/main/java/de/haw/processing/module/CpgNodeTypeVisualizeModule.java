@@ -17,34 +17,60 @@ import java.awt.*;
 @RequiredArgsConstructor( staticName = "instance" )
 public class CpgNodeTypeVisualizeModule<Target> extends PipeModule<Graph, Graph, Target> {
 
-    private final GraphService graphService = GraphService.instance();
+    private final GraphService GS = GraphService.instance();
+
+    private final static int DEFAULT_NODE_SIZE = 2;
+
+    private String sizeAttr;
+
+    private Double sizeScale;
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
+        this.sizeAttr = ctx.get( PipeContext.NODE_SIZE_ATTR, String.class ).orElse( null );
+        this.sizeScale = ctx.get( PipeContext.NODE_SIZE_SCALE, Double.class ).orElse( 1d );
         graph.nodes().forEach( this::setNodeStyle );
         return graph;
     }
 
+    private boolean hasSizeAttr() {
+        return this.sizeAttr != null;
+    }
+
     private void setNodeStyle( final Node node ) {
-        if ( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_SCOPE ) ) {
+        if ( this.GS.hasLabel( node, CpgConst.NODE_LABEL_SCOPE ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.blueFill() );
-            GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
+            if ( !this.hasSizeAttr() ) {
+                GraphUi.addStyleParam( node, GraphUi.getSizeParam( DEFAULT_NODE_SIZE * 5 ) );
+            }
         }
-        if ( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_DECLARATION_RECORD ) ) {
+        if ( this.GS.hasLabel( node, CpgConst.NODE_LABEL_DECLARATION_RECORD ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.redFill() );
-            GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
+            if ( !this.hasSizeAttr() ) {
+                GraphUi.addStyleParam( node, GraphUi.getSizeParam( DEFAULT_NODE_SIZE * 5 ) );
+            }
         }
-        if ( this.graphService.hasLabel( node, CpgConst.NODE_LABEL_TRANSLATION_UNIT ) ) {
+        if ( this.GS.hasLabel( node, CpgConst.NODE_LABEL_TRANSLATION_UNIT ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.getFillColorParam( GraphUi.buildColorValue( Color.YELLOW ) ) );
-            GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
+            if ( !this.hasSizeAttr() ) {
+                GraphUi.addStyleParam( node, GraphUi.getSizeParam( DEFAULT_NODE_SIZE * 5 ) );
+            }
         }
-        if ( this.graphService.hasAnyLabel( node, DesignPatternType.getLabels() ) ) {
+        if ( this.GS.hasAnyLabel( node, DesignPatternType.getLabels() ) ) {
             GraphUi.clearStyle( node );
             GraphUi.addStyleParam( node, GraphUi.greenFill() );
-            GraphUi.addStyleParam( node, GraphUi.getSizeParam( 10 ) );
+            if ( !this.hasSizeAttr() ) {
+                GraphUi.addStyleParam( node, GraphUi.getSizeParam( DEFAULT_NODE_SIZE * 5 ) );
+            }
+        }
+
+        if ( this.hasSizeAttr() ) {
+            double sizeValue = this.GS.getAttr( node, this.sizeAttr, Double.class ).orElse( 0d ) * this.sizeScale;
+            final int nodeSize = DEFAULT_NODE_SIZE + Math.min( 50, Math.max( 0, ( int ) sizeValue ) );
+            GraphUi.addStyleParam( node, GraphUi.getSizeParam( nodeSize ) );
         }
     }
 

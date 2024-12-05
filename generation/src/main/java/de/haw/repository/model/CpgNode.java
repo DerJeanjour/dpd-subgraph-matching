@@ -22,6 +22,11 @@ public class CpgNode {
     @Properties( prefix = "node", allowCast = false )
     private Map<String, String> properties = new HashMap<>();
 
+    /* OWN RELATIONSHIPS */
+
+    @Relationship( value = "RECORD_KNOWS", direction = Relationship.Direction.OUTGOING )
+    private List<CpgEdge<CpgNode>> nextKnownRecords = new ArrayList<>();
+
     /* RELATIONSHIPS */
 
     @Relationship( value = "AST", direction = Relationship.Direction.OUTGOING )

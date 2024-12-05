@@ -13,12 +13,15 @@ import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor( staticName = "instance" )
-public class SimplifyCpgModule<Target> extends PipeModule<Graph, Graph, Target> {
+public class SimplifyCpgEdgesModule<Target> extends PipeModule<Graph, Graph, Target> {
 
     private final GraphService GS = GraphService.instance();
 
     // @formatter:off
     private static final List<CpgEdgeType> RELEVANT_EDGES = Arrays.asList(
+
+            // aggregations
+            CpgEdgeType.CDG,
 
             // elements
             CpgEdgeType.INITIALIZER,

@@ -3,18 +3,15 @@ package de.haw.processing.module;
 import de.haw.dataset.model.DesignPatternType;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
-import de.haw.processing.traversal.ScopedSubgraphCopyTraverser;
 import de.haw.processing.GraphService;
-import de.haw.translation.CpgConst;
+import de.haw.processing.traversal.ScopedSubgraphCopyTraverser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor( staticName = "instance" )
@@ -28,10 +25,6 @@ public class IsolateMarkedPatternsModule<Target> extends PipeModule<Graph, Graph
         final Graph isolatedPatternGraph = this.graphService.getEmptyGraph();
         graph.nodes().forEach( node -> {
 
-            final Optional<String> scopedName = this.graphService.getAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
-            if ( scopedName.isEmpty() || StringUtils.isBlank( scopedName.get() ) ) {
-                return;
-            }
             final List<DesignPatternType> patternTypes = this.getPatternTypes( node );
             if ( patternTypes.isEmpty() ) {
                 return;

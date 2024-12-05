@@ -56,9 +56,13 @@ public abstract class GraphProcessTraverser<T> {
     public void traverse( final Node startNode, final int maxDepth ) {
 
         final Deque<ProcessData<T>> queue = new ArrayDeque<>();
+        queue.push( ProcessData.of( startNode, null, null, null, 0 ) );
+        /*
         this.next( startNode )
                 .forEach( next -> queue.push(
                         ProcessData.of( startNode, next.getOpposite( startNode ), next, null, 0 ) ) );
+
+         */
 
         while ( !queue.isEmpty() ) {
 
@@ -73,7 +77,9 @@ public abstract class GraphProcessTraverser<T> {
             }
 
             final OutputData<T> output = this.process( node, inputData, ctx );
-            this.visitedEdges.add( ctx.getEdge().getId() );
+            if ( ctx.getEdge() != null ) {
+                this.visitedEdges.add( ctx.getEdge().getId() );
+            }
             if ( !output.isProceed() ) {
                 continue;
             }

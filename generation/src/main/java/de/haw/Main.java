@@ -23,36 +23,47 @@ public class Main {
         //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
 
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        final Dataset dataset = DatasetFactory.QUICK_UML;
+        final Dataset dataset = DatasetFactory.FACTORY_METHOD_EXAMPLE;
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
 
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
 
+                /* load data */
                 .add( AttachPatternsToContext.instance() )
                 .add( LoadDatasetFileModule.instance() )
 
+                /* generate cpg */
                 .add( GenerateCpgModule.instance() )
                 //.add( PersistTranslationModule.instance() )
                 .add( TranslationToGraphModule.instance() )
                 //.add( TranslationToGraphAlternative.instance() )
 
-
-                .add( MarkScopeModule.instance() )
-                .add( MarkPatternsModule.instance() )
-                //.add( IsolateMarkedPatternsModule.instance() )
+                /* prepare cpg */
                 .add( RemoveBlacklistElementsModule.instance() )
                 .add( FilterInternalScopeModule.instance() )
-                .add( SimplifyCpgModule.instance() )
-                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.getMain(), false ) )
+                .add( PropagateRecordScopeModule.instance() )
+                //.add( ComputePagerankModule.instance() )
 
+                /* simplify cpg */
+                .add( SimplifyCpgEdgesModule.instance() )
+                .add( ComputeSSSPsModule.instance() )
+                .add( ComputeRecordDependenciesModule.instance() )
+
+                /* patterns */
+                .add( MarkPatternsModule.instance() )
+                //.add( IsolateMarkedPatternsModule.instance() )
+
+                /* visualize */
+                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.MAIN, false ) )
                 /*
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( CpgNodeTypeVisualizeModule.instance() )
                 .add( DisplayGraphModule.instance() )
                  */
 
+                /* persist */
                 .add( PersistCpgModule.instance() )
                 .build();
 

@@ -5,12 +5,17 @@ import java.util.List;
 
 public enum CpgEdgeType {
 
+    // Own
+    RECORD_KNOWS,
+
+    // Aggregated
     AST,
     CDG,
     DFG,
     EOG,
     PDG,
 
+    // Other
     ANONYMOUS_CLASS,
     ARGUMENTS,
     ARRAY_EXPRESSION,
@@ -76,8 +81,10 @@ public enum CpgEdgeType {
     TYPE_OBSERVERS,
     USAGE;
 
-    public static List<CpgEdgeType> getMain() {
-        return Arrays.asList( AST, CDG, DFG, EOG, PDG );
-    }
+    public static final List<CpgEdgeType> ALL = Arrays.asList( values() );
+
+    public static final List<CpgEdgeType> MAIN = Arrays.asList( AST, CDG, DFG, EOG, PDG );
+
+    public static final List<CpgEdgeType> OWN = Arrays.asList( RECORD_KNOWS );
 
 }

@@ -22,10 +22,16 @@ public class ScopedSubgraphCopyTraverser extends GraphProcessTraverser<Void> {
     @Override
     protected OutputData<Void> process( final Node node, final Void data, final TraversalContext ctx ) {
 
-        final Optional<String> nodeScope = this.graphService.getAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
-        final Optional<String> parentScope = this.graphService.getAttr( ctx.getParent(), CpgConst.NODE_ATTR_NAME_SCOPED, String.class );
+        final Optional<String> nodeScope = this.graphService.getAttr(
+                node, CpgConst.NODE_ATTR_NAME_SCOPED_RECORD, String.class );
+        final Optional<String> parentScope = this.graphService.getAttr(
+                ctx.getParent(), CpgConst.NODE_ATTR_NAME_SCOPED_RECORD, String.class );
 
-        if ( nodeScope.isEmpty() || parentScope.isEmpty() || !nodeScope.equals( parentScope ) ) {
+        if ( parentScope.isEmpty() ) {
+            return OutputData.of( null, nodeScope.isPresent() );
+        }
+
+        if ( nodeScope.isEmpty() || !nodeScope.equals( parentScope ) ) {
             return OutputData.of( null, false );
         }
 

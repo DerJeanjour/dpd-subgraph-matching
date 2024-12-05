@@ -32,17 +32,8 @@ public class GraphService {
         final Node sourceNode = this.copyNodeToGraph( targetGraph, sourceEdge.getSourceNode() );
         final Node targetNode = this.copyNodeToGraph( targetGraph, sourceEdge.getTargetNode() );
 
-        Edge edge = targetGraph.getEdge( sourceEdge.getId() );
-        if ( edge == null ) {
-            edge = targetGraph.addEdge( sourceEdge.getId(), sourceNode, targetNode, true );
-        }
-
-        if ( edge == null ) {
-            edge = targetGraph.getEdge( sourceEdge.getId() );
-        }
-        if ( edge != null ) {
-            edge.setAttributes( this.getAttributes( sourceEdge ) );
-        }
+        final Edge edge = this.addEdge( targetGraph, sourceEdge.getId(), sourceNode, targetNode );
+        edge.setAttributes( this.getAttributes( sourceEdge ) );
 
         return edge;
     }
@@ -63,6 +54,20 @@ public class GraphService {
         return node;
     }
 
+    public Edge addEdge( final Graph targetGraph, String edgeId, final Node sourceNode, final Node targetNode ) {
+
+        Edge edge = targetGraph.getEdge( edgeId );
+        if ( edge == null ) {
+            edge = targetGraph.addEdge( edgeId, sourceNode, targetNode, true );
+        }
+        if ( edge == null ) {
+            edge = targetGraph.getEdge( edgeId );
+        }
+
+        return edge;
+
+    }
+
     public Map<String, Object> getAttributes( final Element element ) {
         final Map<String, Object> attr = new HashMap<>();
         if ( element == null ) {
@@ -75,8 +80,12 @@ public class GraphService {
         return attr;
     }
 
+    public String getAttr( final Element element, final String key ) {
+        return this.getAttr( element, key, String.class ).orElse( null );
+    }
+
     public <T> Optional<T> getAttr( final Element element, final String key, final Class<T> clazz ) {
-        if ( !element.hasAttribute( key, clazz ) ) {
+        if ( element == null || !element.hasAttribute( key, clazz ) ) {
             return Optional.empty();
         }
         return Optional.of( element.getAttribute( key, clazz ) );
@@ -96,6 +105,15 @@ public class GraphService {
 
     public boolean hasAnyLabel( final Node node, final List<String> searchLabels ) {
         return this.getLabels( node ).stream().anyMatch( searchLabels::contains );
+    }
+
+    public void setType( final Edge edge, CpgEdgeType edgeType ) {
+        edge.setAttribute( CpgConst.EDGE_ATTR_TYPE, edgeType.name() );
+    }
+
+    public CpgEdgeType getType( final Edge edge ) {
+        final Optional<String> edgeType = this.getAttr( edge, CpgConst.EDGE_ATTR_TYPE, String.class );
+        return edgeType.map( CpgEdgeType::valueOf ).orElse( null );
     }
 
     public boolean isType( final Edge edge, final CpgEdgeType type ) {
@@ -120,7 +138,7 @@ public class GraphService {
         return attr != null;
     }
 
-    private String genId( final String prefix ) {
+    public String genId( final String prefix ) {
         return ( prefix == null ? "" : prefix ) + "_" + UUID.randomUUID();
     }
 
