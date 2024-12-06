@@ -303,39 +303,49 @@
       "id": "a9632e01-e24d-4fe3-a941-ebf2c46a6b7f",
       "content": "// Show Singleton (2NH)\nMATCH (n:SINGLETON)-[r*1..2]-(m) RETURN *",
       "folder": "91929755-f6af-4fc0-be13-c458527647be"
+    },
+    {
+      "id": "628bdce4-23d3-41c9-9f3e-b947670e89d4",
+      "content": "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "6eaee44f-f1e8-413d-8198-77c8ae50794e",
+      "content": "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
     }
   ],
   "neo4j.history": [
-    "// Show Singleton (2NH)\nMATCH (n:SINGLETON)-[r*1..3]-(m) RETURN *",
-    "// Show Singleton (2NH)\nMATCH (n:SINGLETON)-[r*1..2]-(m) RETURN *",
-    "// Show Builder\nMATCH (n:BUILDER)-[r*1..2]-(m) RETURN *",
-    "// Show Observer (2NH)\nMATCH (n:OBSERVER)-[r*1..2]-(m) RETURN *",
-    "// Show Abstract Factory\nMATCH (n:ABSTRACT_FACTORY)-[r*1..2]-(m) RETURN *",
-    "// Show Abstract Factory\nMATCH (n:ABSTRACT_FACTORY)-[r:*1..2]-(m) RETURN *",
-    "// Show Abstract Factory\nMATCH (n:ABSTRACT_FACTORY)-[r]-(m) RETURN *",
-    "MATCH (n:ABSTRACT_FACTORY) RETURN n LIMIT 25",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
     "// Show Observer\nMATCH (n:OBSERVER)-[r]-(m) RETURN *",
+    "// Show Facade\nMATCH (n:FACADE)-[r]-(m) RETURN *",
+    "// Show Builder\nMATCH (n:BUILDER)-[r]-(m) RETURN *",
+    "// Show Builder (2NH)\nMATCH (n:BUILDER)-[r*1..2]-(m) RETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES]->() RETURN p",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|r:RECORD_CREATES]->() RETURN p",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|:RECORD_CREATES]->() RETURN p",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|:RECORD_CREATES|:RECORD_EXTENDS|:RECORD_RETURNS]->() RETURN p",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
     "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
     "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
-    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
-    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show Graph With Code\nMATCH (n) WHERE (n.`node.code`) IS NOT NULL\nMATCH (n)-[r]-(m) WHERE (m.`node.code`) IS NOT NULL\nRETURN n, m, r"
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p"
   ],
   "neo4j.settings": {
     "maxHistory": 30,
@@ -427,7 +437,7 @@
     },
     "activeConnection": "$$discovery",
     "connectionState": 1,
-    "lastUpdate": 1733322860056,
+    "lastUpdate": 1733479113377,
     "useDb": "neo4j",
     "lastUseDb": "neo4j"
   },
@@ -958,6 +968,30 @@
     },
     "node.FloatingPointType": {
       "defaultCaption": "<id>"
+    },
+    "relationship.RECORD_KNOWS": {
+      "shaft-width": "13px",
+      "color": "#F16667",
+      "border-color": "#eb2728",
+      "text-color-internal": "#FFFFFF"
+    },
+    "relationship.RECORD_EXTENDS": {
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34",
+      "shaft-width": "13px"
+    },
+    "relationship.RECORD_CREATES": {
+      "color": "#F79767",
+      "border-color": "#f36924",
+      "text-color-internal": "#FFFFFF",
+      "shaft-width": "13px"
+    },
+    "relationship.RECORD_RETURNS": {
+      "color": "#DA7194",
+      "border-color": "#cc3c6c",
+      "text-color-internal": "#FFFFFF",
+      "shaft-width": "13px"
     }
   },
   "neo4j.udc": {
