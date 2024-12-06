@@ -4,6 +4,8 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.misc.utils.PathUtils;
 import de.haw.processing.GraphService;
+import de.haw.processing.model.CpgNodePaths;
+import de.haw.processing.model.CpgPath;
 import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
@@ -13,25 +15,27 @@ import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor( staticName = "instance" )
-public class ComputeRecordDependenciesModule<Target> extends PipeModule<Graph, Graph, Target> {
+public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, Graph, Target> {
 
     private final GraphService GS = GraphService.instance();
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
-        if ( ctx.get( PipeContext.RECORD_PATHS, HashMap.class ).isEmpty() ) {
+        if ( ctx.get( PipeContext.RECORD_PATHS, CpgNodePaths.class ).isEmpty() ) {
             log.info( "Record paths are not present ..." );
             return graph;
         }
 
-        final Map<String, List<ComputeSSSPsModule.Data>> recordPaths = getPaths( ctx );
+        final CpgNodePaths recordPaths = getPaths( ctx );
 
-        recordPaths.values().forEach( paths -> paths.forEach( recordPath -> {
+        recordPaths.getAll().forEach( recordPath -> {
 
             if ( !this.isValidPath( recordPath ) ) {
                 return;
@@ -39,25 +43,26 @@ public class ComputeRecordDependenciesModule<Target> extends PipeModule<Graph, G
 
             final String edgeId = this.GS.genId( "edge" );
             final Edge edge = this.GS.addEdge( graph, edgeId, recordPath.getSource(), recordPath.getTarget() );
-            this.GS.setType( edge, CpgEdgeType.RECORD_KNOWS );
+            this.GS.setType( edge, this.getTypeOfPath( recordPath ) );
             edge.setAttribute( CpgConst.EDGE_ATTR_DISTANCE, recordPath.getDistance() );
-            recordPath.getPath().getEdgePath().forEach( pathEdge -> pathEdge.setAttribute( "isPath", true ) );
+            recordPath.getPath()
+                    .getEdgePath()
+                    .forEach( pathEdge -> pathEdge.setAttribute( CpgConst.EDGE_ATTR_IS_PATH, true ) );
 
             final String pathStr = PathUtils.pathToString( recordPath.getPath(), true );
-            edge.setAttribute( "path", pathStr );
+            edge.setAttribute( CpgConst.EDGE_ATTR_PATH, pathStr );
             //log.info( "Got path: {}", pathStr );
 
-        } ) );
+        } );
 
         return graph;
     }
 
-    @SuppressWarnings( "unchecked" )
-    private Map<String, List<ComputeSSSPsModule.Data>> getPaths( final PipeContext ctx ) {
-        return ctx.get( PipeContext.RECORD_PATHS, HashMap.class ).orElse( new HashMap<>() );
+    private CpgNodePaths getPaths( final PipeContext ctx ) {
+        return ctx.get( PipeContext.RECORD_PATHS, CpgNodePaths.class ).orElseThrow( IllegalStateException::new );
     }
 
-    private boolean isValidPath( final ComputeSSSPsModule.Data recordPath ) {
+    private boolean isValidPath( final CpgPath recordPath ) {
 
         // validate path distance
         if ( recordPath.getPath().empty() ) {
@@ -92,6 +97,20 @@ public class ComputeRecordDependenciesModule<Target> extends PipeModule<Graph, G
         }
 
         return true;
+    }
+
+    private CpgEdgeType getTypeOfPath( final CpgPath recordPath ) {
+        final List<CpgEdgeType> pathTypes = PathUtils.getTypes( recordPath.getPath() );
+        if ( pathTypes.contains( CpgEdgeType.INSTANTIATES ) ) {
+            return CpgEdgeType.RECORD_CREATES;
+        }
+        if ( pathTypes.contains( CpgEdgeType.SUPER_TYPE_DECLARATIONS ) ) {
+            return CpgEdgeType.RECORD_EXTENDS;
+        }
+        if ( pathTypes.contains( CpgEdgeType.RETURN_TYPES ) ) {
+            return CpgEdgeType.RECORD_RETURNS;
+        }
+        return CpgEdgeType.RECORD_KNOWS;
     }
 
 }

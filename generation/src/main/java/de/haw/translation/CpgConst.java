@@ -46,4 +46,8 @@ public class CpgConst {
 
     public static final String EDGE_ATTR_DISTANCE = "distance";
 
+    public static final String EDGE_ATTR_PATH = "path";
+
+    public static final String EDGE_ATTR_IS_PATH = "isPath";
+
 }

@@ -8,6 +8,8 @@ import java.io.File;
 
 public class DatasetLoader {
 
+    private static final String BASE_PATH_SELF = "";
+
     private static final String BASE_PATH_JAVA = "datasets/java/";
 
     private static final String BASE_PATH_TEST = BASE_PATH_JAVA + "test/";
@@ -24,6 +26,7 @@ public class DatasetLoader {
 
     public static String getDirOfDataset( final DatasetType type ) {
         return switch ( type ) {
+            case SELF -> BASE_PATH_SELF;
             case OWN -> BASE_PATH_TEST;
             case PATTERN_EXAMPLES -> BASE_PATH_PATTERN_EXAMPLES;
             case P_MART -> BASE_PATH_P_MART;

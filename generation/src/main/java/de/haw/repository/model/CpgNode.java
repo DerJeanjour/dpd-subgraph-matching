@@ -22,10 +22,19 @@ public class CpgNode {
     @Properties( prefix = "node", allowCast = false )
     private Map<String, String> properties = new HashMap<>();
 
-    /* OWN RELATIONSHIPS */
+    /* INTERACTIONS */
 
     @Relationship( value = "RECORD_KNOWS", direction = Relationship.Direction.OUTGOING )
-    private List<CpgEdge<CpgNode>> nextKnownRecords = new ArrayList<>();
+    private List<CpgEdge<CpgNode>> nextRecordsKnown = new ArrayList<>();
+
+    @Relationship( value = "RECORD_CREATES", direction = Relationship.Direction.OUTGOING )
+    private List<CpgEdge<CpgNode>> nextRecordsCreating = new ArrayList<>();
+
+    @Relationship( value = "RECORD_EXTENDS", direction = Relationship.Direction.OUTGOING )
+    private List<CpgEdge<CpgNode>> nextRecordsExtending = new ArrayList<>();
+
+    @Relationship( value = "RECORD_RETURNS", direction = Relationship.Direction.OUTGOING )
+    private List<CpgEdge<CpgNode>> nextRecordsReturning = new ArrayList<>();
 
     /* RELATIONSHIPS */
 

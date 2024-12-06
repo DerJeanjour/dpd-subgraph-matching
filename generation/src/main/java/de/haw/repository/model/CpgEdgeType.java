@@ -5,8 +5,11 @@ import java.util.List;
 
 public enum CpgEdgeType {
 
-    // Own
+    // Interactions
     RECORD_KNOWS,
+    RECORD_CREATES,
+    RECORD_EXTENDS,
+    RECORD_RETURNS,
 
     // Aggregated
     AST,
@@ -85,6 +88,6 @@ public enum CpgEdgeType {
 
     public static final List<CpgEdgeType> MAIN = Arrays.asList( AST, CDG, DFG, EOG, PDG );
 
-    public static final List<CpgEdgeType> OWN = Arrays.asList( RECORD_KNOWS );
+    public static final List<CpgEdgeType> OWN = Arrays.asList( RECORD_KNOWS, RECORD_CREATES, RECORD_EXTENDS, RECORD_RETURNS );
 
 }

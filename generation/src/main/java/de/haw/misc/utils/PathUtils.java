@@ -1,10 +1,14 @@
 package de.haw.misc.utils;
 
 import de.haw.processing.GraphService;
+import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.CpgConst;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.Path;
+
+import java.util.List;
+import java.util.Objects;
 
 public class PathUtils {
 
@@ -51,6 +55,10 @@ public class PathUtils {
         sb.append( GS.getAttr( node, CpgConst.NODE_ATTR_NAME_LOCAL ) );
         sb.append( ")" );
         return sb.toString();
+    }
+
+    public static List<CpgEdgeType> getTypes( final Path path ) {
+        return path.getEdgePath().stream().map( GS::getType ).filter( Objects::nonNull ).toList();
     }
 
 }

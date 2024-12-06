@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum DatasetProject {
 
-    SELF( DatasetType.OWN ),
+    SELF( DatasetType.SELF ),
     ANIMAL( DatasetType.OWN ),
     CHESS( DatasetType.OWN ),
 
