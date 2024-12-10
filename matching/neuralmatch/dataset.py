@@ -7,8 +7,8 @@ import torch
 from deepsnap.batch import Batch
 from deepsnap.graph import Graph as DSGraph
 
-from matching.src import feature_preprocess
-from matching.src import utils
+from matching.neuralmatch import feature_preprocess
+from matching.neuralmatch import utils
 
 
 def get_dataset( node_size=100 ):

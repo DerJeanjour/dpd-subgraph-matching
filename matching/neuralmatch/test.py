@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import roc_auc_score, confusion_matrix, average_precision_score
 
-from matching.src import utils
-from matching.src.args import Args, load_args
-from matching.src.dataset import gen_batch, gen_data_loaders, get_dataset
-from matching.src.model import build_model
+from matching.neuralmatch import utils
+from matching.neuralmatch.args import Args, load_args
+from matching.neuralmatch.dataset import gen_batch, gen_data_loaders, get_dataset
+from matching.neuralmatch.model import build_model
 
 
 def validate( args: Args, model: nn.Module, dataset ):

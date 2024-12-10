@@ -8,11 +8,11 @@ import torch.optim as optim
 import torchinfo
 from torch.utils.tensorboard import SummaryWriter
 
-from matching.src import utils
-from matching.src.args import Args, save_args
-from matching.src.dataset import get_dataset, gen_batch, gen_data_loaders
-from matching.src.model import build_model, build_optimizer
-from matching.src.test import validate
+from matching.neuralmatch import utils
+from matching.neuralmatch.args import Args, save_args
+from matching.neuralmatch.dataset import get_dataset, gen_batch, gen_data_loaders
+from matching.neuralmatch.model import build_model, build_optimizer
+from matching.neuralmatch.test import validate
 
 
 def train( model: nn.Module, dataset, args: Args, in_queue: mp.Queue, out_queue: mp.Queue ):

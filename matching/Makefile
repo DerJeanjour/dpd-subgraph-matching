@@ -1,8 +1,8 @@
 train:
-	cd src && python3 train.py
+	cd neuralmatch && python3 train.py
 
 import:
-	cd src && python3 import_dataset.py
+	cd neuralmatch && python3 import_dataset.py
 
 tensorboard:
 	tensorboard --logdir=runs

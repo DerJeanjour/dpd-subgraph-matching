@@ -4,11 +4,20 @@ import random
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 import torch
 
 
 def get_timestamp():
     return datetime.datetime.now().strftime( "%Y-%m-%dT%H-%M" )
+
+
+def set_seed( seed ):
+    random.seed( seed )
+    np.random.seed( seed )
+    torch.manual_seed( seed )
+    torch.cuda.manual_seed_all( seed )
+    torch.cuda.manual_seed_all( seed )
 
 
 def get_device( force_cpu=False ):
@@ -17,42 +26,60 @@ def get_device( force_cpu=False ):
 
     if not force_cpu and use_cuda:
         device = torch.device( "cuda" )
-    #elif not force_cpu and use_mps:
-    #    device = torch.device( "mps" )
+    elif not force_cpu and use_mps:
+        device = torch.device( "mps" )
     else:
         device = torch.device( "cpu" )
 
     return device
 
+
 def model_uses_cuda( model: torch.nn.Module ) -> bool:
-    return next(model.parameters()).is_cuda
+    return next( model.parameters() ).is_cuda
 
 
 def generate_graph( size: int, directed=False ):
     return nx.binomial_graph( size, p=0.05, directed=directed )
 
 
-def plot_graph( G, with_label=False ):
+def random_subgraph( G, k ):
+    random_node = random.choice( list( G.nodes() ) )
+    return nx.ego_graph( G, random_node, radius=k )
+
+
+def plot_graph( G,
+                with_label=False,
+                nodeLabels=None,
+                nodeColors=None,
+                edgeColors=None,
+                title=None ):
     plt.figure( figsize=(6, 4) )
+
+    pos = nx.spring_layout( G, seed=42 )
     node_size = 200
     if not with_label:
-        node_size = node_size * 0.1
+        node_size *= 0.1
+    if not nodeColors:
+        nodeColors = "skyblue"
+    if not edgeColors:
+        edgeColors = "gray"
+
     nx.draw( G,
-             pos=nx.spring_layout( G, seed=42 ),
+             pos=pos,
              with_labels=with_label,
-             node_color="skyblue",
+             labels=nodeLabels,
+             node_color=nodeColors,
              node_size=node_size,
              font_size=6,
              font_color="black",
              width=0.5,
-             edge_color="gray" )
-    plt.title( f"Graph with {len( G.nodes )} nodes and {len( G.edges )} edges", size=10 )
+             edge_color=edgeColors )
+
+    if title is None:
+        title = f"Graph with {len( G.nodes )} nodes and {len( G.edges )} edges"
+
+    plt.title( title, size=10 )
     plt.show()
-
-
-def random_subgraph( G, k ):
-    random_node = random.choice( list( G.nodes() ) )
-    return nx.ego_graph( G, random_node, radius=k )
 
 
 def inject_edge_errors( G, e: int = 1 ):

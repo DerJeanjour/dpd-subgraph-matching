@@ -4,9 +4,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch_geometric.nn as pyg_nn
 
-from matching.src import feature_preprocess
-from matching.src import utils
-from matching.src.args import Args
+from matching.neuralmatch import feature_preprocess
+from matching.neuralmatch import utils
+from matching.neuralmatch.args import Args
 
 
 def build_model( args: Args ) -> nn.Module:
