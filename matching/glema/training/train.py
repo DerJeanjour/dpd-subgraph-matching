@@ -83,12 +83,11 @@ def main( args ):
         "epoch,train_losses,test_losses,train_roc,test_roc,train_time,test_time\n"
     )
 
-    # logger = SummaryWriter( log_dir=f'{log_dir}/{args.dataset}_{args.tactic}_{utils.get_timestamp()}' )
+    logger = SummaryWriter( log_dir=f'{log_dir}/{args.dataset}_{args.tactic}_{utils.get_timestamp()}' )
 
     best_roc = 0
     early_stop_count = 0
 
-    train_batch_count = 0
     for epoch in range( args.epoch ):
         print( "EPOCH", epoch )
         st = time.time()
@@ -135,9 +134,6 @@ def main( args ):
             train_losses.append( loss.data.cpu().item() )
             train_true.append( Y.data.cpu().numpy() )
             train_pred.append( pred.data.cpu().numpy() )
-
-            # logger.add_scalar( 'train/loss', train_losses[len(train_losses)-1], train_batch_count )
-            train_batch_count += 1
 
         pbar.close()
         model.eval()
@@ -208,6 +204,13 @@ def main( args ):
             )
         )
         log_file.flush()
+
+        logger.add_scalar( 'train/loss', train_losses, epoch )
+        logger.add_scalar( 'train/roc', train_roc, epoch )
+        logger.add_scalar( 'test/loss', test_losses, epoch )
+        logger.add_scalar( 'test/roc', test_roc, epoch )
+        logger.add_scalar( 'time/train', st_eval - st, epoch )
+        logger.add_scalar( 'time/test', end - st_eval, epoch )
 
         if test_roc > best_roc:
             early_stop_count = 0
