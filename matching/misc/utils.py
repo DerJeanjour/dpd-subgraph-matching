@@ -1,6 +1,8 @@
 import copy
 import datetime
+import os
 import random
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -8,7 +10,26 @@ import numpy as np
 import torch
 
 
-def get_timestamp():
+def get_abs_file_path( project_file_path: str ) -> str:
+    abs_path: Path = get_project_root() / project_file_path
+    #if not abs_path.exists():
+    #    raise FileNotFoundError( f"The file '{abs_path}' does not exist." )
+    return str( abs_path )
+
+
+def get_project_root() -> Path:
+    return Path( __file__ ).parent.parent
+
+
+def file_exists( path ) -> bool:
+    return os.path.exists( path )
+
+
+def get_filenames_in_dir( dir_path ):
+    return [ f for f in os.listdir( dir_path ) if os.path.isfile( os.path.join( dir_path, f ) ) ]
+
+
+def get_timestamp() -> str:
     return datetime.datetime.now().strftime( "%Y-%m-%dT%H-%M" )
 
 
@@ -20,12 +41,12 @@ def set_seed( seed ):
     torch.cuda.manual_seed_all( seed )
 
 
-def get_device( force_cpu=False ):
+def get_device( force_cpu=False ) -> torch.device:
     use_cuda = torch.cuda.is_available()
     use_mps = not use_cuda and torch.backends.mps.is_available()
 
     if not force_cpu and use_cuda:
-        device = torch.device( "cuda" )
+        device = torch.device( "cuda" )  # cuda:0 ?
     elif not force_cpu and use_mps:
         device = torch.device( "mps" )
     else:
@@ -63,6 +84,21 @@ def plot_graph( G,
         nodeColors = "skyblue"
     if not edgeColors:
         edgeColors = "gray"
+
+    """
+        latex_code = nx.to_latex(
+            graph,
+            pos,
+            node_label=nodeLabels,
+        )
+        with open(title[:-3] + "txt", "w") as f:
+            f.write(latex_code)
+        """
+
+    # edgeLabels = {}
+    # for edge in graph.edges():
+    #     edgeLabels[edge] = graph[edge[0]][edge[1]]["label"]
+    # nx.draw_networkx_edge_labels(graph, pos, edge_labels=edgeLabels, font_color='red')
 
     nx.draw( G,
              pos=pos,

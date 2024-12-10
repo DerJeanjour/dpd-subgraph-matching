@@ -11,7 +11,7 @@ import matching.misc.utils as utils
 
 def test():
 
-    device = utils.get_device( force_cpu=True )
+    device = utils.get_device( force_cpu=False )
     print( f"using device: {device}" )
 
     num_samples = 50000
