@@ -53,9 +53,11 @@ def parse_args( use_default=False ):
     parser.add_argument( "--num_workers", help="number of workers",
                          type=int, default=os.cpu_count() )
     parser.add_argument( "--dataset", help="dataset",
-                         type=str, default="tiny" )
+                         type=str, default="SYNTHETIC_TINY" )
     parser.add_argument( "--directed", action="store_true", help="directed graph" )
     parser.add_argument( "--iso", action="store_true", help="wheather using iso/noniso" )
+    parser.add_argument( "--device", help="torch device",
+                         type=str, default=str( get_device() ) )
 
     # training parameter
     parser.add_argument( "--epoch", help="epoch",
@@ -117,10 +119,14 @@ def parse_args( use_default=False ):
 
     # generating
     parser.add_argument( "--config", "-c", help="Data config file", type=str,
-                         default="data/data_real/configs/base.json" )
+                         default="data/data_real/configs/SYNTHETIC_TINY.json" )
     parser.add_argument( "--cont", action="store_true", help="Continue generating" )
     parser.add_argument( "--num_subgraphs", default=2000, type=int, help="Number of subgraphs" )
     parser.add_argument( "--ds", default="", type=str, help="Dataset name" )
+    parser.add_argument( "--data_name", type=str )
+    parser.add_argument( "--real", action="store_true" )
+    parser.add_argument( "--testonly", action="store_true" )
+    parser.add_argument( "--max_subgraph", type=int, default=-1 )
 
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 
@@ -249,7 +255,7 @@ def read_graphs( database_file_name, directed=False ):
 def initialize_model( model, device, load_save_file: str = None ):
     if not load_save_file is None:
         model.load_state_dict(
-            torch.load( get_abs_file_path( load_save_file ), map_location=device, weights_only=False )
+            torch.load( get_abs_file_path( load_save_file ), map_location=device, weights_only=True )
         )
         """
         if not torch.cuda.is_available():

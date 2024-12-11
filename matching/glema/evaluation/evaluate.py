@@ -25,7 +25,7 @@ def main( args ):
     if args.directed:
         data_path += "_directed"
     result_dir = utils.ensure_dir( args.result_dir, args )
-    result_file = f"result{args.test_keys[ 9:-4 ]}.csv"
+    result_file = "result.csv"
     args.train_keys = utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
     args.test_keys = utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
 
@@ -76,6 +76,7 @@ def main( args ):
         with torch.no_grad():
             pred = model( (H, A1, A2, V) )
 
+        # TODO maybe put into with block ???
         # Collect true label and predicted label
         test_true.append( Y.data.cpu().numpy() )
         test_pred.append( pred.data.cpu().numpy() )
@@ -106,11 +107,17 @@ def main( args ):
         test_pred_by_conf[ test_pred_by_conf < conf_step ] = 0
         test_pred_by_conf[ test_pred_by_conf > 0 ] = 1
 
+        print( f"calc roc auc (conf: {conf_step}) ..." )
         test_roc = roc_auc_score( test_true, test_pred_by_conf )
+        print( f"calc acc (conf: {conf_step}) ..." )
         test_acc = accuracy_score( test_true, test_pred_by_conf )
+        print( f"calc prec (conf: {conf_step}) ..." )
         test_pre = precision_score( test_true, test_pred_by_conf, zero_division=np.nan )
+        print( f"calc rec (conf: {conf_step}) ..." )
         test_rec = recall_score( test_true, test_pred_by_conf, zero_division=np.nan )
+        print( f"calc f1 (conf: {conf_step}) ..." )
         test_f1s = f1_score( test_true, test_pred_by_conf, zero_division=np.nan )
+        print( f"calc avg prec (conf: {conf_step}) ..." )
         test_prc = average_precision_score( test_true, test_pred_by_conf )
         test_time = (end - st_eval) / len( test_dataset )
 
@@ -138,7 +145,8 @@ def main( args ):
 
 if __name__ == "__main__":
     args = utils.parse_args()
-    args.ckpt = "training/save/KKI_jump_directed_best/best_model.pt"
+    #args.ckpt = "training/save/KKI_jump_directed_promising/best_model.pt"
+    args.ckpt = "training/save/SYNTHETIC_TINY_jump_directed/best_model.pt"
     args = utils.load_args( args, args.ckpt )
     args.data_path = "data/data_processed"
     args.batch_size = 128

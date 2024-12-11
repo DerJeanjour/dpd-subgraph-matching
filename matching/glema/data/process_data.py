@@ -8,24 +8,9 @@ import sys
 import networkx as nx
 from tqdm import tqdm
 
-parser = argparse.ArgumentParser()
-parser.add_argument( "--data_name", type=str )
-parser.add_argument( "--real", action="store_true" )
-parser.add_argument( "--testonly", action="store_true" )
-parser.add_argument( "--directed", action="store_true" )
-parser.add_argument( "--max_subgraph", type=int, default=-1 )
-
-args = parser.parse_args()
-
-data_proccessed_dir = "data_processed/%s" % args.data_name
-if args.directed:
-    data_proccessed_dir += "_directed"
-
-if not os.path.exists( "data_processed" ):
-    os.mkdir( "data_processed" )
+import matching.glema.common.utils as utils
 
 
-# %%
 
 
 def read_graphs( database_file_name, max_subgraph=-1 ):
@@ -138,10 +123,6 @@ def load_graph_data( data_dir, source_id, max_subgraph=-1 ):
         noniso_degrees,
     )
 
-
-# %%
-
-
 # Load and save
 def load_dataset( data_dir, list_source, save_dir, additional_tag="", max_subgraph=-1 ):
     size_dict = { }
@@ -180,162 +161,182 @@ def load_dataset( data_dir, list_source, save_dir, additional_tag="", max_subgra
 
     return list( size_dict.keys() )
 
+def main( args ):
+    data_proccessed_dir = "data/data_processed/%s" % args.data_name
+    data_proccessed_dir = data_proccessed_dir.replace( "_train", "" )
+    data_proccessed_dir = utils.get_abs_file_path( data_proccessed_dir )
+    if args.directed:
+        data_proccessed_dir += "_directed"
 
-# Load data
-if not os.path.exists( data_proccessed_dir ):
-    os.mkdir( data_proccessed_dir )
+    print( f"Processing {data_proccessed_dir} ..." )
 
-# %%
-if not args.real:
-    if args.testonly:
-        additional_tag = "test"
-    else:
-        additional_tag = ""
+    # Load data
+    if not os.path.exists( data_proccessed_dir ):
+        os.mkdir( data_proccessed_dir )
 
-    data_dir = "data_synthesis/datasets/%s" % (args.data_name)
+    if not args.real:
+        if args.testonly:
+            additional_tag = "test"
+        else:
+            additional_tag = ""
 
-    list_source = os.listdir( data_dir )
-    list_source = list(
-        filter( lambda x: os.path.isdir( os.path.join( data_dir, x ) ), list_source )
-    )
+        data_dir = "data/data_real/datasets/%s" % (args.data_name)
+        data_dir = utils.get_abs_file_path( data_dir )
 
-    valid_keys = load_dataset(
-        data_dir,
-        list_source,
-        data_proccessed_dir,
-        additional_tag=additional_tag,
-        max_subgraph=args.max_subgraph,
-    )
-
-    if additional_tag == "test":
-        test_keys = [ k for k in valid_keys if k.split( "_" )[ 0 ] in list_source ]
-        train_keys = [ ]
-
-    else:
-        # Split train test
-        from sklearn.model_selection import train_test_split
-
-        train_source, test_source = train_test_split(
-            list_source, test_size=0.2, random_state=42
+        list_source = os.listdir( data_dir )
+        list_source = list(
+            filter( lambda x: os.path.isdir( os.path.join( data_dir, x ) ), list_source )
         )
 
-        train_keys = [ k for k in valid_keys if k.split( "_" )[ 0 ] in train_source ]
-        test_keys = [ k for k in valid_keys if k.split( "_" )[ 0 ] in test_source ]
-
-elif args.real:
-    data_dir = "data_real/datasets/%s" % (args.data_name + "_test")
-    list_source = os.listdir( data_dir )
-    list_source = list(
-        filter( lambda x: os.path.isdir( os.path.join( data_dir, x ) ), list_source )
-    )
-
-    test_keys = load_dataset(
-        data_dir,
-        list_source,
-        data_proccessed_dir,
-        additional_tag="test",
-        max_subgraph=args.max_subgraph,
-    )
-
-    if args.testonly:
-        train_keys = [ ]
-    else:
-        data_dir_train = "data_real/datasets/%s" % (args.data_name + "_train")
-        list_source_train = os.listdir( data_dir_train )
-        list_source_train = list(
-            filter(
-                lambda x: os.path.isdir( os.path.join( data_dir_train, x ) ),
-                list_source_train,
-            )
-        )
-
-        train_keys = load_dataset(
-            data_dir_train,
-            list_source_train,
+        valid_keys = load_dataset(
+            data_dir,
+            list_source,
             data_proccessed_dir,
-            additional_tag="train",
+            additional_tag=additional_tag,
             max_subgraph=args.max_subgraph,
         )
 
-# Notice that key which has "iso" is isomorphism, otherwise non-isomorphism
+        if additional_tag == "test":
+            test_keys = [ k for k in valid_keys if k.split( "_" )[ 0 ] in list_source ]
+            train_keys = [ ]
 
-# %%
-# Save train and test keys
+        else:
+            # Split train test
+            from sklearn.model_selection import train_test_split
 
-with open( "%s/train_keys.pkl" % data_proccessed_dir, "wb" ) as f:
-    pickle.dump( train_keys, f )
+            train_source, test_source = train_test_split(
+                list_source, test_size=0.2, random_state=42
+            )
 
-with open( "%s/test_keys.pkl" % data_proccessed_dir, "wb" ) as f:
-    pickle.dump( test_keys, f )
+            train_keys = [ k for k in valid_keys if k.split( "_" )[ 0 ] in train_source ]
+            test_keys = [ k for k in valid_keys if k.split( "_" )[ 0 ] in test_source ]
 
-if args.real or (not args.real and args.testonly):
-    size_dict = pickle.load( open( f"{data_proccessed_dir}/subgraphs_size.pkl", "rb" ) )
-    degree_dict = pickle.load( open( f"{data_proccessed_dir}/subgraphs_degree.pkl", "rb" ) )
-
-    nondense_0_20 = list(
-        filter( lambda x: size_dict[ x ] <= 20 and degree_dict[ x ] <= 3, test_keys )
-    )
-    nondense_20_40 = list(
-        filter(
-            lambda x: size_dict[ x ] > 20 and size_dict[ x ] <= 40 and degree_dict[ x ] <= 3,
-            test_keys,
+    elif args.real:
+        data_dir = "data/data_real/datasets/%s" % (args.data_name + "_test")
+        data_dir = utils.get_abs_file_path( data_dir )
+        list_source = os.listdir( data_dir )
+        list_source = list(
+            filter( lambda x: os.path.isdir( os.path.join( data_dir, x ) ), list_source )
         )
-    )
-    nondense_40_60 = list(
-        filter(
-            lambda x: size_dict[ x ] > 40 and size_dict[ x ] <= 60 and degree_dict[ x ] <= 3,
-            test_keys,
+
+        test_keys = load_dataset(
+            data_dir,
+            list_source,
+            data_proccessed_dir,
+            additional_tag="test",
+            max_subgraph=args.max_subgraph,
         )
-    )
-    nondense_60_ = list(
-        filter( lambda x: size_dict[ x ] >= 60 and degree_dict[ x ] <= 3, test_keys )
-    )
 
-    dense_0_20 = list(
-        filter( lambda x: size_dict[ x ] <= 20 and degree_dict[ x ] > 3, test_keys )
-    )
-    dense_20_40 = list(
-        filter(
-            lambda x: size_dict[ x ] > 20 and size_dict[ x ] <= 40 and degree_dict[ x ] > 3,
-            test_keys,
+        if args.testonly:
+            train_keys = [ ]
+        else:
+            data_dir_train = "data/data_real/datasets/%s" % (args.data_name + "_train")
+            data_dir_train = utils.get_abs_file_path( data_dir_train )
+            list_source_train = os.listdir( data_dir_train )
+            list_source_train = list(
+                filter(
+                    lambda x: os.path.isdir( os.path.join( data_dir_train, x ) ),
+                    list_source_train,
+                )
+            )
+
+            train_keys = load_dataset(
+                data_dir_train,
+                list_source_train,
+                data_proccessed_dir,
+                additional_tag="train",
+                max_subgraph=args.max_subgraph,
+            )
+
+    # Notice that key which has "iso" is isomorphism, otherwise non-isomorphism
+
+    # Save train and test keys
+    with open( "%s/train_keys.pkl" % data_proccessed_dir, "wb" ) as f:
+        pickle.dump( train_keys, f )
+
+    with open( "%s/test_keys.pkl" % data_proccessed_dir, "wb" ) as f:
+        pickle.dump( test_keys, f )
+
+    if args.real or (not args.real and args.testonly):
+        size_dict = pickle.load( open( f"{data_proccessed_dir}/subgraphs_size.pkl", "rb" ) )
+        degree_dict = pickle.load( open( f"{data_proccessed_dir}/subgraphs_degree.pkl", "rb" ) )
+
+        nondense_0_20 = list(
+            filter( lambda x: size_dict[ x ] <= 20 and degree_dict[ x ] <= 3, test_keys )
         )
-    )
-    dense_40_60 = list(
-        filter(
-            lambda x: size_dict[ x ] > 40 and size_dict[ x ] <= 60 and degree_dict[ x ] > 3,
-            test_keys,
+        nondense_20_40 = list(
+            filter(
+                lambda x: size_dict[ x ] > 20 and size_dict[ x ] <= 40 and degree_dict[ x ] <= 3,
+                test_keys,
+            )
         )
-    )
-    dense_60_ = list(
-        filter( lambda x: size_dict[ x ] >= 60 and degree_dict[ x ] > 3, test_keys )
-    )
+        nondense_40_60 = list(
+            filter(
+                lambda x: size_dict[ x ] > 40 and size_dict[ x ] <= 60 and degree_dict[ x ] <= 3,
+                test_keys,
+            )
+        )
+        nondense_60_ = list(
+            filter( lambda x: size_dict[ x ] >= 60 and degree_dict[ x ] <= 3, test_keys )
+        )
 
-    with open(
-            "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_0_20"), "wb"
-    ) as f:
-        pickle.dump( nondense_0_20, f )
+        dense_0_20 = list(
+            filter( lambda x: size_dict[ x ] <= 20 and degree_dict[ x ] > 3, test_keys )
+        )
+        dense_20_40 = list(
+            filter(
+                lambda x: size_dict[ x ] > 20 and size_dict[ x ] <= 40 and degree_dict[ x ] > 3,
+                test_keys,
+            )
+        )
+        dense_40_60 = list(
+            filter(
+                lambda x: size_dict[ x ] > 40 and size_dict[ x ] <= 60 and degree_dict[ x ] > 3,
+                test_keys,
+            )
+        )
+        dense_60_ = list(
+            filter( lambda x: size_dict[ x ] >= 60 and degree_dict[ x ] > 3, test_keys )
+        )
 
-    with open(
-            "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_20_40"), "wb"
-    ) as f:
-        pickle.dump( nondense_20_40, f )
+        with open(
+                "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_0_20"), "wb"
+        ) as f:
+            pickle.dump( nondense_0_20, f )
 
-    with open(
-            "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_40_60"), "wb"
-    ) as f:
-        pickle.dump( nondense_40_60, f )
+        with open(
+                "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_20_40"), "wb"
+        ) as f:
+            pickle.dump( nondense_20_40, f )
 
-    with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_60_"), "wb" ) as f:
-        pickle.dump( nondense_60_, f )
+        with open(
+                "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_40_60"), "wb"
+        ) as f:
+            pickle.dump( nondense_40_60, f )
 
-    with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_0_20"), "wb" ) as f:
-        pickle.dump( dense_0_20, f )
+        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_60_"), "wb" ) as f:
+            pickle.dump( nondense_60_, f )
 
-    with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_20_40"), "wb" ) as f:
-        pickle.dump( dense_20_40, f )
+        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_0_20"), "wb" ) as f:
+            pickle.dump( dense_0_20, f )
 
-    with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_40_60"), "wb" ) as f:
-        pickle.dump( dense_40_60, f )
+        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_20_40"), "wb" ) as f:
+            pickle.dump( dense_20_40, f )
 
-    with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_60_"), "wb" ) as f:
-        pickle.dump( dense_60_, f )
+        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_40_60"), "wb" ) as f:
+            pickle.dump( dense_40_60, f )
+
+        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_60_"), "wb" ) as f:
+            pickle.dump( dense_60_, f )
+
+if __name__ == "__main__":
+    args = utils.parse_args()
+    args.data_name = "SYNTHETIC_TINY_train"
+    args.real = False
+    args.testonly = False
+    args.directed = True
+    args.max_subgraph = -1
+    print( args )
+    main( args )
+
+

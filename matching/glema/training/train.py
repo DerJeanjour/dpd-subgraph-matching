@@ -1,5 +1,6 @@
 import os
 import pickle
+import random
 import time
 
 import numpy as np
@@ -9,6 +10,7 @@ import matching.glema.common.utils as utils
 from matching.glema.common.dataset import BaseDataset, collate_fn, UnderSampler
 from matching.glema.common.model import GLeMaNet
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torchinfo
@@ -77,17 +79,22 @@ def main( args ):
     # Loss function
     loss_fn = nn.BCELoss()
 
-    # Logging file
-    log_file = open( os.path.join( log_dir, "log.csv" ), "w", encoding="utf-8" )
-    log_file.write(
-        "epoch,train_losses,test_losses,train_roc,test_roc,train_time,test_time\n"
-    )
+    timestamp = utils.get_timestamp()
 
-    logger = SummaryWriter( log_dir=f'{log_dir}/{args.dataset}_{args.tactic}_{utils.get_timestamp()}' )
+    # Logging file
+    log_file = open( os.path.join( log_dir, f"log_{timestamp}.csv" ), "w", encoding="utf-8" )
+    log_file.write(
+        "epoch,train_losses,test_losses,train_acc,test_acc,train_roc,test_roc,train_time,test_time\n"
+    )
+    logger = SummaryWriter( log_dir=f'{log_dir}/{args.dataset}_{args.tactic}_{timestamp}' )
+    utils.save_args( args, f"{log_dir}/args_{timestamp}.json" )
 
     best_roc = 0
     early_stop_count = 0
 
+    batch_count = 0
+    snapshot_interval = 100
+    confidence_thresh = 0.75
     for epoch in range( args.epoch ):
         print( "EPOCH", epoch )
         st = time.time()
@@ -105,6 +112,7 @@ def main( args ):
 
         model.train()
         pbar = tqdm( train_dataloader )
+
         for sample in pbar:
             model.zero_grad()
             H, A1, A2, M, S, Y, V, _ = sample
@@ -134,6 +142,18 @@ def main( args ):
             train_losses.append( loss.data.cpu().item() )
             train_true.append( Y.data.cpu().numpy() )
             train_pred.append( pred.data.cpu().numpy() )
+
+            batch_count += 1
+            if len( train_losses ) >= snapshot_interval and batch_count % snapshot_interval == 0:
+                train_loss_snap = np.mean( np.array( train_losses[ -snapshot_interval: ] ) )
+                logger.add_scalar( 'batch/loss', train_loss_snap, batch_count )
+
+                train_true_snap = np.concatenate( train_true[ -snapshot_interval: ].copy(), 0 )
+                train_pred_snap = np.concatenate( train_pred[ -snapshot_interval: ].copy(), 0 )
+                train_pred_snap[ train_pred_snap < confidence_thresh ] = 0
+                train_pred_snap[ train_pred_snap > 0 ] = 1
+                train_acc_snap = accuracy_score( train_true_snap, train_pred_snap )
+                logger.add_scalar( 'batch/acc', train_acc_snap, batch_count )
 
         pbar.close()
         model.eval()
@@ -178,39 +198,56 @@ def main( args ):
         train_roc = roc_auc_score( train_true, train_pred )
         test_roc = roc_auc_score( test_true, test_pred )
 
-        print(
-            "%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f"
-            % (
-                epoch,
-                train_losses,
-                test_losses,
-                train_roc,
-                test_roc,
-                st_eval - st,
-                end - st_eval,
-            )
-        )
+        test_pred_by_conf = test_pred.copy()
+        test_pred_by_conf[ test_pred_by_conf < confidence_thresh ] = 0
+        test_pred_by_conf[ test_pred_by_conf > 0 ] = 1
+        test_acc = accuracy_score( test_true, test_pred_by_conf )
+
+        train_pred_by_conf = train_pred.copy()
+        train_pred_by_conf[ train_pred_by_conf < confidence_thresh ] = 0
+        train_pred_by_conf[ train_pred_by_conf > 0 ] = 1
+        train_acc = accuracy_score( train_true, train_pred_by_conf )
+
+        time_train = st_eval - st
+        time_test = end - st_eval
+        time_total = time_train + time_test
+
+        print( f"Epoch=[{epoch}] - "
+               f"Train_Loss=[{train_losses:.3f}] - "
+               f"Test_Loss=[{test_losses:.3f}] - "
+               f"Train_Acc=[{train_acc:.3f}] - "
+               f"Test_Acc=[{test_acc:.3f}] - "
+               f"Train_Roc=[{train_roc:.3f}] - "
+               f"Test_Roc=[{test_roc:.3f}] - "
+               f"Train_Time=[{time_train:.3f}s] - "
+               f"Test_Time=[{time_test:.3f}s] - "
+               f"Total_Time=[{time_total:.3f}s]" )
 
         log_file.write(
-            "%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n"
+            "%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f\n"
             % (
                 epoch,
                 train_losses,
                 test_losses,
+                train_acc,
+                test_acc,
                 train_roc,
                 test_roc,
-                st_eval - st,
-                end - st_eval,
+                time_train,
+                time_test,
             )
         )
         log_file.flush()
 
         logger.add_scalar( 'train/loss', train_losses, epoch )
         logger.add_scalar( 'train/roc', train_roc, epoch )
+        logger.add_scalar( 'train/acc', train_acc, epoch )
         logger.add_scalar( 'test/loss', test_losses, epoch )
         logger.add_scalar( 'test/roc', test_roc, epoch )
-        logger.add_scalar( 'time/train', st_eval - st, epoch )
-        logger.add_scalar( 'time/test', end - st_eval, epoch )
+        logger.add_scalar( 'test/acc', test_acc, epoch )
+        logger.add_scalar( 'time/train', time_train, epoch )
+        logger.add_scalar( 'time/test', time_test, epoch )
+        logger.add_scalar( 'time/total', time_total, epoch )
 
         if test_roc > best_roc:
             early_stop_count = 0
@@ -229,12 +266,13 @@ def main( args ):
 
 if __name__ == "__main__":
     args = utils.parse_args()
-    args.ngpu = 0
     args.directed = True
-    args.dataset = "KKI"
-    args.batch_size = 256
+    #args.dataset = "KKI"
+    args.dataset = "SYNTHETIC_TINY"
+    args.batch_size = 128
     args.tactic = "jump"
-    args.embedding_dim = 90
+    args.embedding_dim = 4
+    args.seed = 23
     print( args )
 
     utils.set_seed( args.seed )

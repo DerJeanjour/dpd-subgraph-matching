@@ -471,7 +471,7 @@ def generate_batch( start_idx, stop_idx, number_source, dataset_path, *args, **k
 
 
 def generate_dataset( dataset_path, is_continue, number_source, *args, **kwargs ):
-    print( "Generating..." )
+    print( f"Generating {dataset_path} (continue:{is_continue}) using {os.cpu_count()} processes..." )
     list_processes = [ ]
 
     if is_continue is not False:
@@ -611,19 +611,21 @@ def save_per_source( graph_id, H, iso_subgraphs, noniso_subgraphs, dataset_path 
     nismf.close()
 
 
+# generate synthetic subgraphs (iso and no-iso) from config file
 def main( config_file, is_continue ):
-    seed( 42 )
-    np.random.seed( 42 )
-    dataset_path = os.path.join(
-        "datasets", os.path.basename( config_file ).split( "." )[ 0 ] + "_train"
-    )
+    utils.set_seed( 42 )
+    dataset_path = os.path.join( "data/data_real/datasets",
+                                 os.path.basename( config_file ).split( "." )[ 0 ] + "_train" )
     dataset_path = utils.get_abs_file_path( dataset_path )
     ensure_path( dataset_path )
     config = read_config( config_file )
+    print( config )
 
     generate_dataset( dataset_path=dataset_path, is_continue=is_continue, **config )
 
 
 if __name__ == "__main__":
     args = utils.parse_args()
+    args.config = "data/data_real/configs/SYNTHETIC_TINY.json"
+    print( args )
     main( args.config, args.cont )
