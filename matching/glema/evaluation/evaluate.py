@@ -76,7 +76,6 @@ def main( args ):
         with torch.no_grad():
             pred = model( (H, A1, A2, V) )
 
-        # TODO maybe put into with block ???
         # Collect true label and predicted label
         test_true.append( Y.data.cpu().numpy() )
         test_pred.append( pred.data.cpu().numpy() )
@@ -145,10 +144,10 @@ def main( args ):
 
 if __name__ == "__main__":
     args = utils.parse_args()
-    #args.ckpt = "training/save/KKI_jump_directed_promising/best_model.pt"
-    args.ckpt = "training/save/SYNTHETIC_TINY_jump_directed/best_model.pt"
-    args = utils.load_args( args, args.ckpt )
-    args.data_path = "data/data_processed"
+    #model_ckpt = "training/save/KKI_jump_directed_promising/best_model.pt"
+    model_ckpt = "training/save/SYNTHETIC_TINY_jump_directed_30e/best_model.pt"
+    args = utils.load_args( args, model_ckpt )
+    args.ckpt = model_ckpt
     args.batch_size = 128
     print( args )
 

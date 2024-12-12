@@ -254,6 +254,7 @@ def read_graphs( database_file_name, directed=False ):
 
 def initialize_model( model, device, load_save_file: str = None ):
     if not load_save_file is None:
+        print( f"Loading model from {load_save_file} ..." )
         model.load_state_dict(
             torch.load( get_abs_file_path( load_save_file ), map_location=device, weights_only=True )
         )
@@ -266,6 +267,7 @@ def initialize_model( model, device, load_save_file: str = None ):
             model.load_state_dict(torch.load(load_save_file))
             """
     else:
+        print( f"Init default model ..." )
         for param in model.parameters():
             if param.dim() == 1:
                 continue
