@@ -11,10 +11,10 @@ from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
 
 
-def onehot_encoding_node( m, embedding_dim ):
+def onehot_encoding_node( graph, embedding_dim ):
     H = [ ]
-    for i in m.nodes:
-        H.append( utils.node_feature( m, i, embedding_dim ) )
+    for node_idx in graph.nodes:
+        H.append( utils.node_feature( graph, node_idx, embedding_dim ) )
     H = np.array( H )
     return H
 
@@ -34,51 +34,51 @@ class BaseDataset( Dataset ):
         with open( os.path.join( self.data_dir, key ), "rb" ) as f:
             data = pickle.load( f )
             if len( data ) == 3:
-                m1, m2, mapping = data
+                query, source, mapping = data
             else:
-                m1, m2 = data
+                query, source = data
                 mapping = [ ]
 
         # Prepare subgraph
-        n1 = m1.number_of_nodes()
-        adj1 = nx.to_numpy_array( m1 ) + np.eye( n1 )
-        H1 = onehot_encoding_node( m1, self.embedding_dim )
+        n_query = query.number_of_nodes()
+        adj_query = nx.to_numpy_array( query ) + np.eye( n_query )
+        H_query = onehot_encoding_node( query, self.embedding_dim )
 
         # Prepare source graph
-        n2 = m2.number_of_nodes()
-        adj2 = nx.to_numpy_array( m2 ) + np.eye( n2 )
-        H2 = onehot_encoding_node( m2, self.embedding_dim )
+        n_source = source.number_of_nodes()
+        adj_source = nx.to_numpy_array( source ) + np.eye( n_source )
+        H_source = onehot_encoding_node( source, self.embedding_dim )
 
         # Aggregation node encoding
-        agg_adj1 = np.zeros( (n1 + n2, n1 + n2) )
-        agg_adj1[ :n1, :n1 ] = adj1
-        agg_adj1[ n1:, n1: ] = adj2
+        agg_adj1 = np.zeros( (n_query + n_source, n_query + n_source) )
+        agg_adj1[ :n_query, :n_query ] = adj_query
+        agg_adj1[ n_query:, n_query: ] = adj_source
         agg_adj2 = np.copy( agg_adj1 )
-        dm = distance_matrix( H1, H2 )
+        dm = distance_matrix( H_query, H_source )
         dm_new = np.zeros_like( dm )
         dm_new[ dm == 0.0 ] = 1.0
-        agg_adj2[ :n1, n1: ] = np.copy( dm_new )
-        agg_adj2[ n1:, :n1 ] = np.copy( np.transpose( dm_new ) )
+        agg_adj2[ :n_query, n_query: ] = np.copy( dm_new )
+        agg_adj2[ n_query:, :n_query ] = np.copy( np.transpose( dm_new ) )
 
-        H1 = np.concatenate( [ H1, np.zeros( (n1, self.embedding_dim) ) ], 1 )
-        H2 = np.concatenate( [ np.zeros( (n2, self.embedding_dim) ), H2 ], 1 )
-        H = np.concatenate( [ H1, H2 ], 0 )
+        H_query = np.concatenate( [ H_query, np.zeros( (n_query, self.embedding_dim) ) ], 1 )
+        H_source = np.concatenate( [ np.zeros( (n_source, self.embedding_dim) ), H_source ], 1 )
+        H = np.concatenate( [ H_query, H_source ], 0 )
 
-        # node indice for aggregation
-        valid = np.zeros( (n1 + n2,) )
-        valid[ :n1 ] = 1
+        # node indices for aggregation
+        valid = np.zeros( (n_query + n_source,) )
+        valid[ :n_query ] = 1
 
         # create mapping matrix
         mapping_matrix = np.zeros_like( agg_adj1 )
         if len( mapping ) > 0:
             mapping = np.array( mapping ).T
-            mapping[ 1 ] = mapping[ 1 ] + n1
+            mapping[ 1 ] = mapping[ 1 ] + n_query
             mapping_matrix[ mapping[ 0 ], mapping[ 1 ] ] = 1.0
             mapping_matrix[ mapping[ 1 ], mapping[ 0 ] ] = 1.0
 
         same_label_matrix = np.zeros_like( agg_adj1 )
-        same_label_matrix[ :n1, n1: ] = np.copy( dm_new )
-        same_label_matrix[ n1:, :n1 ] = np.copy( np.transpose( dm_new ) )
+        same_label_matrix[ :n_query, n_query: ] = np.copy( dm_new )
+        same_label_matrix[ n_query:, :n_query ] = np.copy( np.transpose( dm_new ) )
 
         # iso to class
         Y = 1 if "iso" in key else 0

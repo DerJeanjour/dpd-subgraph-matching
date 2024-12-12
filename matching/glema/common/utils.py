@@ -11,8 +11,10 @@ import torch.nn as nn
 import matching.misc.utils as utils
 
 
-def get_abs_file_path( project_file_path: str ) -> str:
-    local_path: Path = "glema" / Path( project_file_path )
+def get_abs_file_path( project_file_path: str, with_subproject=True ) -> str:
+    local_path: Path = Path( project_file_path )
+    if with_subproject:
+        local_path = "glema" / local_path
     return utils.get_abs_file_path( str( local_path ) )
 
 
@@ -32,12 +34,28 @@ def get_timestamp() -> str:
     return utils.get_timestamp()
 
 
+def set_seed( seed ):
+    utils.set_seed( seed )
+
+
 def get_device( force_cpu=False ) -> torch.device:
     return utils.get_device( force_cpu=force_cpu )
 
 
-def set_seed( seed ):
-    utils.set_seed( seed )
+def model_uses_cuda( model: torch.nn.Module ) -> bool:
+    return utils.model_uses_cuda( model )
+
+
+def generate_graph( size: int, directed: bool ):
+    return utils.generate_graph( size, directed )
+
+
+def random_subgraph( G, k: int ):
+    return utils.random_subgraph( G, k )
+
+
+def inject_edge_errors( G, e: int = 1 ):
+    return utils.inject_edge_errors( G, e )
 
 
 def parse_args( use_default=False ):
@@ -258,14 +276,6 @@ def initialize_model( model, device, load_save_file: str = None ):
         model.load_state_dict(
             torch.load( get_abs_file_path( load_save_file ), map_location=device, weights_only=True )
         )
-        """
-        if not torch.cuda.is_available():
-            model.load_state_dict(
-                torch.load(load_save_file, map_location=torch.device("cpu"))
-            )
-        else:
-            model.load_state_dict(torch.load(load_save_file))
-            """
     else:
         print( f"Init default model ..." )
         for param in model.parameters():
@@ -278,9 +288,9 @@ def initialize_model( model, device, load_save_file: str = None ):
     return model
 
 
-def onehot_encoding( x, max_x ):
-    onehot_vector = [ 0 ] * max_x
-    onehot_vector[ x - 1 ] = 1  # label start from 1
+def onehot_encoding( label_idx, max_labels ):
+    onehot_vector = [ 0 ] * max_labels
+    onehot_vector[ label_idx - 1 ] = 1  # label start from 1
     return onehot_vector
 
 
@@ -298,8 +308,8 @@ def one_of_k_encoding_unk( x, allowable_set ):
     return list( map( lambda s: x == s, allowable_set ) )
 
 
-def node_feature( m, node_i, max_nodes ):
-    node = m.nodes[ node_i ]
+def node_feature( graph, node_idx, max_nodes ):
+    node = graph.nodes[ node_idx ]
     return onehot_encoding( node[ "label" ], max_nodes )
 
 
@@ -318,7 +328,6 @@ def save_args( args, filename: str ) -> None:
 
 # Function to load Args from JSON
 def load_args( args, filename: str ):
-
     if not filename.endswith( ".json" ):
         filename += ".json"
 
@@ -329,6 +338,6 @@ def load_args( args, filename: str ):
     # Set the attributes of Args from the dictionary
     for key, value in args_dict.items():
         setattr( args, key, value )
-        #args[ key ] = value
+        # args[ key ] = value
 
     return args
