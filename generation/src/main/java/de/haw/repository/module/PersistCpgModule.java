@@ -15,7 +15,10 @@ public class PersistCpgModule<Target> extends PipeModule<Graph, Graph, Target> {
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
         final GraphRepository client = GraphRepository.instance();
-        client.writeGraph( graph, ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ), true );
+
+        final int depth = ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class );
+        final boolean purge = ctx.get( PipeContext.CPG_REPOSITORY_PURGE_KEY, true, Boolean.class );
+        client.writeGraph( graph, ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ), purge );
 
         return graph;
     }

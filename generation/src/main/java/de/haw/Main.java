@@ -24,10 +24,11 @@ public class Main {
         //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
 
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        final Dataset dataset = DatasetFactory.QUICK_UML;
+        final Dataset dataset = DatasetFactory.OBSERVER_EXAMPLE;
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
+        ctx.set( PipeContext.CPG_REPOSITORY_PURGE_KEY, false );
 
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
 

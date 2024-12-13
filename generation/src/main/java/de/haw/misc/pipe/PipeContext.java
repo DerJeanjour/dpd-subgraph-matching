@@ -13,6 +13,8 @@ public class PipeContext {
 
     public static String CPG_DEPTH_KEY = "depth";
 
+    public static String CPG_REPOSITORY_PURGE_KEY = "purge_repo";
+
     public static String CPG_DESIGN_PATTERNS_EXISTS = "cpg_dp_exists";
 
     public static String CPG_DESIGN_PATTERNS = "cpg_dp";
