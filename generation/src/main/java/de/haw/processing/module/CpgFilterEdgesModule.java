@@ -21,7 +21,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
 
     private final boolean autoConnect;
 
-    private final GraphService graphService = GraphService.instance();
+    private final GraphService GS  = GraphService.instance();
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
@@ -30,7 +30,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
                 graph.getEdgeCount() );
 
         final Set<String> typesIncludedExplicitly = new HashSet<>();
-        final Graph filtered = this.graphService.getEmptyGraph();
+        final Graph filtered = this.GS.getEmptyGraph( graph );
 
         graph.edges().forEach( edge -> {
 
@@ -41,7 +41,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
             if ( shouldIncludeEdge ) {
 
                 typesIncludedExplicitly.add( type );
-                this.graphService.copyEdgeToGraph( filtered, edge );
+                this.GS.copyEdgeToGraph( filtered, edge );
             }
 
         } );
@@ -65,7 +65,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
 
                     final String type = edge.getAttribute( CpgConst.EDGE_ATTR_TYPE, String.class );
                     typesIncludedImplicitly.add( type );
-                    this.graphService.copyEdgeToGraph( filtered, edge );
+                    this.GS.copyEdgeToGraph( filtered, edge );
                 }
             } );
 

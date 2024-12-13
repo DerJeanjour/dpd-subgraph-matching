@@ -2,6 +2,8 @@ package de.haw.translation;
 
 public class CpgConst {
 
+    public static final String GRAPH_ATTR_DATASET = "dataset";
+
     public static final String NODE_LABEL_COMPONENT = "Component";
 
     public static final String NODE_LABEL_TRANSLATION_UNIT = "TranslationUnitDeclaration";

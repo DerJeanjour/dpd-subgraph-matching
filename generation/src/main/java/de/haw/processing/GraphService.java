@@ -19,12 +19,18 @@ public class GraphService {
 
     private final static String GRAPH_ID_PREFIX = "graph";
 
-    public Graph getEmptyGraph() {
-        return this.getEmptyGraph( false, false );
+    public Graph getEmptyGraph( final Graph graph ) {
+        return this.getEmptyGraph( this.getAttr( graph, CpgConst.GRAPH_ATTR_DATASET ) );
     }
 
-    public Graph getEmptyGraph( final boolean strict, final boolean autoCreate ) {
-        return new MultiGraph( genId( GRAPH_ID_PREFIX ), strict, autoCreate );
+    public Graph getEmptyGraph( final String dataset ) {
+        return this.getEmptyGraph( false, false, dataset );
+    }
+
+    public Graph getEmptyGraph( final boolean strict, final boolean autoCreate, final String dataset ) {
+        final Graph graph = new MultiGraph( genId( GRAPH_ID_PREFIX ), strict, autoCreate );
+        graph.setAttribute( CpgConst.GRAPH_ATTR_DATASET, dataset );
+        return graph;
     }
 
     public Edge copyEdgeToGraph( final Graph targetGraph, final Edge sourceEdge ) {

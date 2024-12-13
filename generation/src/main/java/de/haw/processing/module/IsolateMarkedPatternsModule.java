@@ -17,12 +17,12 @@ import java.util.List;
 @RequiredArgsConstructor( staticName = "instance" )
 public class IsolateMarkedPatternsModule<Target> extends PipeModule<Graph, Graph, Target> {
 
-    private final GraphService graphService = GraphService.instance();
+    private final GraphService GS = GraphService.instance();
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
-        final Graph isolatedPatternGraph = this.graphService.getEmptyGraph();
+        final Graph isolatedPatternGraph = this.GS.getEmptyGraph( graph );
         graph.nodes().forEach( node -> {
 
             final List<DesignPatternType> patternTypes = this.getPatternTypes( node );
@@ -38,7 +38,7 @@ public class IsolateMarkedPatternsModule<Target> extends PipeModule<Graph, Graph
 
     private List<DesignPatternType> getPatternTypes( final Node node ) {
         return Arrays.stream( DesignPatternType.values() )
-                .filter( dpt -> this.graphService.hasLabel( node, dpt.name() ) )
+                .filter( dpt -> this.GS.hasLabel( node, dpt.name() ) )
                 .toList();
     }
 

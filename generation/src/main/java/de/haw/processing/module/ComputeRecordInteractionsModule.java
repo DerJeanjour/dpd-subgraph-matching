@@ -117,6 +117,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         }
 
         interactionNode = this.GS.addNode( graph, String.valueOf( this.GS.genId() ) );
+        interactionNode.setAttribute( CpgConst.NODE_ATTR_DATASET, this.GS.getAttr( graph, CpgConst.GRAPH_ATTR_DATASET ) );
         this.GS.addLabel( interactionNode, interaction.getType().name() );
         this.addEdgeForInteraction( graph, interaction.getSource(), interactionNode, interaction, false );
         return interactionNode;
@@ -130,6 +131,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         final Edge edge = this.GS.addEdge( graph, String.valueOf( edgeId ), source, target );
         this.GS.setType( edge, CpgEdgeType.INTERACTS );
         edge.setAttribute( CpgConst.EDGE_ATTR_INTERACTION_TYPE, interaction.getType().name() );
+        edge.setAttribute( CpgConst.EDGE_ATTR_DATASET, this.GS.getAttr( graph, CpgConst.GRAPH_ATTR_DATASET ) );
 
         if ( applyPathAttrs ) {
             final String pathStr = PathUtils.pathToString( interaction.getPath().getPath(), true );

@@ -4,6 +4,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.GraphService;
 import de.haw.repository.model.CpgEdgeType;
+import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
@@ -51,7 +52,7 @@ public class SimplifyCpgEdgesModule<Target> extends PipeModule<Graph, Graph, Tar
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
-        final Graph simplifiedGraph = this.GS.getEmptyGraph();
+        final Graph simplifiedGraph = this.GS.getEmptyGraph( graph );
 
         graph.edges().forEach( edge -> {
             if ( this.GS.isAnyType( edge, RELEVANT_EDGES ) ) {

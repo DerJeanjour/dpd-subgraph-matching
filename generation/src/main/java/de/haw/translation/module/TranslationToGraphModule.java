@@ -29,7 +29,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
 
     private static final boolean PREVENT_SELF_LOOPS = true;
 
-    private final GraphService graphService = GraphService.instance();
+    private final GraphService GS = GraphService.instance();
 
     @Override
     protected Graph processImpl( final TranslationResult result, final PipeContext ctx ) {
@@ -51,7 +51,8 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
 
         final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
                 .orElseThrow( IllegalStateException::new );
-        final Graph graph = this.graphService.getEmptyGraph();
+        final Graph graph = this.GS.getEmptyGraph( dataset.getName() );
+        graph.setAttribute( CpgConst.GRAPH_ATTR_DATASET, dataset.getName() );
 
         for ( JsonNode jsonNode : json.getNodes() ) {
             Node node = graph.addNode( String.valueOf( jsonNode.getId() ) );

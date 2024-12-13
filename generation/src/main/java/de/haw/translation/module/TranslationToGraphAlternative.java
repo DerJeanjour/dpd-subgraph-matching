@@ -29,8 +29,11 @@ public class TranslationToGraphAlternative<Target> extends PipeModule<Translatio
     @Override
     protected Graph processImpl( final TranslationResult translationResult, final PipeContext ctx ) {
 
-        final GraphService graphService = GraphService.instance();
-        final Graph graph = graphService.getEmptyGraph();
+        final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
+                .orElseThrow( IllegalStateException::new );
+        
+        final GraphService GS = GraphService.instance();
+        final Graph graph = GS.getEmptyGraph( dataset.getName() );
 
         for ( final Component component : translationResult.getComponents() ) {
             this.traverseAST( graph, component, ctx );
