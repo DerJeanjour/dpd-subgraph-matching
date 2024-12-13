@@ -33,7 +33,7 @@ public class GraphMapper {
         final Map<Long, CpgNode> cpgNodes = new HashMap<>();
         nodes.forEach( node -> {
             final CpgNode cpgNode = map( node );
-            cpgNodes.put( cpgNode.getId(), cpgNode );
+            cpgNodes.put( cpgNode.getInternalId(), cpgNode );
         } );
         return cpgNodes;
     }
@@ -41,7 +41,8 @@ public class GraphMapper {
     @SuppressWarnings( "unchecked" )
     private static CpgNode map( final Node node ) {
         final CpgNode cpgNode = new CpgNode();
-        cpgNode.setId( mapId( node ) );
+        cpgNode.setInternalId( mapId( node ) );
+        //cpgNode.setId( mapId( node ) );
 
         final Map<String, Object> attr = GraphService.instance().getAttributes( node );
         if ( attr.containsKey( CpgConst.NODE_ATTR_LABELS ) ) {

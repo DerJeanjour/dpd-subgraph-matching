@@ -16,6 +16,9 @@ public class CpgNode {
     @GeneratedValue
     private Long id;
 
+    @Transient
+    private Long internalId;
+
     @Labels
     private Collection<String> labels;
 
