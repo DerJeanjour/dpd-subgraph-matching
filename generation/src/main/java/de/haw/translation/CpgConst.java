@@ -38,6 +38,8 @@ public class CpgConst {
 
     public static final String NODE_ATTR_IMPLICIT = "isImplicit";
 
+    public static final String NODE_ATTR_INTERACTION_COUNT = "interactions";
+
     public static final String EDGE_ATTR_LABEL = "label";
 
     public static final String EDGE_ATTR_TYPE = "type";
@@ -47,6 +49,8 @@ public class CpgConst {
     public static final String EDGE_ATTR_DISTANCE = "distance";
 
     public static final String EDGE_ATTR_PATH = "path";
+
+    public static final String EDGE_ATTR_INTERACTION_TYPE = "interactionType";
 
     public static final String EDGE_ATTR_IS_PATH = "isPath";
 

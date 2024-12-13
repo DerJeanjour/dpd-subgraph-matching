@@ -6,6 +6,8 @@ import de.haw.misc.utils.PathUtils;
 import de.haw.processing.GraphService;
 import de.haw.processing.model.CpgNodePaths;
 import de.haw.processing.model.CpgPath;
+import de.haw.processing.model.RecordInteraction;
+import de.haw.processing.model.RecordInteractionType;
 import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.graphstream.graph.Node;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -41,18 +44,16 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
                 return;
             }
 
-            final String edgeId = this.GS.genId( "edge" );
-            final Edge edge = this.GS.addEdge( graph, edgeId, recordPath.getSource(), recordPath.getTarget() );
-            this.GS.setType( edge, this.getTypeOfPath( recordPath ) );
-            edge.setAttribute( CpgConst.EDGE_ATTR_DISTANCE, recordPath.getDistance() );
+            final RecordInteraction interaction = this.getPathInteraction( recordPath );
+
+            // add interaction node and edges
+            final Node interactionNode = this.getInteractionOrCreate( graph, interaction );
+            this.addEdgeForInteraction( graph, interactionNode, interaction.getTarget(), interaction, true );
+
+            // mark existing path edges with path flag
             recordPath.getPath()
                     .getEdgePath()
                     .forEach( pathEdge -> pathEdge.setAttribute( CpgConst.EDGE_ATTR_IS_PATH, true ) );
-
-            final String pathStr = PathUtils.pathToString( recordPath.getPath(), true );
-            edge.setAttribute( CpgConst.EDGE_ATTR_PATH, pathStr );
-            //log.info( "Got path: {}", pathStr );
-
         } );
 
         return graph;
@@ -99,18 +100,64 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         return true;
     }
 
-    private CpgEdgeType getTypeOfPath( final CpgPath recordPath ) {
+    public Node getInteractionOrCreate(
+            final Graph graph, final RecordInteraction interaction ) {
+
+        final Optional<Edge> interactionEdge = interaction.getSource()
+                .leavingEdges()
+                .filter( edge -> CpgEdgeType.INTERACTS.equals( this.GS.getType( edge ) ) )
+                .filter( edge -> interaction.getType()
+                        .name()
+                        .equals( this.GS.getAttr( edge, CpgConst.EDGE_ATTR_INTERACTION_TYPE ) ) )
+                .findFirst();
+
+        Node interactionNode;
+        if ( interactionEdge.isPresent() ) {
+            return interactionEdge.get().getTargetNode();
+        }
+
+        interactionNode = this.GS.addNode( graph, String.valueOf( this.GS.genId() ) );
+        this.GS.addLabel( interactionNode, interaction.getType().name() );
+        this.addEdgeForInteraction( graph, interaction.getSource(), interactionNode, interaction, false );
+        return interactionNode;
+    }
+
+    private void addEdgeForInteraction(
+            final Graph graph, final Node source, final Node target, final RecordInteraction interaction,
+            final boolean applyPathAttrs ) {
+
+        final long edgeId = this.GS.genId();
+        final Edge edge = this.GS.addEdge( graph, String.valueOf( edgeId ), source, target );
+        this.GS.setType( edge, CpgEdgeType.INTERACTS );
+        edge.setAttribute( CpgConst.EDGE_ATTR_INTERACTION_TYPE, interaction.getType().name() );
+
+        if ( applyPathAttrs ) {
+            final String pathStr = PathUtils.pathToString( interaction.getPath().getPath(), true );
+            edge.setAttribute( CpgConst.EDGE_ATTR_PATH, pathStr );
+            edge.setAttribute( CpgConst.EDGE_ATTR_DISTANCE, interaction.getPath().getDistance() );
+
+            source.setAttribute( CpgConst.NODE_ATTR_INTERACTION_COUNT, source.getOutDegree() );
+        }
+
+
+    }
+
+    private RecordInteraction getPathInteraction( final CpgPath recordPath ) {
+
         final List<CpgEdgeType> pathTypes = PathUtils.getTypes( recordPath.getPath() );
+        final Node pathSource = PathUtils.getFirstNode( recordPath.getPath() );
+        final Node pathTarget = PathUtils.getLastNode( recordPath.getPath() );
+
         if ( pathTypes.contains( CpgEdgeType.INSTANTIATES ) ) {
-            return CpgEdgeType.RECORD_CREATES;
+            return RecordInteraction.of( RecordInteractionType.CREATES_RECORD, pathSource, pathTarget, recordPath );
         }
         if ( pathTypes.contains( CpgEdgeType.SUPER_TYPE_DECLARATIONS ) ) {
-            return CpgEdgeType.RECORD_EXTENDS;
+            return RecordInteraction.of( RecordInteractionType.EXTENDED_BY_RECORD, pathTarget, pathSource, recordPath );
         }
         if ( pathTypes.contains( CpgEdgeType.RETURN_TYPES ) ) {
-            return CpgEdgeType.RECORD_RETURNS;
+            return RecordInteraction.of( RecordInteractionType.RETURNS_RECORD, pathSource, pathTarget, recordPath );
         }
-        return CpgEdgeType.RECORD_KNOWS;
+        return RecordInteraction.of( RecordInteractionType.KNOWS_RECORD, pathSource, pathTarget, recordPath );
     }
 
 }

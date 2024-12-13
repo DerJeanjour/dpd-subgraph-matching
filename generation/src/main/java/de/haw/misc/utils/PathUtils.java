@@ -61,4 +61,15 @@ public class PathUtils {
         return path.getEdgePath().stream().map( GS::getType ).filter( Objects::nonNull ).toList();
     }
 
+    public static Node getFirstNode( final Path path ) {
+        return path.getNodePath().stream().findFirst().orElse( null );
+    }
+
+    public static Node getLastNode( final Path path ) {
+        if ( path.empty() ) {
+            return null;
+        }
+        return path.getNodePath().get( path.getNodePath().size() - 1 );
+    }
+
 }

@@ -39,18 +39,23 @@ public class GraphService {
     }
 
     public Node copyNodeToGraph( final Graph targetGraph, final Node sourceNode ) {
-
-        Node node = targetGraph.getNode( sourceNode.getId() );
-        if ( node == null ) {
-            node = targetGraph.addNode( sourceNode.getId() );
-        }
-
-        if ( node == null ) {
-            node = targetGraph.getNode( sourceNode.getId() );
-        }
+        final Node node = this.addNode( targetGraph, sourceNode.getId() );
         if ( node != null ) {
             node.setAttributes( this.getAttributes( sourceNode ) );
         }
+        return node;
+    }
+
+    public Node addNode( final Graph targetGraph, String nodeId ) {
+        Node node = targetGraph.getNode( nodeId );
+        if ( node == null ) {
+            node = targetGraph.addNode( nodeId );
+        }
+
+        if ( node == null ) {
+            node = targetGraph.getNode( nodeId );
+        }
+
         return node;
     }
 
@@ -94,7 +99,7 @@ public class GraphService {
     @SuppressWarnings( "unchecked" )
     public void addLabel( final Node node, final String label ) {
         final Set<String> labels = this.getAttr( node, CpgConst.NODE_ATTR_LABELS, Set.class )
-                .orElse( Collections.emptySet() );
+                .orElse( new HashSet<>() );
         labels.add( label );
         node.setAttribute( CpgConst.NODE_ATTR_LABELS, labels );
     }
@@ -140,6 +145,10 @@ public class GraphService {
 
     public String genId( final String prefix ) {
         return ( prefix == null ? "" : prefix ) + "_" + UUID.randomUUID();
+    }
+
+    public long genId() {
+        return UUID.randomUUID().getLeastSignificantBits();
     }
 
 }

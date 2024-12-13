@@ -305,47 +305,47 @@
       "folder": "91929755-f6af-4fc0-be13-c458527647be"
     },
     {
-      "id": "628bdce4-23d3-41c9-9f3e-b947670e89d4",
-      "content": "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+      "id": "c71c4580-0a8e-4ddf-b12b-995221d9a305",
+      "content": "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
       "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
     },
     {
-      "id": "6eaee44f-f1e8-413d-8198-77c8ae50794e",
-      "content": "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+      "id": "bd51e598-d1aa-46cd-a739-3e5846f20d59",
+      "content": "//Show Record Interaction Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
       "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
     }
   ],
   "neo4j.history": [
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Observer\nMATCH (n:OBSERVER)-[r]-(m) RETURN *",
-    "// Show Facade\nMATCH (n:FACADE)-[r]-(m) RETURN *",
-    "// Show Builder\nMATCH (n:BUILDER)-[r]-(m) RETURN *",
-    "// Show Builder (2NH)\nMATCH (n:BUILDER)-[r*1..2]-(m) RETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES]->() RETURN p",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|r:RECORD_CREATES]->() RETURN p",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|:RECORD_CREATES]->() RETURN p",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|:RECORD_CREATES|:RECORD_EXTENDS|:RECORD_RETURNS]->() RETURN p",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
+    "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
+    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "",
+    "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
+    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "MATCH (n:KNOWS_RECORD) RETURN n LIMIT 25",
+    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
+    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "MATCH (n:KNOWS_RECORD) RETURN n LIMIT 25",
+    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
     "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "//Show Record Interaction Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:INTERACTS]->() RETURN p",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:INTERACTS]->() RETURN p",
+    "MATCH (n:CREATING) RETURN n LIMIT 25",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
     "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
     "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
     "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
     "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS]->() RETURN p"
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
+    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
+    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *"
   ],
   "neo4j.settings": {
     "maxHistory": 30,
@@ -437,7 +437,7 @@
     },
     "activeConnection": "$$discovery",
     "connectionState": 1,
-    "lastUpdate": 1733479113377,
+    "lastUpdate": 1734093867460,
     "useDb": "neo4j",
     "lastUseDb": "neo4j"
   },
@@ -787,7 +787,8 @@
       "defaultCaption": "<id>"
     },
     "node.CpgNode": {
-      "defaultCaption": "<id>"
+      "defaultCaption": "<id>",
+      "caption": "<id>"
     },
     "relationship.DFG": {
       "color": "#57C7E3",
@@ -992,10 +993,60 @@
       "border-color": "#cc3c6c",
       "text-color-internal": "#FFFFFF",
       "shaft-width": "13px"
+    },
+    "node.EXTENDING": {
+      "defaultCaption": "<id>",
+      "diameter": "50px",
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34"
+    },
+    "node.CREATING": {
+      "defaultCaption": "<id>",
+      "color": "#FFC454",
+      "border-color": "#d7a013",
+      "text-color-internal": "#2A2C34",
+      "diameter": "50px",
+      "caption": "{node.distance}"
+    },
+    "node.KNOWING": {
+      "defaultCaption": "<id>",
+      "color": "#F79767",
+      "border-color": "#f36924",
+      "text-color-internal": "#FFFFFF",
+      "diameter": "50px"
+    },
+    "node.EXTENDED_BY_RECORD": {
+      "defaultCaption": "<id>",
+      "color": "#57C7E3",
+      "border-color": "#23b3d7",
+      "text-color-internal": "#2A2C34",
+      "caption": "{node.interactions}"
+    },
+    "node.KNOWS_RECORD": {
+      "defaultCaption": "<id>",
+      "color": "#F79767",
+      "border-color": "#f36924",
+      "text-color-internal": "#FFFFFF",
+      "caption": "{node.interactions}"
+    },
+    "node.CREATES_RECORD": {
+      "defaultCaption": "<id>",
+      "color": "#FFC454",
+      "border-color": "#d7a013",
+      "text-color-internal": "#2A2C34",
+      "caption": "{node.interactions}"
+    },
+    "node.RETURNS_RECORD": {
+      "defaultCaption": "<id>",
+      "color": "#C990C0",
+      "border-color": "#b261a5",
+      "text-color-internal": "#FFFFFF",
+      "caption": "{node.interactions}"
     }
   },
   "neo4j.udc": {
-    "lastSnapshot": 1733300906,
+    "lastSnapshot": 1734085536,
     "uuid": "4be9ad52-1e14-45c5-b186-81337876f848",
     "consentBannerShownCount": 6,
     "allowUserStatsInDesktop": false,

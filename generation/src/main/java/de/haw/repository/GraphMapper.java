@@ -73,10 +73,7 @@ public class GraphMapper {
 
         switch ( edgeType.get() ) {
 
-            case RECORD_KNOWS -> cpgSourceNode.getNextRecordsKnown().add( cpgEdge );
-            case RECORD_CREATES -> cpgSourceNode.getNextRecordsCreating().add( cpgEdge );
-            case RECORD_EXTENDS -> cpgSourceNode.getNextRecordsExtending().add( cpgEdge );
-            case RECORD_RETURNS -> cpgSourceNode.getNextRecordsReturning().add( cpgEdge );
+            case INTERACTS -> cpgSourceNode.getNextInteractions().add( cpgEdge );
 
             case AST -> cpgSourceNode.getNextAstEdges().add( cpgEdge );
             case DFG -> cpgSourceNode.getNextDfgEdge().add( cpgEdge );
