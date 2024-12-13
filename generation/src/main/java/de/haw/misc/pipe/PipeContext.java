@@ -29,6 +29,8 @@ public class PipeContext {
 
     public static String RECORD_PATHS = "ssspRecords";
 
+    public static String TOTAL_PROCESSING_TIME = "totalTime";
+
     private final Map<String, Object> ctx = new HashMap<>();
 
     public void set( final String key, final Object value ) {

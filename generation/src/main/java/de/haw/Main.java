@@ -8,6 +8,7 @@ import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.processing.module.*;
+import de.haw.repository.model.CpgEdgeType;
 import de.haw.repository.module.PersistCpgModule;
 import de.haw.translation.module.GenerateCpgModule;
 import de.haw.translation.module.TranslationToGraphModule;
@@ -56,7 +57,7 @@ public class Main {
                 //.add( IsolateMarkedPatternsModule.instance() )
 
                 /* visualize */
-                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.MAIN, false ) )
+                .add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
                 /*
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( CpgNodeTypeVisualizeModule.instance() )
