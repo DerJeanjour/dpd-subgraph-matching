@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 from pathlib import Path
 import json
+from enum import Enum
 
 import networkx as nx
 import torch
@@ -126,6 +127,12 @@ def parse_args( use_default=False ):
                          type=str, default="training/runs/" )
     parser.add_argument( "--result_dir", help="save directory of model parameter",
                          type=str, default="evaluation/results/" )
+    parser.add_argument( "--config_dir", help="Dataset config directory",
+                         type=str, default="data/data_real/configs/" )
+    parser.add_argument( "--dataset_dir", help="Dataset directory",
+                         type=str, default="data/data_real/datasets/" )
+    parser.add_argument( "--raw_dataset_dir", help="Raw dataset directory",
+                         type=str, default="data/data_real/raw_datasets/" )
     parser.add_argument( "--ckpt", help="Load ckpt file",
                          type=str, default=None )
     parser.add_argument( "--train_keys", help="train keys",
@@ -134,17 +141,23 @@ def parse_args( use_default=False ):
                          type=str, default="test_keys.pkl" )
     parser.add_argument( "--tag", help="Additional tag for saving and logging folder",
                          type=str, default="" )
+    parser.add_argument( "--import_dir", help="Import folder of datasets",
+                         type=str, default="datasets/" )
 
     # generating
     parser.add_argument( "--config", "-c", help="Data config file", type=str,
                          default="data/data_real/configs/SYNTHETIC_TINY.json" )
     parser.add_argument( "--cont", action="store_true", help="Continue generating" )
     parser.add_argument( "--num_subgraphs", default=2000, type=int, help="Number of subgraphs" )
-    parser.add_argument( "--ds", default="", type=str, help="Dataset name" )
+    #parser.add_argument( "--ds", default="", type=str, help="Dataset name" )
     parser.add_argument( "--data_name", type=str )
     parser.add_argument( "--real", action="store_true" )
     parser.add_argument( "--testonly", action="store_true" )
     parser.add_argument( "--max_subgraph", type=int, default=-1 )
+    parser.add_argument( "--import_format", help="Graph file format",
+                         type=str, default=".gml" )
+    parser.add_argument( "--import_subgraph_radius", help="Max radius of subgraph.",
+                         type=int, default=3 )
 
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 
@@ -341,3 +354,17 @@ def load_args( args, filename: str ):
         # args[ key ] = value
 
     return args
+
+
+def get_enum_idx( enum_member: Enum ) -> int:
+    """
+    Gets the index (ordinal position) of an enum member in its Enum class.
+
+    Args:
+        enum_member (Enum): The enum member to find the index for.
+
+    Returns:
+        int: The index of the enum member in the Enum.
+    """
+    enum_class = enum_member.__class__
+    return list( enum_class ).index( enum_member ) + 1 # idx starts with 1

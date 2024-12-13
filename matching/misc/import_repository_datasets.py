@@ -3,6 +3,8 @@ import os
 import networkx as nx
 from neo4j import GraphDatabase
 
+import matching.misc.utils as utils
+
 uri = "bolt://localhost:7687"
 username = "neo4j"
 password = "password"
@@ -29,7 +31,7 @@ def import_dataset():
         G = graphs[ dataset ]
         prepare_graph_attributes( G )
         # print( f"Nodes of {dataset}:", G.nodes( data=True ) )
-        write_as_graphml( G, dataset )
+        write_as_gml( G, dataset )
 
 
 def fetch_graph_data( tx ):
@@ -64,8 +66,8 @@ def add_record_to_graph( G: nx.MultiDiGraph, record ):
     G.add_edge( source_id, target_id, type=relationship_type )
 
 
-def write_as_graphml( G: nx.MultiDiGraph, name ):
-    file_name = f"datasets/{name}.gml"
+def write_as_gml( G: nx.MultiDiGraph, name ):
+    file_name = utils.get_abs_file_path( f"datasets/{name}.gml" )
     print( f"Writing dataset [ nodes: {len( G.nodes )} / edges: {len( G.edges )} ] to file {file_name}" )
     if not os.path.exists( os.path.dirname( file_name ) ):
         os.makedirs( os.path.dirname( file_name ) )

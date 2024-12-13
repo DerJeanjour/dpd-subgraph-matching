@@ -1,0 +1,55 @@
+from enum import Enum
+
+NODE_PREFIX = "node_"
+
+class NodeAttr( Enum ):
+    LABELS = NODE_PREFIX + "labels"
+    SCOPED_RECORD_NAME = NODE_PREFIX + "scopedRecordName"
+    FULL_NAME = NODE_PREFIX + "fullName"
+    LOCAL_NAME = NODE_PREFIX + "localName"
+
+
+class EdgeAttr( Enum ):
+    TYPE = "type"
+
+
+class EdgeType( Enum ):
+    INTERACTS = "INTERACTS"
+
+
+class NodeLabel( Enum ):
+    RECORD = "RecordDeclaration"
+    KNOWS_RECORD = "KNOWS_RECORD"
+    CREATES_RECORD = "CREATES_RECORD"
+    EXTENDED_BY_RECORD = "EXTENDED_BY_RECORD"
+    RETURNS_RECORD = "RETURNS_RECORD"
+
+
+class DesignPatternType( Enum ):
+    # PRIMARY
+    ABSTRACT_FACTORY = "ABSTRACT_FACTORY"
+    ADAPTER = "ADAPTER"
+    BUILDER = "BUILDER"
+    FACADE = "FACADE"
+    FACTORY_METHOD = "FACTORY_METHOD"
+    OBSERVER = "OBSERVER"
+    SINGLETON = "SINGLETON"
+
+    """
+    # SECONDARY
+    DECORATOR = "DECORATOR"
+    MEMENTO = "MEMENTO"
+    PROTOTYPE = "PROTOTYPE"
+    PROXY = "PROXY"
+    VISITOR = "VISITOR"
+
+    # ADDITIONAL
+    COMMAND = "COMMAND"
+    COMPOSITE = "COMPOSITE"
+    STATE = "STATE"
+    ITERATOR = "ITERATOR"
+    NULL_OBJECT = "NULL_OBJECT"
+    TEMPLATE_METHOD = "TEMPLATE_METHOD"
+    BRIDGE = "BRIDGE"
+    STRATEGY = "STRATEGY"
+    """

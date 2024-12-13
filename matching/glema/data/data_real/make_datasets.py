@@ -4,7 +4,7 @@ import os
 import signal
 from contextlib import contextmanager
 from functools import reduce
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 from random import choice, seed, shuffle
 
 import networkx as nx
@@ -13,8 +13,6 @@ import numpy as np
 from tqdm import tqdm
 
 import matching.glema.common.utils as utils
-
-RAW_DATASETS_PATH = "./raw_datasets"
 
 
 @contextmanager
@@ -42,6 +40,7 @@ def ensure_path( path ):
 
 def read_dataset( path, ds_name ):
     ds_dir = os.path.join( path, ds_name )
+    ds_dir = utils.get_abs_file_path( ds_dir )
 
     node_labels_file = open( os.path.join( ds_dir, ds_name + ".node_labels" ), "r" )
     edges_file = open( os.path.join( ds_dir, ds_name + ".edges" ), "r" )
@@ -470,11 +469,12 @@ def generate_noniso_subgraph(
     return subgraph
 
 
-def generate_subgraphs( graph, number_subgraph_per_source, *args, **kwargs ):
+def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, *args, **kwargs ):
     list_iso_subgraphs = [ ]
     list_noniso_subgraphs = [ ]
 
-    for _ in tqdm( range( number_subgraph_per_source ) ):
+    # for _ in tqdm( range( number_subgraph_per_source ) ):
+    for _ in range( number_subgraph_per_source ):
         generated_subgraph = None
         while generated_subgraph is None:
             no_of_nodes = np.random.randint( 2, graph.number_of_nodes() + 1 )
@@ -493,30 +493,33 @@ def generate_subgraphs( graph, number_subgraph_per_source, *args, **kwargs ):
         else:
             list_noniso_subgraphs.append( generated_subgraph )
 
+        progress_queue.put( 1 )
+
     return list_iso_subgraphs, list_noniso_subgraphs
 
 
-def generate_one_sample( idx, number_subgraph_per_source, source_graphs, *arg, **kwarg ):
+def generate_one_sample( idx, progress_queue, number_subgraph_per_source, source_graphs, *arg, **kwarg ):
     source_graph = source_graphs[ idx ]
     iso_subgraphs, noniso_subgraphs = generate_subgraphs(
-        source_graph, number_subgraph_per_source, *arg, **kwarg
+        source_graph, number_subgraph_per_source, progress_queue, *arg, **kwarg
     )
 
     return source_graph, iso_subgraphs, noniso_subgraphs
 
 
-def generate_batch( start_idx, stop_idx, number_source, dataset_path, *args, **kwargs ):
+def generate_batch( start_idx, stop_idx, number_source, dataset_path, progress_queue, *args, **kwargs ):
     for idx in range( start_idx, stop_idx ):
-        print( "SAMPLE %d/%d" % (idx + 1, number_source) )
+        # print( "SAMPLE %d/%d" % (idx + 1, number_source) )
         graph, iso_subgraphs, noniso_subgraphs = generate_one_sample(
-            idx, *args, **kwargs
+            idx, progress_queue, *args, **kwargs
         )
         save_per_source( idx, graph, iso_subgraphs, noniso_subgraphs, dataset_path )
 
 
-def generate_dataset( dataset_path, is_continue, number_source, *args, **kwargs ):
+def generate_dataset( dataset_path, is_continue, number_source, num_process, num_subgraphs, *args, **kwargs ):
     print( "Generating..." )
     list_processes = [ ]
+    progress_queue = Queue()
 
     if is_continue is not False:
         print( "Continue generating..." )
@@ -543,14 +546,12 @@ def generate_dataset( dataset_path, is_continue, number_source, *args, **kwargs 
             list_processes.append(
                 Process(
                     target=generate_batch,
-                    args=(start_idx, stop_idx, number_source, dataset_path),
+                    args=(start_idx, stop_idx, number_source, dataset_path, progress_queue),
                     kwargs=kwargs,
                 )
             )
 
     else:
-        # num_process = 1
-        num_process = os.cpu_count()
         batch_size = int( number_source / num_process ) + 1
         start_idx = 0
         stop_idx = start_idx + batch_size
@@ -559,7 +560,7 @@ def generate_dataset( dataset_path, is_continue, number_source, *args, **kwargs 
             list_processes.append(
                 Process(
                     target=generate_batch,
-                    args=(start_idx, stop_idx, number_source, dataset_path),
+                    args=(start_idx, stop_idx, number_source, dataset_path, progress_queue),
                     kwargs=kwargs,
                 )
             )
@@ -569,11 +570,21 @@ def generate_dataset( dataset_path, is_continue, number_source, *args, **kwargs 
             if stop_idx > number_source:
                 stop_idx = number_source
 
-    for idx in range( len( list_processes ) ):
-        list_processes[ idx ].start()
+    for p in list_processes:
+        p.start()
 
-    for idx in range( len( list_processes ) ):
-        list_processes[ idx ].join()
+    # Track progress using tqdm
+    total_subgraphs = number_source * num_subgraphs
+    with tqdm( total=total_subgraphs ) as pbar:
+        processed_count = 0
+        while processed_count < total_subgraphs:
+            # Wait for a progress update
+            progress_queue.get()
+            processed_count += 1
+            pbar.update()
+
+    for p in list_processes:
+        p.join()
 
 
 def separate_graphs( total_graph, transaction_by_id ):
@@ -635,13 +646,13 @@ def calculate_ds_attr( graph_ds, total_graph, num_subgraphs ):
     return attr_dict
 
 
-def save_config_for_synthesis( ds_name, configs ):
-    configs[ "number_source" ] *= 4
-    with open( "configs/%s.json" % ds_name, "w" ) as f:
+def save_config_for_synthesis( config_path, ds_name, configs ):
+    configs[ "number_source" ] *= 4  # generate train data 4 times the test size
+    with open( utils.get_abs_file_path( f"{config_path}{ds_name}.json" ), "w" ) as f:
         json.dump( configs, f, indent=4 )
 
 
-def process_dataset( path, ds_name, is_continue, num_subgraphs ):
+def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
     total_graph, transaction_by_nid = read_dataset( path, ds_name )
 
     source_graphs = separate_graphs( total_graph, transaction_by_nid )
@@ -653,31 +664,42 @@ def process_dataset( path, ds_name, is_continue, num_subgraphs ):
     seed( 42 )
     np.random.seed( 42 )
     dataset_path = os.path.join(
-        "datasets", os.path.basename( ds_name ).split( "." )[ 0 ] + "_test"
+        args.dataset_dir, os.path.basename( ds_name ).split( "." )[ 0 ] + "_test"
     )
+    dataset_path = utils.get_abs_file_path( dataset_path )
     ensure_path( dataset_path )
 
     generate_dataset(
         dataset_path=dataset_path,
         is_continue=is_continue,
         source_graphs=source_graphs,
+        num_process=args.num_workers,
+        num_subgraphs=num_subgraphs,
         **config
     )
 
-    save_config_for_synthesis( ds_name, config )
+    save_config_for_synthesis( args.config_dir, ds_name, config )
 
 
 if __name__ == "__main__":
-    list_datasets = os.listdir( RAW_DATASETS_PATH )
+
     args = utils.parse_args()
+    args.dataset = "CPG"
+    # args.num_workers = 1
+    args.num_subgraphs = 16  # 2000
+    print( args )
+
+    raw_dataset_dir = utils.get_abs_file_path( args.raw_dataset_dir )
+    list_datasets = os.listdir( raw_dataset_dir )
 
     for dataset in list_datasets:
-        if dataset != args.ds:
+        if dataset != args.dataset:
             continue  # TO_TEST
 
         print( "PROCESSING DATASET:", dataset )
         process_dataset(
-            path=RAW_DATASETS_PATH,
+            args=args,
+            path=raw_dataset_dir,
             ds_name=dataset,
             is_continue=args.cont,
             num_subgraphs=args.num_subgraphs,
