@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 
 import matching.misc.utils as utils
+import matching.misc.cpg_const as cpg_const
 
 
 def get_abs_file_path( project_file_path: str, with_subproject=True ) -> str:
@@ -114,6 +115,8 @@ def parse_args( use_default=False ):
                          type=float, default=1e-5 )
 
     # analysis
+    parser.add_argument( "--test_data", help="If true, test dataset is used",
+                         action="store_true", default=False )
     parser.add_argument( "--source", help="source graph idx for analysis",
                          type=int, default=0 )
     parser.add_argument( "--query", help="query graph idx for analysis",
@@ -413,3 +416,117 @@ def save_graph_debug( G, file_name ):
         print( f"An error occurred while rendering the graph: {e}" )
     finally:
         plt.close()  # Ensure the plot is closed to free memory
+
+
+def get_source_graph( args, source_graph_idx ):
+    dataset_type = "test" if args.test_data else "train"
+    dataset = f"{args.dataset}_{dataset_type}"
+    return read_graphs(
+        f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source.lg",
+        directed=args.directed )[ source_graph_idx ]
+
+
+def load_query_id_mapping( args, source_graph_idx, query_subgraph_idx ):
+    dataset_type = "test" if args.test_data else "train"
+    dataset = f"{args.dataset}_{dataset_type}"
+    return read_mapping(
+        f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs_mapping.lg" )[
+        query_subgraph_idx ]
+
+
+def load_query( args, source_graph_idx, query_subgraph_idx ):
+    query_id_mapping = load_query_id_mapping( args, source_graph_idx, query_subgraph_idx )
+    node_id_mapping = { }
+    for source_id, query_id in query_id_mapping.items():
+        node_id_mapping[ query_id ] = source_id
+
+    print( query_id_mapping )
+    print( node_id_mapping )
+
+    dataset_type = "test" if args.test_data else "train"
+    dataset = f"{args.dataset}_{dataset_type}"
+    query = read_graphs(
+        f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs.lg",
+        directed=args.directed )[ query_subgraph_idx ]
+
+    return nx.relabel_nodes( query, node_id_mapping )
+
+
+def get_record_scopes( args ) -> dict[ str, str ]:
+    record_scopes = { }
+    record_scope_filepath = os.path.join( args.raw_dataset_dir, args.dataset, args.dataset + ".record_scopes" )
+    record_scope_filepath = get_abs_file_path( record_scope_filepath )
+    record_scope_file = open( record_scope_filepath, "r" )
+    for idx, record_scope in enumerate( record_scope_file.read().strip().split( "\n" ) ):
+        record_scopes[ str( idx ) ] = record_scope
+    return record_scopes
+
+
+def get_design_patterns( args ) -> dict[ str, str ]:
+    design_patterns = { }
+    pattern_type_filepath = os.path.join( args.raw_dataset_dir, args.dataset, args.dataset + ".pattern_types" )
+    pattern_type_filepath = get_abs_file_path( pattern_type_filepath )
+    pattern_type_file = open( pattern_type_filepath, "r" )
+    for row in list( pattern_type_file.read().strip().split( "\n" ) ):
+        node_id = row.split( " " )[ 0 ]
+        pattern_type = row.split( " " )[ 1 ]
+        design_patterns[ str( int( node_id ) - 1 ) ] = pattern_type
+    return design_patterns
+
+
+def map_node_label_idx( node_id, node_label_idx,
+                        record_scopes=None,
+                        design_patterns=None ):
+    record_type = get_enum_by_idx( cpg_const.NodeLabel, node_label_idx )
+    label = f"<{str( node_id )}>"
+
+    if record_type == cpg_const.NodeLabel.RECORD:
+        node_id = str( node_id )
+        if record_scopes is not None:
+            label = f"{label}\n[{record_scopes[ node_id ]}]"
+        if design_patterns is not None and node_id in design_patterns:
+            label = f"{label}\n[{design_patterns[ node_id ]}]"
+    else:
+        label = f"{label}\n[{record_type.value}]"
+
+    return label
+
+
+def get_node_labels( G, record_scopes=None, design_patterns=None ):
+    labels = nx.get_node_attributes( G, 'label' )
+    label_args = {
+        "record_scopes": record_scopes,
+        "design_patterns": design_patterns
+    }
+    return { key: map_node_label_idx( key, value, **label_args ) for key, value in labels.items() }
+
+
+def combine_graph( source, query, matching_colors: dict[ int, str ] = None ):
+    # Create a combined graph
+    combined_graph = nx.compose( source, query )
+
+    # Determine node colors
+    node_matching = [ ]
+    for node in combined_graph.nodes():
+        if node in query.nodes and node in source.nodes:
+            node_matching.append( 1 )  # Nodes in both source and query
+        elif node in query.nodes:
+            node_matching.append( -1 )  # Nodes only in query
+        else:
+            node_matching.append( 0 )  # Nodes only in source
+
+    # Determine edge colors
+    edge_matching = [ ]
+    for edge in combined_graph.edges():
+        if edge in query.edges and edge in source.edges:
+            edge_matching.append( 1 )  # Edges in both source and query
+        elif edge in query.edges:
+            edge_matching.append( -1 )  # Edges only in query
+        else:
+            edge_matching.append( 0 )  # Edges only in source
+    if matching_colors is None:
+        return combined_graph, node_matching, edge_matching
+
+    node_colors = [ matching_colors[ matching ] for matching in node_matching ]
+    edge_colors = [ matching_colors[ matching ] for matching in edge_matching ]
+    return combined_graph, node_colors, edge_colors
