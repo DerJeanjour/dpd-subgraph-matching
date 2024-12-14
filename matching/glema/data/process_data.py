@@ -11,9 +11,7 @@ from tqdm import tqdm
 import matching.glema.common.utils as utils
 
 
-
-
-def read_graphs( database_file_name, max_subgraph=-1 ):
+def read_graphs( database_file_name, args, max_subgraph=-1 ):
     graphs = dict()
     sizes = { }
     degrees = { }
@@ -93,19 +91,19 @@ def read_mapping( filename, max_subgraph=-1 ):
     return mapping
 
 
-def load_graph_data( data_dir, source_id, max_subgraph=-1 ):
-    source_graph = read_graphs( "%s/%s/source.lg" % (data_dir, source_id) )[ 0 ][
+def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
+    source_graph = read_graphs( "%s/%s/source.lg" % (data_dir, source_id), args )[ 0 ][
         int( source_id )
     ]
     iso_subgraphs, iso_sizes, iso_degrees = read_graphs(
-        "%s/%s/iso_subgraphs.lg" % (data_dir, source_id), max_subgraph=max_subgraph
+        "%s/%s/iso_subgraphs.lg" % (data_dir, source_id), max_subgraph=max_subgraph, args=args
     )
     noniso_subgraphs, noniso_sizes, noniso_degrees = read_graphs(
-        "%s/%s/noniso_subgraphs.lg" % (data_dir, source_id), max_subgraph=max_subgraph
+        "%s/%s/noniso_subgraphs.lg" % (data_dir, source_id), max_subgraph=max_subgraph, args=args
     )
     iso_subgraphs_mapping = read_mapping(
         "%s/%s/iso_subgraphs_mapping.lg" % (data_dir, source_id),
-        max_subgraph=max_subgraph,
+        max_subgraph=max_subgraph
     )
     noniso_subgraphs_mapping = read_mapping(
         "%s/%s/noniso_subgraphs_mapping.lg" % (data_dir, source_id),
@@ -123,8 +121,9 @@ def load_graph_data( data_dir, source_id, max_subgraph=-1 ):
         noniso_degrees,
     )
 
+
 # Load and save
-def load_dataset( data_dir, list_source, save_dir, additional_tag="", max_subgraph=-1 ):
+def load_dataset( data_dir, list_source, save_dir, args, additional_tag="", max_subgraph=-1 ):
     size_dict = { }
     degree_dict = { }
 
@@ -139,7 +138,7 @@ def load_dataset( data_dir, list_source, save_dir, additional_tag="", max_subgra
             noniso_sizes,
             iso_degrees,
             noniso_degrees,
-        ) = load_graph_data( data_dir, source_id, max_subgraph=max_subgraph )
+        ) = load_graph_data( data_dir, source_id, max_subgraph=max_subgraph, args=args )
 
         for key, data in iso_subgraphs.items():
             fname = "%s_%d_iso_%s" % (source_id, key, additional_tag)
@@ -161,8 +160,11 @@ def load_dataset( data_dir, list_source, save_dir, additional_tag="", max_subgra
 
     return list( size_dict.keys() )
 
-def main( args ):
-    data_proccessed_dir = "data/data_processed/%s" % args.data_name
+
+def process( args ):
+    utils.set_seed( args.seed )
+
+    data_proccessed_dir = os.path.join( args.data_path, args.dataset )
     data_proccessed_dir = data_proccessed_dir.replace( "_train", "" )
     data_proccessed_dir = utils.get_abs_file_path( data_proccessed_dir )
     if args.directed:
@@ -180,7 +182,7 @@ def main( args ):
         else:
             additional_tag = ""
 
-        data_dir = "data/data_real/datasets/%s" % (args.data_name)
+        data_dir = os.path.join( args.dataset_dir, args.dataset )
         data_dir = utils.get_abs_file_path( data_dir )
 
         list_source = os.listdir( data_dir )
@@ -194,6 +196,7 @@ def main( args ):
             data_proccessed_dir,
             additional_tag=additional_tag,
             max_subgraph=args.max_subgraph,
+            args=args
         )
 
         if additional_tag == "test":
@@ -212,7 +215,8 @@ def main( args ):
             test_keys = [ k for k in valid_keys if k.split( "_" )[ 0 ] in test_source ]
 
     elif args.real:
-        data_dir = "data/data_real/datasets/%s" % (args.data_name + "_test")
+
+        data_dir = os.path.join( args.dataset_dir, f"{args.dataset}_test" )
         data_dir = utils.get_abs_file_path( data_dir )
         list_source = os.listdir( data_dir )
         list_source = list(
@@ -225,12 +229,13 @@ def main( args ):
             data_proccessed_dir,
             additional_tag="test",
             max_subgraph=args.max_subgraph,
+            args=args
         )
 
         if args.testonly:
             train_keys = [ ]
         else:
-            data_dir_train = "data/data_real/datasets/%s" % (args.data_name + "_train")
+            data_dir_train = os.path.join( args.dataset_dir, f"{args.dataset}_train" )
             data_dir_train = utils.get_abs_file_path( data_dir_train )
             list_source_train = os.listdir( data_dir_train )
             list_source_train = list(
@@ -246,6 +251,7 @@ def main( args ):
                 data_proccessed_dir,
                 additional_tag="train",
                 max_subgraph=args.max_subgraph,
+                args=args
             )
 
     # Notice that key which has "iso" is isomorphism, otherwise non-isomorphism
@@ -329,14 +335,13 @@ def main( args ):
         with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_60_"), "wb" ) as f:
             pickle.dump( dense_60_, f )
 
+
 if __name__ == "__main__":
     args = utils.parse_args()
-    args.data_name = "SYNTHETIC_TINY_train"
-    args.real = False
-    args.testonly = False
-    args.directed = True
-    args.max_subgraph = -1
-    print( args )
-    main( args )
-
-
+    # args.dataset = "CPG"
+    # args.real = True
+    # args.testonly = False
+    # args.directed = True
+    # args.max_subgraph = -1
+    # print( args )
+    process( args )

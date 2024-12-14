@@ -4,6 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 import json
 from enum import Enum
+import matplotlib.pyplot as plt
 
 import networkx as nx
 import torch
@@ -72,7 +73,7 @@ def parse_args( use_default=False ):
     parser.add_argument( "--num_workers", help="number of workers",
                          type=int, default=os.cpu_count() )
     parser.add_argument( "--dataset", help="dataset",
-                         type=str, default="SYNTHETIC_TINY" )
+                         type=str, default="CPG" )
     parser.add_argument( "--directed", action="store_true", help="directed graph" )
     parser.add_argument( "--iso", action="store_true", help="wheather using iso/noniso" )
     parser.add_argument( "--device", help="torch device",
@@ -145,19 +146,19 @@ def parse_args( use_default=False ):
                          type=str, default="datasets/" )
 
     # generating
-    parser.add_argument( "--config", "-c", help="Data config file", type=str,
-                         default="data/data_real/configs/SYNTHETIC_TINY.json" )
     parser.add_argument( "--cont", action="store_true", help="Continue generating" )
     parser.add_argument( "--num_subgraphs", default=2000, type=int, help="Number of subgraphs" )
-    #parser.add_argument( "--ds", default="", type=str, help="Dataset name" )
-    parser.add_argument( "--data_name", type=str )
     parser.add_argument( "--real", action="store_true" )
     parser.add_argument( "--testonly", action="store_true" )
     parser.add_argument( "--max_subgraph", type=int, default=-1 )
     parser.add_argument( "--import_format", help="Graph file format",
                          type=str, default=".gml" )
-    parser.add_argument( "--import_subgraph_radius", help="Max radius of subgraph.",
+    parser.add_argument( "--import_subgraph_radius", help="Radius of k neighbourhood for subgraph.",
                          type=int, default=3 )
+    parser.add_argument( "--import_subgraph_max", help="Max number of nodes per subgraph.",
+                         type=int, default=40 )
+    parser.add_argument( "--import_subgraph_min", help="Min number of nodes per subgraph.",
+                         type=int, default=2 )
 
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 
@@ -367,4 +368,48 @@ def get_enum_idx( enum_member: Enum ) -> int:
         int: The index of the enum member in the Enum.
     """
     enum_class = enum_member.__class__
-    return list( enum_class ).index( enum_member ) + 1 # idx starts with 1
+    return list( enum_class ).index( enum_member ) + 1  # idx starts with 1
+
+
+def get_enum_by_idx( enum_class: Enum, idx: int ) -> Enum:
+    """
+    Gets the enum member corresponding to the given index (1-based) in the Enum class.
+
+    Args:
+        enum_class (Enum): The Enum class to search.
+        idx (int): The 1-based index of the enum member.
+
+    Returns:
+        Enum: The enum member corresponding to the index.
+
+    Raises:
+        IndexError: If the index is out of range.
+    """
+    # Enum members as a list
+    members = list( enum_class )
+    if 1 <= idx <= len( members ):
+        return members[ idx - 1 ]  # Convert 1-based index to 0-based
+    raise IndexError( "Index out of range for the Enum class." )
+
+
+def save_graph_debug( G, file_name ):
+    file_path = get_abs_file_path( "debug/" )
+    if not os.path.exists( file_path ):
+        os.mkdir( file_path )
+    file_path = os.path.join( file_path, file_name )
+    try:
+        # Set up the plot
+        plt.figure( figsize=(8, 8) )
+        plt.axis( 'off' )  # Turn off axis
+
+        # Draw the graph without labels
+        pos = nx.spring_layout( G )  # Compute layout
+        nx.draw( G, pos, with_labels=False, node_color="lightblue", edge_color="gray", node_size=500 )
+
+        # Save to file
+        plt.savefig( file_path, format='png', bbox_inches='tight' )
+        print( f"Graph rendered and saved to {file_path}" )
+    except Exception as e:
+        print( f"An error occurred while rendering the graph: {e}" )
+    finally:
+        plt.close()  # Ensure the plot is closed to free memory

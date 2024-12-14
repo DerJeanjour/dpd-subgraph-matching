@@ -3,7 +3,6 @@ import json
 import os
 import signal
 from contextlib import contextmanager
-from functools import reduce
 from multiprocessing import Process, Queue
 from random import choice, seed, shuffle
 
@@ -38,125 +37,27 @@ def ensure_path( path ):
         os.mkdir( path )
 
 
-def read_dataset( path, ds_name ):
-    ds_dir = os.path.join( path, ds_name )
-    ds_dir = utils.get_abs_file_path( ds_dir )
+def add_labels( graph, NN, NE ):
+    nodes = np.array( list( graph.nodes ) )
+    edges = np.array( list( graph.edges ) )
 
-    node_labels_file = open( os.path.join( ds_dir, ds_name + ".node_labels" ), "r" )
-    edges_file = open( os.path.join( ds_dir, ds_name + ".edges" ), "r" )
-    graph_idx_file = open( os.path.join( ds_dir, ds_name + ".graph_idx" ), "r" )
+    node_labels = np.random.randint( 1, NN + 1, len( nodes ) ).tolist()
+    edge_labels = np.random.randint( 1, NE + 1, len( edges ) ).tolist()
 
-    total_graph = nx.Graph()
-    transactions_by_nid = { }
-
-    node_labels = node_labels_file.read().strip().split( "\n" )
-    label_set = set( node_labels )
-    # Label start from 1
-    label_mapping = { x: i + 1 for i, x in enumerate( label_set ) }
-    node_labels = [ (i, { "label": label_mapping[ x ] }) for i, x in enumerate( node_labels ) ]
-    total_graph.add_nodes_from( node_labels )
-
-    edges = edges_file.read().strip().split( "\n" )
-    edges = [
-        (int( sn ) - 1, int( en ) - 1, { "label": 1 })
-        for line in edges
-        for sn, en in [ line.split( "," ) ]
+    labelled_nodes = [
+        (nodes[ k ], { "label": node_labels[ k ], "color": "green" })
+        for k in range( len( nodes ) )
     ]
-    total_graph.add_edges_from( edges )
+    labelled_edges = [
+        (edges[ k ][ 0 ], edges[ k ][ 1 ], { "label": edge_labels[ k ], "color": "green" })
+        for k in range( len( edges ) )
+    ]
 
-    nid_to_transaction = graph_idx_file.read().strip().split( "\n" )
-    nid_to_transaction = { i: int( x ) - 1 for i, x in enumerate( nid_to_transaction ) }
+    G = nx.Graph()
+    G.add_nodes_from( labelled_nodes )
+    G.add_edges_from( labelled_edges )
 
-    transaction_ids = set( nid_to_transaction.values() )
-    print( "Processing transactions..." )
-    for tid in tqdm( transaction_ids ):
-        filtered_nid_by_transaction = list(
-            y[ 0 ] for y in filter( lambda x: x[ 1 ] == tid, nid_to_transaction.items() )
-        )
-        transactions_by_nid[ tid ] = filtered_nid_by_transaction
-
-    return total_graph, transactions_by_nid
-
-
-def save_per_source( graph_id, H, iso_subgraphs, noniso_subgraphs, dataset_path ):
-    # Ensure path
-    subgraph_path = os.path.join( dataset_path, str( graph_id ) )
-    ensure_path( subgraph_path )
-
-    # Save source graphs
-    source_graph_file = os.path.join( subgraph_path, "source.lg" )
-    with open( source_graph_file, "w", encoding="utf-8" ) as file:
-        file.write( "t # {0}\n".format( graph_id ) )
-        for node in H.nodes:
-            file.write( "v {} {}\n".format( node, H.nodes[ node ][ "label" ] ) )
-        for edge in H.edges:
-            file.write(
-                "e {} {} {}\n".format(
-                    edge[ 0 ], edge[ 1 ], H.edges[ (edge[ 0 ], edge[ 1 ]) ][ "label" ]
-                )
-            )
-
-    # Save subgraphs
-    iso_subgraph_file = os.path.join( subgraph_path, "iso_subgraphs.lg" )
-    noniso_subgraph_file = os.path.join( subgraph_path, "noniso_subgraphs.lg" )
-    iso_subgraph_mapping_file = os.path.join( subgraph_path, "iso_subgraphs_mapping.lg" )
-    noniso_subgraph_mapping_file = os.path.join(
-        subgraph_path, "noniso_subgraphs_mapping.lg"
-    )
-
-    isf = open( iso_subgraph_file, "w", encoding="utf-8" )
-    ismf = open( iso_subgraph_mapping_file, "w", encoding="utf-8" )
-
-    for subgraph_id, S in enumerate( iso_subgraphs ):
-        isf.write( "t # {0}\n".format( subgraph_id ) )
-        ismf.write( "t # {0}\n".format( subgraph_id ) )
-        node_mapping = { }
-        list_nodes = list( S.nodes )
-        shuffle( list_nodes )
-
-        for node_idx, node_emb in enumerate( list_nodes ):
-            isf.write( "v {} {}\n".format( node_idx, S.nodes[ node_emb ][ "label" ] ) )
-            ismf.write( "v {} {}\n".format( node_idx, node_emb ) )
-            node_mapping[ node_emb ] = node_idx
-
-        for edge in S.edges:
-            edge_0 = node_mapping[ edge[ 0 ] ]
-            edge_1 = node_mapping[ edge[ 1 ] ]
-            isf.write(
-                "e {} {} {}\n".format(
-                    edge_0, edge_1, S.edges[ (edge[ 0 ], edge[ 1 ]) ][ "label" ]
-                )
-            )
-
-    isf.close()
-    ismf.close()
-
-    nisf = open( noniso_subgraph_file, "w", encoding="utf-8" )
-    nismf = open( noniso_subgraph_mapping_file, "w", encoding="utf-8" )
-    for subgraph_id, S in enumerate( noniso_subgraphs ):
-        nisf.write( "t # {0}\n".format( subgraph_id ) )
-        nismf.write( "t # {0}\n".format( subgraph_id ) )
-        node_mapping = { }
-        list_nodes = list( S.nodes )
-        shuffle( list_nodes )
-
-        for node_idx, node_emb in enumerate( list_nodes ):
-            nisf.write( "v {} {}\n".format( node_idx, S.nodes[ node_emb ][ "label" ] ) )
-            if not S.nodes[ node_emb ][ "modified" ]:
-                nismf.write( "v {} {}\n".format( node_idx, node_emb ) )
-            node_mapping[ node_emb ] = node_idx
-
-        for edge in S.edges:
-            edge_0 = node_mapping[ edge[ 0 ] ]
-            edge_1 = node_mapping[ edge[ 1 ] ]
-            nisf.write(
-                "e {} {} {}\n".format(
-                    edge_0, edge_1, S.edges[ (edge[ 0 ], edge[ 1 ]) ][ "label" ]
-                )
-            )
-
-    nisf.close()
-    nismf.close()
+    return G
 
 
 def node_match( first_node, second_node ):
@@ -167,7 +68,9 @@ def edge_match( first_edge, second_edge ):
     return first_edge[ "label" ] == second_edge[ "label" ]
 
 
-def generate_iso_subgraph( graph, no_of_nodes, avg_degree, std_degree, *args, **kwargs ):
+def generate_iso_subgraph(
+        graph, no_of_nodes, avg_degree, std_degree, number_label_node, number_label_edge
+):
     graph_nodes = graph.number_of_nodes()
     node_ratio = no_of_nodes / graph_nodes
     if node_ratio > 1:
@@ -196,6 +99,15 @@ def generate_iso_subgraph( graph, no_of_nodes, avg_degree, std_degree, *args, **
             if node_ratio > 1:
                 node_ratio = 1
             iteration = 0
+
+    # Remove for induced subgraph
+    # high = subgraph.number_of_edges() - subgraph.number_of_nodes() + 2
+    # if high > 0:
+    #     modify_times = np.random.randint(0, high)
+    #     for _ in range(modify_times):
+    #         if subgraph.number_of_edges() <= min_edges:
+    #             break
+    #         subgraph = remove_random_edge(subgraph)
 
     return subgraph
 
@@ -428,6 +340,13 @@ def generate_noniso_subgraph(
             max_edges,
         )
 
+    # Remove for induced subgraph
+    # high = subgraph.number_of_edges() - subgraph.number_of_nodes() + 2
+    # if high > 0:
+    #     modify_times = np.random.randint(0, high)
+    #     for _ in range(modify_times):
+    #         subgraph = remove_random_edge(subgraph)
+
     subgraph, graph_nodes = random_modify(
         subgraph,
         number_label_node,
@@ -473,7 +392,6 @@ def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, *args
     list_iso_subgraphs = [ ]
     list_noniso_subgraphs = [ ]
 
-    # for _ in tqdm( range( number_subgraph_per_source ) ):
     for _ in range( number_subgraph_per_source ):
         generated_subgraph = None
         while generated_subgraph is None:
@@ -498,26 +416,66 @@ def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, *args
     return list_iso_subgraphs, list_noniso_subgraphs
 
 
-def generate_one_sample( idx, progress_queue, number_subgraph_per_source, source_graphs, *arg, **kwarg ):
-    source_graph = source_graphs[ idx ]
-    iso_subgraphs, noniso_subgraphs = generate_subgraphs(
-        source_graph, number_subgraph_per_source, progress_queue, *arg, **kwarg
+def generate_one_sample(
+        progress_queue,
+        number_subgraph_per_source,
+        avg_source_size,
+        std_source_size,
+        avg_degree,
+        std_degree,
+        number_label_node,
+        number_label_edge,
+):
+    generated_pattern = None
+    iteration = 0
+    no_of_nodes = int( np.random.normal( avg_source_size, std_source_size ) )
+    while no_of_nodes < 2:
+        no_of_nodes = int( np.random.normal( avg_source_size, std_source_size ) )
+    degree = np.random.normal( avg_degree, std_degree )
+    if degree < 1:
+        degree = 1
+    if degree > no_of_nodes - 1:
+        degree = no_of_nodes - 1
+    probability_for_edge_creation = degree / (no_of_nodes - 1)
+
+    while (
+            generated_pattern is None
+            or nx.is_empty( generated_pattern )
+            or not nx.is_connected( generated_pattern )
+    ):  # make sure the generated graph is connected
+        generated_pattern = nx.erdos_renyi_graph(
+            no_of_nodes, probability_for_edge_creation, directed=False
+        )
+        iteration += 1
+        if iteration > 5:
+            probability_for_edge_creation *= 1.05
+            iteration = 0
+
+    labelled_pattern = add_labels(
+        generated_pattern, number_label_node, number_label_edge
     )
 
-    return source_graph, iso_subgraphs, noniso_subgraphs
+    iso_subgraphs, noniso_subgraphs = generate_subgraphs(
+        labelled_pattern,
+        number_subgraph_per_source,
+        progress_queue,
+        avg_degree,
+        std_degree,
+        number_label_node,
+        number_label_edge
+    )
+    return labelled_pattern, iso_subgraphs, noniso_subgraphs
 
 
 def generate_batch( start_idx, stop_idx, number_source, dataset_path, progress_queue, *args, **kwargs ):
     for idx in range( start_idx, stop_idx ):
         # print( "SAMPLE %d/%d" % (idx + 1, number_source) )
-        graph, iso_subgraphs, noniso_subgraphs = generate_one_sample(
-            idx, progress_queue, *args, **kwargs
-        )
+        graph, iso_subgraphs, noniso_subgraphs = generate_one_sample( progress_queue=progress_queue, *args, **kwargs )
         save_per_source( idx, graph, iso_subgraphs, noniso_subgraphs, dataset_path )
 
 
-def generate_dataset( dataset_path, is_continue, number_source, num_process, num_subgraphs, *args, **kwargs ):
-    print( "Generating..." )
+def generate_dataset( dataset_path, is_continue, number_source, num_process, *args, **kwargs ):
+    print( f"Generating {dataset_path} (continue:{is_continue}) using {os.cpu_count()} processes..." )
     list_processes = [ ]
     progress_queue = Queue()
 
@@ -556,7 +514,7 @@ def generate_dataset( dataset_path, is_continue, number_source, num_process, num
         start_idx = 0
         stop_idx = start_idx + batch_size
 
-        for idx in range( num_process ):
+        for idx in range( os.cpu_count() ):
             list_processes.append(
                 Process(
                     target=generate_batch,
@@ -574,7 +532,7 @@ def generate_dataset( dataset_path, is_continue, number_source, num_process, num
         p.start()
 
     # Track progress using tqdm
-    total_subgraphs = number_source * num_subgraphs
+    total_subgraphs = number_source * kwargs[ "number_subgraph_per_source" ]
     with tqdm( total=total_subgraphs ) as pbar:
         processed_count = 0
         while processed_count < total_subgraphs:
@@ -587,120 +545,109 @@ def generate_dataset( dataset_path, is_continue, number_source, num_process, num
         p.join()
 
 
-def separate_graphs( total_graph, transaction_by_id ):
-    separeted_graphs = { }
-    for gid in transaction_by_id:
-        G = total_graph.subgraph( transaction_by_id[ gid ] )
-        mapping = dict( zip( G, range( G.number_of_nodes() ) ) )
-        source_graph = nx.relabel_nodes( G, mapping )
-        unique_labels = set( nx.get_node_attributes( source_graph, "label" ).values() )
-        label_mapping = { x: i + 1 for i, x in enumerate( unique_labels ) }
-        for nid in source_graph.nodes:
-            source_graph.nodes[ nid ][ "label" ] = label_mapping[
-                source_graph.nodes[ nid ][ "label" ]
-            ]
+def save_per_source( graph_id, H, iso_subgraphs, noniso_subgraphs, dataset_path ):
+    # Ensure path
+    subgraph_path = utils.get_abs_file_path( os.path.join( dataset_path, str( graph_id ) ) )
+    ensure_path( subgraph_path )
 
-        separeted_graphs[ gid ] = source_graph
+    # Save source graphs
+    source_graph_file = os.path.join( subgraph_path, "source.lg" )
+    with open( source_graph_file, "w", encoding="utf-8" ) as file:
+        file.write( "t # {0}\n".format( graph_id ) )
+        for node in H.nodes:
+            file.write( "v {} {}\n".format( node, H.nodes[ node ][ "label" ] ) )
+        for edge in H.edges:
+            file.write(
+                "e {} {} {}\n".format(
+                    edge[ 0 ], edge[ 1 ], H.edges[ (edge[ 0 ], edge[ 1 ]) ][ "label" ]
+                )
+            )
 
-    return separeted_graphs
-
-
-def calculate_ds_attr( graph_ds, total_graph, num_subgraphs ):
-    """
-    "number_source": 1000,
-    "avg_source_size": 60,
-    "std_source_size": 10,
-    "avg_degree": 3.5,
-    "std_degree": 0.5,
-    "number_label_node": 20
-    """
-
-    attr_dict = { }
-    attr_dict[ "number_source" ] = len( graph_ds )
-    list_source_node = [ g.number_of_nodes() for _, g in graph_ds.items() ]
-    total_label = reduce(
-        lambda x, y: x + [ y.nodes[ nid ][ "label" ] for nid in y.nodes ],
-        graph_ds.values(),
-        [ ],
+    # Save subgraphs
+    iso_subgraph_file = os.path.join( subgraph_path, "iso_subgraphs.lg" )
+    noniso_subgraph_file = os.path.join( subgraph_path, "noniso_subgraphs.lg" )
+    iso_subgraph_mapping_file = os.path.join( subgraph_path, "iso_subgraphs_mapping.lg" )
+    noniso_subgraph_mapping_file = os.path.join(
+        subgraph_path, "noniso_subgraphs_mapping.lg"
     )
-    list_source_edge = [ g.number_of_edges() for _, g in graph_ds.items() ]
 
-    mean_size, std_size = np.mean( list_source_node, axis=0 ), np.std(
-        list_source_node, axis=0
-    )
-    attr_dict[ "avg_source_size" ] = mean_size
-    attr_dict[ "std_source_size" ] = std_size
+    isf = open( iso_subgraph_file, "w", encoding="utf-8" )
+    ismf = open( iso_subgraph_mapping_file, "w", encoding="utf-8" )
 
-    list_avg_degree = [ e * 2 / n for n, e in zip( list_source_node, list_source_edge ) ]
-    mean_degree, std_degree = np.mean( list_avg_degree, axis=0 ), np.std(
-        list_avg_degree, axis=0
-    )
-    attr_dict[ "avg_degree" ] = mean_degree
-    attr_dict[ "std_degree" ] = std_degree
+    for subgraph_id, S in enumerate( iso_subgraphs ):
+        isf.write( "t # {0}\n".format( subgraph_id ) )
+        ismf.write( "t # {0}\n".format( subgraph_id ) )
+        node_mapping = { }
+        list_nodes = list( S.nodes )
+        shuffle( list_nodes )
 
-    # total_label = [total_graph.nodes[n]["label"] for n in total_graph.nodes]
-    attr_dict[ "number_label_node" ] = len( set( total_label ) )
-    attr_dict[ "number_label_edge" ] = 1  # TO_REMOVE
+        for node_idx, node_emb in enumerate( list_nodes ):
+            isf.write( "v {} {}\n".format( node_idx, S.nodes[ node_emb ][ "label" ] ) )
+            ismf.write( "v {} {}\n".format( node_idx, node_emb ) )
+            node_mapping[ node_emb ] = node_idx
 
-    attr_dict[ "number_subgraph_per_source" ] = num_subgraphs  # TO_REMOVE
-    return attr_dict
+        for edge in S.edges:
+            edge_0 = node_mapping[ edge[ 0 ] ]
+            edge_1 = node_mapping[ edge[ 1 ] ]
+            isf.write(
+                "e {} {} {}\n".format(
+                    edge_0, edge_1, S.edges[ (edge[ 0 ], edge[ 1 ]) ][ "label" ]
+                )
+            )
+
+    isf.close()
+    ismf.close()
+
+    nisf = open( noniso_subgraph_file, "w", encoding="utf-8" )
+    nismf = open( noniso_subgraph_mapping_file, "w", encoding="utf-8" )
+    for subgraph_id, S in enumerate( noniso_subgraphs ):
+        nisf.write( "t # {0}\n".format( subgraph_id ) )
+        nismf.write( "t # {0}\n".format( subgraph_id ) )
+        node_mapping = { }
+        list_nodes = list( S.nodes )
+        shuffle( list_nodes )
+
+        for node_idx, node_emb in enumerate( list_nodes ):
+            nisf.write( "v {} {}\n".format( node_idx, S.nodes[ node_emb ][ "label" ] ) )
+            if not S.nodes[ node_emb ][ "modified" ]:
+                nismf.write( "v {} {}\n".format( node_idx, node_emb ) )
+            node_mapping[ node_emb ] = node_idx
+
+        for edge in S.edges:
+            edge_0 = node_mapping[ edge[ 0 ] ]
+            edge_1 = node_mapping[ edge[ 1 ] ]
+            nisf.write(
+                "e {} {} {}\n".format(
+                    edge_0, edge_1, S.edges[ (edge[ 0 ], edge[ 1 ]) ][ "label" ]
+                )
+            )
+
+    nisf.close()
+    nismf.close()
 
 
-def save_config_for_synthesis( config_path, ds_name, configs ):
-    configs[ "number_source" ] *= 4  # generate train data 4 times the test size
-    with open( utils.get_abs_file_path( f"{config_path}{ds_name}.json" ), "w" ) as f:
-        json.dump( configs, f, indent=4 )
+# generate synthetic subgraphs (iso and no-iso) from config file
+def process( args ):
+    config_file = f"{args.config_dir}{args.dataset}.json"
+    is_continue = args.cont
 
-
-def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
-    total_graph, transaction_by_nid = read_dataset( path, ds_name )
-
-    source_graphs = separate_graphs( total_graph, transaction_by_nid )
-    config = calculate_ds_attr( source_graphs, total_graph, num_subgraphs )
-
-    del total_graph
-    del transaction_by_nid
-
-    seed( 42 )
-    np.random.seed( 42 )
-    dataset_path = os.path.join(
-        args.dataset_dir, os.path.basename( ds_name ).split( "." )[ 0 ] + "_test"
-    )
+    utils.set_seed( args.seed )
+    dataset_path = os.path.join( args.dataset_dir,
+                                 os.path.basename( config_file ).split( "." )[ 0 ] + "_train" )
     dataset_path = utils.get_abs_file_path( dataset_path )
     ensure_path( dataset_path )
+    config = read_config( config_file )
+    print( config )
 
-    generate_dataset(
-        dataset_path=dataset_path,
-        is_continue=is_continue,
-        source_graphs=source_graphs,
-        num_process=args.num_workers,
-        num_subgraphs=num_subgraphs,
-        **config
-    )
-
-    save_config_for_synthesis( args.config_dir, ds_name, config )
+    generate_dataset( dataset_path=dataset_path,
+                      is_continue=is_continue,
+                      num_process=args.num_workers,
+                      **config )
 
 
 if __name__ == "__main__":
-
     args = utils.parse_args()
     args.dataset = "CPG"
     # args.num_workers = 1
-    args.num_subgraphs = 16  # 2000
-    print( args )
-
-    raw_dataset_dir = utils.get_abs_file_path( args.raw_dataset_dir )
-    list_datasets = os.listdir( raw_dataset_dir )
-
-    for dataset in list_datasets:
-        if dataset != args.dataset:
-            continue  # TO_TEST
-
-        print( "PROCESSING DATASET:", dataset )
-        process_dataset(
-            args=args,
-            path=raw_dataset_dir,
-            ds_name=dataset,
-            is_continue=args.cont,
-            num_subgraphs=args.num_subgraphs,
-        )
+    # print( args )
+    process( args )

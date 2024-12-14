@@ -7,17 +7,20 @@ import matching.misc.cpg_const as cpg_const
 
 
 def import_datasets( args ):
+    utils.set_seed( args.seed )
+
     import_dir = utils.get_abs_file_path( args.import_dir, with_subproject=False )
     list_datasets = os.listdir( import_dir )
 
     G = nx.DiGraph()
     node_id_mapping: dict[ str, int ] = { }
 
+    graph_idx = 1  # graph index starts from 1
     for dataset_filename in list_datasets:
         if not dataset_filename.endswith( args.import_format ):
             continue
         dataset_name = dataset_filename.split( "." )[ 0 ]
-        read_dataset_to( args, dataset_name, G, node_id_mapping )
+        graph_idx = read_dataset_to( args, dataset_name, G, node_id_mapping, graph_idx )
 
     print( f"Collected all datasets: Nodes[{len( G.nodes )}] / Edges[{len( G.edges )}]" )
     if len( G.nodes ) == 0:
@@ -26,7 +29,11 @@ def import_datasets( args ):
     write_files( args, G, node_id_mapping )
 
 
-def read_dataset_to( args, dataset_name: str, G_target: nx.DiGraph, node_id_mapping: dict[ str, int ] ):
+def read_dataset_to( args,
+                     dataset_name: str,
+                     G_target: nx.DiGraph,
+                     node_id_mapping: dict[ str, int ],
+                     graph_idx: int ) -> int:
     import_file = utils.get_abs_file_path( f"{args.import_dir}{dataset_name}{args.import_format}",
                                            with_subproject=False )
 
@@ -39,22 +46,55 @@ def read_dataset_to( args, dataset_name: str, G_target: nx.DiGraph, node_id_mapp
         print( "Couldn't read graph or graph is empty ..." )
         return
 
-    print( f"Processing dataset: Nodes[{len( G.nodes )}] / Edges[{len( G.edges )}]" )
+    print( f"Processing dataset: Nodes[{G.number_of_nodes()}] / Edges[{G.number_of_edges()}]" )
 
-    graph_idx = 1  # graph index start at 1
     for node_id, node_data in tqdm( list( G.nodes( data=True ) ) ):
         record_label = get_record_label( node_data )
         if record_label is None or record_label != cpg_const.NodeLabel.RECORD:
             # use only records as pivot for subgraphs
             continue
-        G_sub = nx.ego_graph( G, node_id, radius=args.import_subgraph_radius, undirected=True )
-        # TODO find smarter way to partition graph without duplicates !!!
-        add_subgraph_to( G_sub, G_target, node_id_mapping, graph_idx ) # subgraph around record
+
+        G_sub = get_k_neighbourhood( G, node_id, args.import_subgraph_radius,
+                                     min_n=args.import_subgraph_min,
+                                     max_n=args.import_subgraph_max )
+
+        if G_sub.number_of_nodes() == 0:
+            continue
+
+        # utils.save_graph_debug( G_sub, f"sub_{graph_idx}.png" )
+        add_graph_to( G_sub, G_target, node_id_mapping, graph_idx )  # subgraph around record
         graph_idx += 1
 
+    return graph_idx
 
-def add_subgraph_to( G_source: nx.DiGraph, G_target: nx.DiGraph, node_id_mapping: dict[ str, int ], graph_idx: int ):
+
+def get_k_neighbourhood( G: nx.DiGraph, node_id, k: int, min_n: int = 2, max_n: int = 50 ):
+    resize_tries = 0
+    max_resize_tries = 10
+    subgraph_radius = k
+    G_sub = nx.ego_graph( G, node_id, radius=subgraph_radius, undirected=True )
+
+    # reduce subgraph size until it matches max subgraph size
+    while G_sub.number_of_nodes() > max_n and resize_tries < max_resize_tries:
+        subgraph_radius -= 1
+        G_sub = nx.ego_graph( G, node_id, radius=subgraph_radius, undirected=True )
+        resize_tries += 1
+
+    # reduce subgraph size until it matches min subgraph size
+    while G_sub.number_of_nodes() < min_n and resize_tries < max_resize_tries:
+        subgraph_radius += 1
+        G_sub = nx.ego_graph( G, node_id, radius=subgraph_radius, undirected=True )
+        resize_tries += 1
+
+    if G_sub.number_of_nodes() > max_n or G_sub.number_of_nodes() < min_n:
+        return nx.DiGraph()
+
+    return nx.DiGraph( G_sub )
+
+
+def add_graph_to( G_source: nx.DiGraph, G_target: nx.DiGraph, node_id_mapping: dict[ str, int ], graph_idx: int ):
     # process nodes
+    # print( f"Adding subgraph {graph_idx}: Nodes[{G_source.number_of_nodes()}] / Edges[{G_source.number_of_edges()}]" )
     for node_idx, node in enumerate( G_source.nodes( data=True ) ):
 
         node_id, node_data = node
@@ -63,7 +103,7 @@ def add_subgraph_to( G_source: nx.DiGraph, G_target: nx.DiGraph, node_id_mapping
             continue
 
         node_id_key = f"{graph_idx}::{node_id}"
-        node_id_mapping[ node_id_key ] = G_target.number_of_nodes() + 1  # node indices start with 1
+        node_id_mapping[ node_id_key ] = G_target.number_of_nodes() + 1  # node_ids starts from 1
 
         record_label_idx = utils.get_enum_idx( record_label )
         pattern_types = get_design_pattern_types( node_data )
@@ -153,8 +193,10 @@ def get_record_label( node_data ) -> cpg_const.NodeLabel:
 
 if __name__ == "__main__":
     args = utils.parse_args()
-    args.import_subgraph_radius = 5
-    args.dataset = "CPG"
-    print( args )
+    # args.import_subgraph_radius = 4
+    # args.import_subgraph_max = 40
+    # args.import_subgraph_min = 2
+    # args.dataset = "CPG"
+    # print( args )
 
     import_datasets( args )
