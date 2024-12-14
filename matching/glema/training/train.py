@@ -18,6 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 def main( args ):
+    utils.set_seed( args.seed )
     data_path = utils.get_abs_file_path( os.path.join( args.data_path, args.dataset ) )
     if args.directed:
         data_path += "_directed"
@@ -267,13 +268,13 @@ def main( args ):
 if __name__ == "__main__":
     args = utils.parse_args()
     args.directed = True
-    #args.dataset = "KKI"
-    args.dataset = "SYNTHETIC_TINY"
+    # args.dataset = "KKI"
+    #args.dataset = "SYNTHETIC_TINY"
+    args.dataset = "CPG"
     args.batch_size = 128
     args.tactic = "jump"
-    args.embedding_dim = 4
+    args.embedding_dim = 5
     args.seed = 23
     print( args )
 
-    utils.set_seed( args.seed )
     main( args )

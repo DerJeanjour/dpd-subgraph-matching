@@ -162,6 +162,9 @@ def parse_args( use_default=False ):
                          type=int, default=40 )
     parser.add_argument( "--import_subgraph_min", help="Min number of nodes per subgraph.",
                          type=int, default=2 )
+    parser.add_argument( "--split_data",
+                         help="If true, the dataset will be split into train and test without without generating train algorithmically.",
+                         action="store_true", default=False )
 
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 
@@ -418,30 +421,43 @@ def save_graph_debug( G, file_name ):
         plt.close()  # Ensure the plot is closed to free memory
 
 
+def load_source_mapping( args, source_graph_idx ):
+    dataset_type = "test" if args.test_data else "train"
+    dataset = f"{args.dataset}_{dataset_type}"
+    mapping_rev = read_mapping(
+        f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source_mapping.lg" )[ source_graph_idx ]
+    mapping = { }
+    for original_id, source_id in mapping_rev.items():
+        mapping[ source_id ] = original_id
+    return mapping
+
+
 def get_source_graph( args, source_graph_idx ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
-    return read_graphs(
+    source_mapping = load_source_mapping( args, source_graph_idx )
+    source = read_graphs(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source.lg",
         directed=args.directed )[ source_graph_idx ]
+
+    return nx.relabel_nodes( source, source_mapping )
 
 
 def load_query_id_mapping( args, source_graph_idx, query_subgraph_idx ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
-    return read_mapping(
+    mapping_rev = read_mapping(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs_mapping.lg" )[
         query_subgraph_idx ]
+    mapping = { }
+    for source_id, query_id in mapping_rev.items():
+        mapping[ query_id ] = source_id
+    return mapping
 
 
 def load_query( args, source_graph_idx, query_subgraph_idx ):
     query_id_mapping = load_query_id_mapping( args, source_graph_idx, query_subgraph_idx )
-    node_id_mapping = { }
-    for source_id, query_id in query_id_mapping.items():
-        node_id_mapping[ query_id ] = source_id
-
-    print( query_id_mapping )
-    print( node_id_mapping )
+    source_id_mapping = load_source_mapping( args, source_graph_idx )
 
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
@@ -449,7 +465,8 @@ def load_query( args, source_graph_idx, query_subgraph_idx ):
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs.lg",
         directed=args.directed )[ query_subgraph_idx ]
 
-    return nx.relabel_nodes( query, node_id_mapping )
+    query = nx.relabel_nodes( query, query_id_mapping )
+    return nx.relabel_nodes( query, source_id_mapping )
 
 
 def get_record_scopes( args ) -> dict[ str, str ]:

@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import signal
+import random
 from contextlib import contextmanager
 from functools import reduce
 from multiprocessing import Process, Queue
@@ -78,7 +79,7 @@ def read_dataset( path, ds_name ):
     return total_graph, transactions_by_nid
 
 
-def save_per_source( graph_id, H, iso_subgraphs, noniso_subgraphs, dataset_path ):
+def save_per_source( graph_id, H, source_graph_mapping, iso_subgraphs, noniso_subgraphs, dataset_path ):
     # Ensure path
     subgraph_path = os.path.join( dataset_path, str( graph_id ) )
     ensure_path( subgraph_path )
@@ -95,6 +96,13 @@ def save_per_source( graph_id, H, iso_subgraphs, noniso_subgraphs, dataset_path 
                     edge[ 0 ], edge[ 1 ], H.edges[ (edge[ 0 ], edge[ 1 ]) ][ "label" ]
                 )
             )
+
+    # Save source graph mapping
+    source_graph_mapping_file = os.path.join( subgraph_path, "source_mapping.lg" )
+    with open( source_graph_mapping_file, "w", encoding="utf-8" ) as file:
+        file.write( "t # {0}\n".format( graph_id ) )
+        for original_id, source_id in source_graph_mapping.items():
+            file.write( "v {} {}\n".format( source_id, original_id ) )
 
     # Save subgraphs
     iso_subgraph_file = os.path.join( subgraph_path, "iso_subgraphs.lg" )
@@ -503,22 +511,24 @@ def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, *args
     return list_iso_subgraphs, list_noniso_subgraphs
 
 
-def generate_one_sample( idx, progress_queue, number_subgraph_per_source, source_graphs, *arg, **kwarg ):
+def generate_one_sample( idx, progress_queue, number_subgraph_per_source, source_graphs, source_graph_mappings, *arg,
+                         **kwarg ):
     source_graph = source_graphs[ idx ]
+    source_graph_mapping = source_graph_mappings[ idx ]
     iso_subgraphs, noniso_subgraphs = generate_subgraphs(
         source_graph, number_subgraph_per_source, progress_queue, *arg, **kwarg
     )
 
-    return source_graph, iso_subgraphs, noniso_subgraphs
+    return source_graph, source_graph_mapping, iso_subgraphs, noniso_subgraphs
 
 
 def generate_batch( start_idx, stop_idx, number_source, dataset_path, progress_queue, *args, **kwargs ):
     for idx in range( start_idx, stop_idx ):
         # print( "SAMPLE %d/%d" % (idx + 1, number_source) )
-        graph, iso_subgraphs, noniso_subgraphs = generate_one_sample(
+        graph, mapping, iso_subgraphs, noniso_subgraphs = generate_one_sample(
             idx, progress_queue, *args, **kwargs
         )
-        save_per_source( idx, graph, iso_subgraphs, noniso_subgraphs, dataset_path )
+        save_per_source( idx, graph, mapping, iso_subgraphs, noniso_subgraphs, dataset_path )
 
 
 def generate_dataset( dataset_path, is_continue, number_source, num_process, num_subgraphs, *args, **kwargs ):
@@ -594,10 +604,12 @@ def generate_dataset( dataset_path, is_continue, number_source, num_process, num
 
 def separate_graphs( total_graph, transaction_by_id ):
     separeted_graphs = { }
+    separeted_graphs_mapping = { }
     for gid in transaction_by_id:
         G = total_graph.subgraph( transaction_by_id[ gid ] )
         mapping = dict( zip( G, range( G.number_of_nodes() ) ) )
         source_graph = nx.relabel_nodes( G, mapping )
+        # source_graph = G
         unique_labels = set( nx.get_node_attributes( source_graph, "label" ).values() )
         label_mapping = { x: i + 1 for i, x in enumerate( unique_labels ) }
         for nid in source_graph.nodes:
@@ -606,9 +618,10 @@ def separate_graphs( total_graph, transaction_by_id ):
             ]
 
         separeted_graphs[ gid ] = source_graph
+        separeted_graphs_mapping[ gid ] = mapping
         # utils.save_graph_debug( source_graph, f"source_{gid}.png" )
 
-    return separeted_graphs
+    return separeted_graphs, separeted_graphs_mapping
 
 
 def calculate_ds_attr( graph_ds, total_graph, num_subgraphs ):
@@ -658,26 +671,66 @@ def save_config_for_synthesis( config_path, ds_name, configs ):
         json.dump( configs, f, indent=4 )
 
 
+def split_source_graphs( source_graphs, source_graph_mappings, train_split_ration=0.8 ):
+    # Shuffle keys and split them
+    keys = list( source_graphs.keys() )
+    random.shuffle( keys )
+    split_index = int( len( keys ) * train_split_ration )
+
+    train_keys = keys[ :split_index ]
+    test_keys = keys[ split_index: ]
+
+    # Create train and test dictionaries with reindexed keys
+    train_data = { i: source_graphs[ k ] for i, k in enumerate( train_keys ) }
+    train_data_mapping = { i: source_graph_mappings[ k ] for i, k in enumerate( train_keys ) }
+    test_data = { i: source_graphs[ k ] for i, k in enumerate( test_keys ) }
+    test_data_mapping = { i: source_graph_mappings[ k ] for i, k in enumerate( test_keys ) }
+
+    return train_data, test_data, train_data_mapping, test_data_mapping
+
+
 def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
     total_graph, transaction_by_nid = read_dataset( path, ds_name )
-    source_graphs = separate_graphs( total_graph, transaction_by_nid )
+    source_graphs, source_graph_mapping = separate_graphs( total_graph, transaction_by_nid )
     config = calculate_ds_attr( source_graphs, total_graph, num_subgraphs )
+    dataset_name = os.path.basename( ds_name ).split( "." )[ 0 ]
 
     del total_graph
     del transaction_by_nid
 
-    seed( 42 )
-    np.random.seed( 42 )
-    dataset_path = os.path.join(
-        args.dataset_dir, os.path.basename( ds_name ).split( "." )[ 0 ] + "_test"
-    )
-    dataset_path = utils.get_abs_file_path( dataset_path )
-    ensure_path( dataset_path )
+    source_graphs_test = source_graphs
+    source_graphs_test_mapping = source_graph_mapping
+    if args.split_data:
+        print( f"Splitting dataset with size {len( source_graphs )} into test and train data ..." )
+        (source_graphs_train, source_graphs_test,
+         source_graphs_train_mapping, source_graphs_test_mapping) = split_source_graphs( source_graphs,
+                                                                                         source_graph_mapping )
 
+        config[ "number_source" ] = len( source_graphs_train )
+        print( f"Processing train data of size {len( source_graphs_train )} ..." )
+        dataset_path_train = os.path.join( args.dataset_dir, dataset_name + "_train" )
+        dataset_path_train = utils.get_abs_file_path( dataset_path_train )
+        ensure_path( dataset_path_train )
+        generate_dataset(
+            dataset_path=dataset_path_train,
+            is_continue=is_continue,
+            source_graphs=source_graphs_train,
+            source_graph_mappings=source_graphs_train_mapping,
+            num_process=args.num_workers,
+            num_subgraphs=num_subgraphs,
+            **config
+        )
+
+    config[ "number_source" ] = len( source_graphs_test )
+    print( f"Processing test data of size {len( source_graphs_test )} ..." )
+    dataset_path_test = os.path.join( args.dataset_dir, dataset_name + "_test" )
+    dataset_path_test = utils.get_abs_file_path( dataset_path_test )
+    ensure_path( dataset_path_test )
     generate_dataset(
-        dataset_path=dataset_path,
+        dataset_path=dataset_path_test,
         is_continue=is_continue,
-        source_graphs=source_graphs,
+        source_graphs=source_graphs_test,
+        source_graph_mappings=source_graphs_test_mapping,
         num_process=args.num_workers,
         num_subgraphs=num_subgraphs,
         **config
@@ -709,6 +762,7 @@ def process( args ):
 if __name__ == "__main__":
     args = utils.parse_args()
     # args.dataset = "CPG"
+    # args.split_data = True
     # args.num_workers = 1
     # args.num_subgraphs = 20  # 2000
     # print( args )

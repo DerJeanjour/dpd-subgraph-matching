@@ -647,7 +647,7 @@ def process( args ):
 
 if __name__ == "__main__":
     args = utils.parse_args()
-    args.dataset = "CPG"
+    #args.dataset = "CPG"
     # args.num_workers = 1
     # print( args )
     process( args )
