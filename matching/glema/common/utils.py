@@ -429,6 +429,24 @@ def save_graph_debug( G, file_name ):
         plt.close()  # Ensure the plot is closed to free memory
 
 
+def mark_pivot( args, G, source_graph_idx, mapping: [ int, int ] = None ):
+    dataset_type = "test" if args.test_data else "train"
+    dataset = f"{args.dataset}_{dataset_type}"
+    database_file = f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source.lg"
+    with open( get_abs_file_path( database_file ), "r", encoding="utf-8" ) as f:
+        lines = [ line.strip() for line in f.readlines() ]
+        for i, line in enumerate( lines ):
+            cols = line.split( " " )
+            if i > 2:
+                return
+            if cols[ 0 ] == "p":
+                pivot = int( cols[ -1 ] )
+                if mapping is not None:
+                    pivot = mapping[ pivot ]
+                for node_id, node_data in G.nodes( data=True ):
+                    node_data[ "pivot" ] = int( node_id ) == pivot
+
+
 def load_source_mapping( args, source_graph_idx, flip=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
@@ -445,6 +463,7 @@ def load_source_graph( args, source_graph_idx, relabel=True ):
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source.lg",
         directed=args.directed )[ source_graph_idx ]
 
+    mark_pivot( args, source, source_graph_idx )
     if relabel:
         source_mapping = load_source_mapping( args, source_graph_idx )
         source = nx.relabel_nodes( source, source_mapping )
@@ -471,6 +490,7 @@ def load_query( args, source_graph_idx, query_subgraph_idx, relabel=True ):
         query_id_mapping = load_query_id_mapping( args, source_graph_idx, query_subgraph_idx )
         source_id_mapping = load_source_mapping( args, source_graph_idx )
         query = nx.relabel_nodes( query, query_id_mapping )
+        mark_pivot( args, query, source_graph_idx )
         query = nx.relabel_nodes( query, source_id_mapping )
     return query
 
@@ -497,11 +517,15 @@ def get_design_patterns( args ) -> dict[ str, str ]:
     return design_patterns
 
 
-def map_node_label_idx( node_id, node_label_idx,
+def map_node_label_idx( node_id, node_data,
                         record_scopes=None,
                         design_patterns=None ):
+    node_label_idx = node_data[ "label" ]
     record_type = get_enum_by_idx( cpg_const.NodeLabel, node_label_idx )
     label = f"<{str( node_id )}>"
+
+    if "pivot" in node_data and bool( node_data[ "pivot" ] ):
+        label = f"{label}\n[PIVOT]"
 
     if record_type == cpg_const.NodeLabel.RECORD:
         node_id = str( node_id )
@@ -516,12 +540,11 @@ def map_node_label_idx( node_id, node_label_idx,
 
 
 def get_node_labels( G, record_scopes=None, design_patterns=None ):
-    labels = nx.get_node_attributes( G, 'label' )
     label_args = {
         "record_scopes": record_scopes,
         "design_patterns": design_patterns
     }
-    return { key: map_node_label_idx( key, value, **label_args ) for key, value in labels.items() }
+    return { node_id: map_node_label_idx( node_id, data, **label_args ) for node_id, data in G.nodes( data=True ) }
 
 
 def combine_graph( source, query, matching_colors: dict[ int, str ] = None ):
@@ -530,10 +553,13 @@ def combine_graph( source, query, matching_colors: dict[ int, str ] = None ):
 
     # Determine node colors
     node_matching = [ ]
-    for node in combined_graph.nodes():
-        if node in query.nodes and node in source.nodes:
-            node_matching.append( 1 )  # Nodes in both source and query
-        elif node in query.nodes:
+    for node_id, node_data in combined_graph.nodes( data=True ):
+        if node_id in query.nodes and node_id in source.nodes:
+            if "pivot" in node_data and bool( node_data["pivot"] ):
+                node_matching.append( 2 ) # Node is pivot
+            else:
+                node_matching.append( 1 )  # Nodes in both source and query
+        elif node_id in query.nodes:
             node_matching.append( -1 )  # Nodes only in query
         else:
             node_matching.append( 0 )  # Nodes only in source

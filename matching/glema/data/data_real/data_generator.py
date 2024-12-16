@@ -46,6 +46,7 @@ def read_dataset( path, ds_name ):
     node_labels_file = open( os.path.join( ds_dir, ds_name + ".node_labels" ), "r" )
     edges_file = open( os.path.join( ds_dir, ds_name + ".edges" ), "r" )
     graph_idx_file = open( os.path.join( ds_dir, ds_name + ".graph_idx" ), "r" )
+    pivot_file = open( os.path.join( ds_dir, ds_name + ".pivots" ), "r" )
 
     total_graph = nx.Graph()
     transactions_by_nid = { }
@@ -76,10 +77,17 @@ def read_dataset( path, ds_name ):
         )
         transactions_by_nid[ tid ] = filtered_nid_by_transaction
 
-    return total_graph, transactions_by_nid
+    pivots_by_transaction: dict[ int, int ] = { }
+    for entry in pivot_file.read().strip().split( "\n" ):
+        tid = int( entry.split( " " )[ 0 ] ) - 1
+        nid = int( entry.split( " " )[ 1 ] ) - 1
+        pivots_by_transaction[ tid ] = nid
+
+    return total_graph, transactions_by_nid, pivots_by_transaction
 
 
-def save_per_source( graph_id, H, source_graph_mapping, iso_subgraphs, noniso_subgraphs, dataset_path ):
+def save_per_source( graph_id, H, source_graph_mapping, source_graph_pivot, iso_subgraphs, noniso_subgraphs,
+                     dataset_path ):
     # Ensure path
     subgraph_path = os.path.join( dataset_path, str( graph_id ) )
     ensure_path( subgraph_path )
@@ -88,6 +96,7 @@ def save_per_source( graph_id, H, source_graph_mapping, iso_subgraphs, noniso_su
     source_graph_file = os.path.join( subgraph_path, "source.lg" )
     with open( source_graph_file, "w", encoding="utf-8" ) as file:
         file.write( "t # {0}\n".format( graph_id ) )
+        file.write( "p # {0}\n".format( source_graph_pivot ) )
         for node in H.nodes:
             file.write( "v {} {}\n".format( node, H.nodes[ node ][ "label" ] ) )
         for edge in H.edges:
@@ -175,7 +184,7 @@ def edge_match( first_edge, second_edge ):
     return first_edge[ "label" ] == second_edge[ "label" ]
 
 
-def generate_iso_subgraph( graph, no_of_nodes, avg_degree, std_degree, *args, **kwargs ):
+def generate_iso_subgraph( graph, pivot, no_of_nodes, avg_degree, std_degree, *args, **kwargs ):
     graph_nodes = graph.number_of_nodes()
     node_ratio = no_of_nodes / graph_nodes
     if node_ratio > 1:
@@ -185,6 +194,8 @@ def generate_iso_subgraph( graph, no_of_nodes, avg_degree, std_degree, *args, **
     max_edges = int( no_of_nodes * (avg_degree + std_degree) / 2 )
     subgraph = None
     iteration = 0
+
+    # TODO handle pivot !!!
 
     while (
             subgraph is None
@@ -384,6 +395,7 @@ def random_modify( graph, NN, NE, node_start_id, min_edges, max_edges ):
 
 def generate_noniso_subgraph(
         graph,
+        pivot,
         no_of_nodes,
         avg_degree,
         std_degree,
@@ -401,6 +413,8 @@ def generate_noniso_subgraph(
     max_edges = int( no_of_nodes * min( no_of_nodes - 1, avg_degree + std_degree ) / 2 )
     subgraph = None
     iteration = 0
+
+    # TODO handle pivot !!!
 
     while (
             subgraph is None
@@ -479,7 +493,7 @@ def generate_noniso_subgraph(
     return subgraph
 
 
-def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, *args, **kwargs ):
+def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, source_graph_pivot, *args, **kwargs ):
     list_iso_subgraphs = [ ]
     list_noniso_subgraphs = [ ]
 
@@ -493,12 +507,12 @@ def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, *args
             if prob == 1:
                 # print( f"Generate iso subgraph {i}/{number_subgraph_per_source}" )
                 generated_subgraph = generate_iso_subgraph(
-                    graph, no_of_nodes, *args, **kwargs
+                    graph, source_graph_pivot, no_of_nodes, *args, **kwargs
                 )
             else:
                 # print( f"Generate non iso subgraph {i}/{number_subgraph_per_source}" )
                 generated_subgraph = generate_noniso_subgraph(
-                    graph, no_of_nodes, *args, **kwargs
+                    graph, source_graph_pivot, no_of_nodes, *args, **kwargs
                 )
 
         if prob == 1:
@@ -511,24 +525,26 @@ def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, *args
     return list_iso_subgraphs, list_noniso_subgraphs
 
 
-def generate_one_sample( idx, progress_queue, number_subgraph_per_source, source_graphs, source_graph_mappings, *arg,
-                         **kwarg ):
+def generate_one_sample( idx, progress_queue, number_subgraph_per_source,
+                         source_graphs, source_graph_mappings, source_graph_pivots,
+                         *arg, **kwarg ):
     source_graph = source_graphs[ idx ]
     source_graph_mapping = source_graph_mappings[ idx ]
+    source_graph_pivot = source_graph_pivots[ idx ]
     iso_subgraphs, noniso_subgraphs = generate_subgraphs(
-        source_graph, number_subgraph_per_source, progress_queue, *arg, **kwarg
+        source_graph, number_subgraph_per_source, progress_queue, source_graph_pivot, *arg, **kwarg
     )
 
-    return source_graph, source_graph_mapping, iso_subgraphs, noniso_subgraphs
+    return source_graph, source_graph_mapping, source_graph_pivot, iso_subgraphs, noniso_subgraphs
 
 
 def generate_batch( start_idx, stop_idx, number_source, dataset_path, progress_queue, *args, **kwargs ):
     for idx in range( start_idx, stop_idx ):
         # print( "SAMPLE %d/%d" % (idx + 1, number_source) )
-        graph, mapping, iso_subgraphs, noniso_subgraphs = generate_one_sample(
+        graph, mapping, pivot, iso_subgraphs, noniso_subgraphs = generate_one_sample(
             idx, progress_queue, *args, **kwargs
         )
-        save_per_source( idx, graph, mapping, iso_subgraphs, noniso_subgraphs, dataset_path )
+        save_per_source( idx, graph, mapping, pivot, iso_subgraphs, noniso_subgraphs, dataset_path )
 
 
 def generate_dataset( dataset_path, is_continue, number_source, num_process, num_subgraphs, *args, **kwargs ):
@@ -602,9 +618,10 @@ def generate_dataset( dataset_path, is_continue, number_source, num_process, num
         p.join()
 
 
-def separate_graphs( total_graph, transaction_by_id ):
+def separate_graphs( total_graph, transaction_by_id, pivots_by_transaction ):
     separeted_graphs = { }
     separeted_graphs_mapping = { }
+    separeted_graphs_pivot = { }
     for gid in transaction_by_id:
         G = total_graph.subgraph( transaction_by_id[ gid ] )
         mapping = dict( zip( G, range( G.number_of_nodes() ) ) )
@@ -619,9 +636,10 @@ def separate_graphs( total_graph, transaction_by_id ):
 
         separeted_graphs[ gid ] = source_graph
         separeted_graphs_mapping[ gid ] = mapping
+        separeted_graphs_pivot[ gid ] = mapping[ pivots_by_transaction[ gid ] ]
         # utils.save_graph_debug( source_graph, f"source_{gid}.png" )
 
-    return separeted_graphs, separeted_graphs_mapping
+    return separeted_graphs, separeted_graphs_mapping, separeted_graphs_pivot
 
 
 def calculate_ds_attr( graph_ds, total_graph, num_subgraphs ):
@@ -671,7 +689,7 @@ def save_config_for_synthesis( config_path, ds_name, configs ):
         json.dump( configs, f, indent=4 )
 
 
-def split_source_graphs( source_graphs, source_graph_mappings, train_split_ration=0.8 ):
+def split_source_graphs( source_graphs, source_graph_mappings, source_graph_pivots, train_split_ration=0.8 ):
     # Shuffle keys and split them
     keys = list( source_graphs.keys() )
     random.shuffle( keys )
@@ -682,16 +700,20 @@ def split_source_graphs( source_graphs, source_graph_mappings, train_split_ratio
 
     # Create train and test dictionaries with reindexed keys
     train_data = { i: source_graphs[ k ] for i, k in enumerate( train_keys ) }
-    train_data_mapping = { i: source_graph_mappings[ k ] for i, k in enumerate( train_keys ) }
     test_data = { i: source_graphs[ k ] for i, k in enumerate( test_keys ) }
+    train_data_mapping = { i: source_graph_mappings[ k ] for i, k in enumerate( train_keys ) }
     test_data_mapping = { i: source_graph_mappings[ k ] for i, k in enumerate( test_keys ) }
+    train_data_pivots = { i: source_graph_pivots[ k ] for i, k in enumerate( train_keys ) }
+    test_data_pivots = { i: source_graph_pivots[ k ] for i, k in enumerate( test_keys ) }
 
-    return train_data, test_data, train_data_mapping, test_data_mapping
+    return train_data, test_data, train_data_mapping, test_data_mapping, train_data_pivots, test_data_pivots
 
 
 def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
-    total_graph, transaction_by_nid = read_dataset( path, ds_name )
-    source_graphs, source_graph_mapping = separate_graphs( total_graph, transaction_by_nid )
+    total_graph, transaction_by_nid, pivots_by_transaction = read_dataset( path, ds_name )
+    (source_graphs,
+     source_graph_mapping,
+     source_graph_pivots) = separate_graphs( total_graph, transaction_by_nid, pivots_by_transaction )
     config = calculate_ds_attr( source_graphs, total_graph, num_subgraphs )
     dataset_name = os.path.basename( ds_name ).split( "." )[ 0 ]
 
@@ -700,11 +722,14 @@ def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
 
     source_graphs_test = source_graphs
     source_graphs_test_mapping = source_graph_mapping
+    source_graphs_test_pivots = source_graph_pivots
     if args.split_data:
         print( f"Splitting dataset with size {len( source_graphs )} into test and train data ..." )
         (source_graphs_train, source_graphs_test,
-         source_graphs_train_mapping, source_graphs_test_mapping) = split_source_graphs( source_graphs,
-                                                                                         source_graph_mapping )
+         source_graphs_train_mapping, source_graphs_test_mapping,
+         source_graphs_train_pivots, source_graphs_test_pivots) = split_source_graphs( source_graphs,
+                                                                                       source_graph_mapping,
+                                                                                       source_graph_pivots )
 
         config[ "number_source" ] = len( source_graphs_train )
         print( f"Processing train data of size {len( source_graphs_train )} ..." )
@@ -716,6 +741,7 @@ def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
             is_continue=is_continue,
             source_graphs=source_graphs_train,
             source_graph_mappings=source_graphs_train_mapping,
+            source_graph_pivots=source_graphs_train_pivots,
             num_process=args.num_workers,
             num_subgraphs=num_subgraphs,
             **config
@@ -731,6 +757,7 @@ def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
         is_continue=is_continue,
         source_graphs=source_graphs_test,
         source_graph_mappings=source_graphs_test_mapping,
+        source_graph_pivots=source_graphs_test_pivots,
         num_process=args.num_workers,
         num_subgraphs=num_subgraphs,
         **config
