@@ -429,52 +429,50 @@ def save_graph_debug( G, file_name ):
         plt.close()  # Ensure the plot is closed to free memory
 
 
-def load_source_mapping( args, source_graph_idx ):
+def load_source_mapping( args, source_graph_idx, flip=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
-    mapping_rev = read_mapping(
+    mapping = read_mapping(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source_mapping.lg" )[ source_graph_idx ]
-    mapping = { }
-    for original_id, source_id in mapping_rev.items():
-        mapping[ source_id ] = original_id
-    return mapping
+    return flip_key_values( mapping ) if flip else mapping
 
 
-def get_source_graph( args, source_graph_idx ):
+def load_source_graph( args, source_graph_idx, relabel=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
-    source_mapping = load_source_mapping( args, source_graph_idx )
+
     source = read_graphs(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source.lg",
         directed=args.directed )[ source_graph_idx ]
 
-    return nx.relabel_nodes( source, source_mapping )
+    if relabel:
+        source_mapping = load_source_mapping( args, source_graph_idx )
+        source = nx.relabel_nodes( source, source_mapping )
+    return source
 
 
-def load_query_id_mapping( args, source_graph_idx, query_subgraph_idx ):
+def load_query_id_mapping( args, source_graph_idx, query_subgraph_idx, flip=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
-    mapping_rev = read_mapping(
+    mapping = read_mapping(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs_mapping.lg" )[
         query_subgraph_idx ]
-    mapping = { }
-    for source_id, query_id in mapping_rev.items():
-        mapping[ query_id ] = source_id
-    return mapping
+    return flip_key_values( mapping ) if flip else mapping
 
 
-def load_query( args, source_graph_idx, query_subgraph_idx ):
-    query_id_mapping = load_query_id_mapping( args, source_graph_idx, query_subgraph_idx )
-    source_id_mapping = load_source_mapping( args, source_graph_idx )
-
+def load_query( args, source_graph_idx, query_subgraph_idx, relabel=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
     query = read_graphs(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs.lg",
         directed=args.directed )[ query_subgraph_idx ]
 
-    query = nx.relabel_nodes( query, query_id_mapping )
-    return nx.relabel_nodes( query, source_id_mapping )
+    if relabel:
+        query_id_mapping = load_query_id_mapping( args, source_graph_idx, query_subgraph_idx )
+        source_id_mapping = load_source_mapping( args, source_graph_idx )
+        query = nx.relabel_nodes( query, query_id_mapping )
+        query = nx.relabel_nodes( query, source_id_mapping )
+    return query
 
 
 def get_record_scopes( args ) -> dict[ str, str ]:
@@ -559,3 +557,10 @@ def combine_graph( source, query, matching_colors: dict[ int, str ] = None ):
 
 def get_shape_of_tensors( input_tensors ):
     return [ tuple( tensor.shape ) for tensor in input_tensors ]
+
+
+def flip_key_values( data: dict[ any, any ] ) -> dict[ any, any ]:
+    flipped_data = { }
+    for key, value in data.items():
+        flipped_data[ value ] = key
+    return flipped_data

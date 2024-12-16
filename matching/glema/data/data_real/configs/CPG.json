@@ -6,5 +6,5 @@
     "std_degree": 0.3791028655885958,
     "number_label_node": 5,
     "number_label_edge": 1,
-    "number_subgraph_per_source": 20
+    "number_subgraph_per_source": 64
 }

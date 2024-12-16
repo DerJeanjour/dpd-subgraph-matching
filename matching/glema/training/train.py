@@ -94,8 +94,9 @@ def main( args ):
     early_stop_count = 0
 
     batch_count = 0
-    snapshot_interval = 100
+    snapshot_interval = 20 # TODO maybe relative ???
     confidence_thresh = 0.75
+
     for epoch in range( args.epoch ):
         print( "EPOCH", epoch )
         st = time.time()

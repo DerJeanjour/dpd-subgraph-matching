@@ -35,7 +35,7 @@ if __name__ == "__main__":
     args.import_subgraph_radius = 4
     args.import_subgraph_max = 40
     args.import_subgraph_min = 2
-    args.num_subgraphs = 20
+    args.num_subgraphs = 64
     args.real = True
     args.testonly = False
     args.directed = True

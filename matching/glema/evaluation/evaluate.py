@@ -106,17 +106,11 @@ def main( args ):
         test_pred_by_conf[ test_pred_by_conf < conf_step ] = 0
         test_pred_by_conf[ test_pred_by_conf > 0 ] = 1
 
-        print( f"calc roc auc (conf: {conf_step}) ..." )
         test_roc = roc_auc_score( test_true, test_pred_by_conf )
-        print( f"calc acc (conf: {conf_step}) ..." )
         test_acc = accuracy_score( test_true, test_pred_by_conf )
-        print( f"calc prec (conf: {conf_step}) ..." )
         test_pre = precision_score( test_true, test_pred_by_conf, zero_division=np.nan )
-        print( f"calc rec (conf: {conf_step}) ..." )
         test_rec = recall_score( test_true, test_pred_by_conf, zero_division=np.nan )
-        print( f"calc f1 (conf: {conf_step}) ..." )
         test_f1s = f1_score( test_true, test_pred_by_conf, zero_division=np.nan )
-        print( f"calc avg prec (conf: {conf_step}) ..." )
         test_prc = average_precision_score( test_true, test_pred_by_conf )
         test_time = (end - st_eval) / len( test_dataset )
 
@@ -145,7 +139,7 @@ def main( args ):
 if __name__ == "__main__":
     args = utils.parse_args()
     #model_ckpt = "training/save/KKI_jump_directed_promising/best_model.pt"
-    model_ckpt = "training/save/SYNTHETIC_TINY_jump_directed_30e/best_model.pt"
+    model_ckpt = "training/save/CPG_jump_directed_best/best_model.pt"
     args = utils.load_args( args, model_ckpt )
     args.ckpt_path = model_ckpt
     args.batch_size = 128
