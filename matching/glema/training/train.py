@@ -269,7 +269,7 @@ if __name__ == "__main__":
     args = utils.parse_args()
     args.directed = True
     # args.dataset = "KKI"
-    #args.dataset = "SYNTHETIC_TINY"
+    # args.dataset = "SYNTHETIC_TINY"
     args.dataset = "CPG"
     args.batch_size = 128
     args.tactic = "jump"

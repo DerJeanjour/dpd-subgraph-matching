@@ -555,3 +555,7 @@ def combine_graph( source, query, matching_colors: dict[ int, str ] = None ):
     node_colors = [ matching_colors[ matching ] for matching in node_matching ]
     edge_colors = [ matching_colors[ matching ] for matching in edge_matching ]
     return combined_graph, node_colors, edge_colors
+
+
+def get_shape_of_tensors( input_tensors ):
+    return [ tuple( tensor.shape ) for tensor in input_tensors ]

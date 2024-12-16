@@ -215,7 +215,6 @@ class GLeMaNet( torch.nn.Module ):
 class InferenceGNN:
     def __init__( self, args ) -> None:
         self.model = GLeMaNet( args )
-        # self.device = torch.device( "cuda:0" if torch.cuda.is_available() else "cpu" )
         self.device = utils.get_device()
         self.model = utils.initialize_model(
             self.model, self.device, load_save_file=args.ckpt_path
