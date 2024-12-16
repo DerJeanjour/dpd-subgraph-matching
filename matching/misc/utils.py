@@ -1,6 +1,7 @@
 import copy
 import datetime
 import os
+import shutil
 import random
 from pathlib import Path
 
@@ -12,7 +13,7 @@ import torch
 
 def get_abs_file_path( project_file_path: str ) -> str:
     abs_path: Path = get_project_root() / project_file_path
-    #if not abs_path.exists():
+    # if not abs_path.exists():
     #    raise FileNotFoundError( f"The file '{abs_path}' does not exist." )
     return str( abs_path )
 
@@ -21,8 +22,30 @@ def get_project_root() -> Path:
     return Path( __file__ ).parent.parent
 
 
-def file_exists( path ) -> bool:
+def path_exists( path ) -> bool:
     return os.path.exists( path )
+
+
+def delete_path( path: str, dry_run=False ):
+    if path_exists( path ):
+        try:
+            if os.path.isfile( path ) or os.path.islink( path ):
+                if not dry_run:
+                    os.remove( path )
+                print( f"Deleted file: {path}" )
+            elif os.path.isdir( path ):
+                if not dry_run:
+                    shutil.rmtree( path )
+                print( f"Deleted directory: {path}" )
+        except Exception as e:
+            print( f"Error deleting {path}: {e}" )
+    else:
+        print( f"Can't delete non existing path: {path}" )
+
+
+def delete_paths( paths: list[ str ], dry_run=False ):
+    for path in paths:
+        delete_path( path, dry_run=dry_run )
 
 
 def get_filenames_in_dir( dir_path ):

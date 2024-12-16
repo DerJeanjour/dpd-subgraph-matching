@@ -1,8 +1,21 @@
+import os.path
+
 import matching.glema.common.utils as utils
 import matching.glema.data.data_real.import_dataset as importer
 import matching.glema.data.data_real.data_generator as data_generator
 import matching.glema.data.data_real.data_synthesis as data_synthesis
 import matching.glema.data.process_data as data_processor
+
+
+def clean_up( args ):
+    data_paths = [
+        os.path.join( args.raw_dataset_dir, f"{args.dataset}" ),
+        os.path.join( args.dataset_dir, f"{args.dataset}_train" ),
+        os.path.join( args.dataset_dir, f"{args.dataset}_test" ),
+        os.path.join( args.data_path, f"{args.dataset}{'_directed' if args.directed else ''}" )
+    ]
+    data_paths = [ utils.get_abs_file_path( path ) for path in data_paths ]
+    utils.delete_paths( data_paths )
 
 
 def process( args ):
@@ -29,4 +42,5 @@ if __name__ == "__main__":
     args.max_subgraph = -1
     print( args )
 
+    clean_up( args )
     process( args )
