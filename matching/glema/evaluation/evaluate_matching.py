@@ -38,7 +38,7 @@ def eval_mapping( groundtruth, predict_list, predict_prob ):
 
 
 def evaluate( args ):
-    data_path = utils.get_abs_file_path( os.path.join( args.data_path, args.dataset ) )
+    data_path = utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
     if args.directed:
         data_path += "_directed"
     result_dir = utils.ensure_dir( args.result_dir, args )
@@ -60,7 +60,7 @@ def evaluate( args ):
     )
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = utils.get_device()
-    model = utils.initialize_model( model, device, load_save_file=args.ckpt )
+    model = utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
     test_dataset = BaseDataset( test_keys, data_path, embedding_dim=args.embedding_dim )
     test_dataloader = DataLoader(

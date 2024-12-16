@@ -16,7 +16,7 @@ class InferenceGNN:
         # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.device = utils.get_device()
         self.model = utils.initialize_model(
-            self.model, self.device, load_save_file=args.ckpt
+            self.model, self.device, load_save_file=args.ckpt_path
         )
 
         self.model.eval()
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     args = utils.parse_args()
     print( args )
 
-    data_path = utils.get_abs_file_path( os.path.join( args.data_path, args.dataset ) )
+    data_path = utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
     result_dir = utils.ensure_dir( args.result_dir, args )
 
     model = InferenceGNN( args )

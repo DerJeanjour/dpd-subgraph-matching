@@ -131,9 +131,9 @@ def parse_args( use_default=False ):
                          type=int, default=0 )
 
     # file paths
-    parser.add_argument( "--data_path", help="path to the data",
+    parser.add_argument( "--data_processed_dir", help="path to the data",
                          type=str, default="data/data_processed" )
-    parser.add_argument( "--save_dir", help="save directory of model parameter",
+    parser.add_argument( "--ckpt_dir", help="save directory of model parameter",
                          type=str, default="training/save/" )
     parser.add_argument( "--log_dir", help="logging directory",
                          type=str, default="training/runs/" )
@@ -145,7 +145,7 @@ def parse_args( use_default=False ):
                          type=str, default="data/data_real/datasets/" )
     parser.add_argument( "--raw_dataset_dir", help="Raw dataset directory",
                          type=str, default="data/data_real/raw_datasets/" )
-    parser.add_argument( "--ckpt", help="Load ckpt file",
+    parser.add_argument( "--ckpt_path", help="Path to model ckpt file",
                          type=str, default=None )
     parser.add_argument( "--train_keys", help="train keys",
                          type=str, default="train_keys.pkl" )

@@ -164,7 +164,7 @@ def load_dataset( data_dir, list_source, save_dir, args, additional_tag="", max_
 def process( args ):
     utils.set_seed( args.seed )
 
-    data_proccessed_dir = os.path.join( args.data_path, args.dataset )
+    data_proccessed_dir = os.path.join( args.data_processed_dir, args.dataset )
     data_proccessed_dir = data_proccessed_dir.replace( "_train", "" )
     data_proccessed_dir = utils.get_abs_file_path( data_proccessed_dir )
     if args.directed:

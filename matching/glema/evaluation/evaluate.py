@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 def main( args ):
     # hyper parameters
-    data_path = utils.get_abs_file_path( os.path.join( args.data_path, args.dataset ) )
+    data_path = utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
     if args.directed:
         data_path += "_directed"
     result_dir = utils.ensure_dir( args.result_dir, args )
@@ -42,7 +42,7 @@ def main( args ):
     )
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = utils.get_device()
-    model = utils.initialize_model( model, device, load_save_file=args.ckpt )
+    model = utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
     test_dataset = BaseDataset( test_keys, data_path, embedding_dim=args.embedding_dim )
     test_dataloader = DataLoader(
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     #model_ckpt = "training/save/KKI_jump_directed_promising/best_model.pt"
     model_ckpt = "training/save/SYNTHETIC_TINY_jump_directed_30e/best_model.pt"
     args = utils.load_args( args, model_ckpt )
-    args.ckpt = model_ckpt
+    args.ckpt_path = model_ckpt
     args.batch_size = 128
     print( args )
 

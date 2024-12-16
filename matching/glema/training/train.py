@@ -19,12 +19,12 @@ from torch.utils.tensorboard import SummaryWriter
 
 def main( args ):
     utils.set_seed( args.seed )
-    data_path = utils.get_abs_file_path( os.path.join( args.data_path, args.dataset ) )
+    data_path = utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
     if args.directed:
         data_path += "_directed"
     args.train_keys = utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
     args.test_keys = utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
-    save_dir = utils.ensure_dir( args.save_dir, args )
+    save_dir = utils.ensure_dir( args.ckpt_dir, args )
     log_dir = utils.ensure_dir( args.log_dir, args )
 
     # Read data. data is stored in format of dictionary. Each key has information about protein-ligand complex.
@@ -46,7 +46,7 @@ def main( args ):
     torchinfo.summary( model )
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = utils.get_device()
-    model = utils.initialize_model( model, device, load_save_file=args.ckpt )
+    model = utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
     # Train and test dataset
     train_dataset = BaseDataset( train_keys, data_path, embedding_dim=args.embedding_dim )

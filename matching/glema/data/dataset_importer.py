@@ -12,7 +12,7 @@ def clean_up( args ):
         os.path.join( args.raw_dataset_dir, f"{args.dataset}" ),
         os.path.join( args.dataset_dir, f"{args.dataset}_train" ),
         os.path.join( args.dataset_dir, f"{args.dataset}_test" ),
-        os.path.join( args.data_path, f"{args.dataset}{'_directed' if args.directed else ''}" )
+        os.path.join( args.data_processed_dir, f"{args.dataset}{'_directed' if args.directed else ''}" )
     ]
     data_paths = [ utils.get_abs_file_path( path ) for path in data_paths ]
     utils.delete_paths( data_paths )
