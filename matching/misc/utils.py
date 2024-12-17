@@ -48,8 +48,8 @@ def delete_paths( paths: list[ str ], dry_run=False ):
         delete_path( path, dry_run=dry_run )
 
 
-def get_filenames_in_dir( dir_path ):
-    return [ f for f in os.listdir( dir_path ) if os.path.isfile( os.path.join( dir_path, f ) ) ]
+def get_filenames_in_dir( dir_path, only_files=True ):
+    return [ f for f in os.listdir( dir_path ) if not only_files or os.path.isfile( os.path.join( dir_path, f ) ) ]
 
 
 def get_timestamp() -> str:

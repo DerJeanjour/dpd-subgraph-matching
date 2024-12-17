@@ -37,8 +37,8 @@ def delete_paths( paths: list[ str ], dry_run=False ):
     utils.delete_paths( paths, dry_run=dry_run )
 
 
-def get_filenames_in_dir( dir_path ):
-    return utils.get_filenames_in_dir( dir_path )
+def get_filenames_in_dir( dir_path, only_files=True ):
+    return utils.get_filenames_in_dir( dir_path, only_files=only_files )
 
 
 def get_timestamp() -> str:
@@ -452,6 +452,7 @@ def load_source_mapping( args, source_graph_idx, flip=True ):
     dataset = f"{args.dataset}_{dataset_type}"
     mapping = read_mapping(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/source_mapping.lg" )[ source_graph_idx ]
+    mapping = { original_id + 1: source_id for original_id, source_id in mapping.items() }
     return flip_key_values( mapping ) if flip else mapping
 
 
@@ -470,29 +471,54 @@ def load_source_graph( args, source_graph_idx, relabel=True ):
     return source
 
 
+def load_source_graphs( args, relabel=True ):
+    dataset_type = "test" if args.test_data else "train"
+    dataset_path = os.path.join( args.dataset_dir, f"{args.dataset}_{dataset_type}" )
+    dataset_path = get_abs_file_path( dataset_path )
+
+    source_graph_idxs = get_filenames_in_dir( dataset_path, only_files=False )
+    source_graph_idxs = sorted( [ int( idx ) for idx in source_graph_idxs ] )
+
+    source_graphs = { }
+    for source_graph_idx in source_graph_idxs:
+        source_graph_idx = int( source_graph_idx )
+        source_graphs[ source_graph_idx ] = load_source_graph( args, source_graph_idx, relabel=relabel )
+    return source_graphs
+
+
+def load_query_id_mappings( args, source_graph_idx, flip=True ):
+    dataset_type = "test" if args.test_data else "train"
+    dataset = f"{args.dataset}_{dataset_type}"
+    mappings = read_mapping(
+        f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs_mapping.lg" )
+    if flip:
+        mappings = { query_graph_idx: flip_key_values( mapping ) for query_graph_idx, mapping in mappings.items() }
+    return mappings
+
+
 def load_query_id_mapping( args, source_graph_idx, query_subgraph_idx, flip=True ):
-    dataset_type = "test" if args.test_data else "train"
-    dataset = f"{args.dataset}_{dataset_type}"
-    mapping = read_mapping(
-        f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs_mapping.lg" )[
-        query_subgraph_idx ]
-    return flip_key_values( mapping ) if flip else mapping
+    return load_query_id_mappings( args, source_graph_idx, flip=flip )[ query_subgraph_idx ]
 
 
-def load_query( args, source_graph_idx, query_subgraph_idx, relabel=True ):
+def load_query_graphs( args, source_graph_idx, relabel=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
-    query = read_graphs(
+    queries = read_graphs(
         f"{args.dataset_dir}/{dataset}/{source_graph_idx}/{'non' if not args.iso else ''}iso_subgraphs.lg",
-        directed=args.directed )[ query_subgraph_idx ]
-
+        directed=args.directed )
     if relabel:
-        query_id_mapping = load_query_id_mapping( args, source_graph_idx, query_subgraph_idx )
+        query_id_mappings = load_query_id_mappings( args, source_graph_idx )
         source_id_mapping = load_source_mapping( args, source_graph_idx )
-        query = nx.relabel_nodes( query, query_id_mapping )
-        mark_pivot( args, query, source_graph_idx )
-        query = nx.relabel_nodes( query, source_id_mapping )
-    return query
+        for query_graph_idx, query in queries.items():
+            query = nx.relabel_nodes( query, query_id_mappings[ query_graph_idx ] )
+            mark_pivot( args, query, source_graph_idx )
+            query = nx.relabel_nodes( query, source_id_mapping )
+            queries[ query_graph_idx ] = query
+    return queries
+
+
+def load_query_graph( args, source_graph_idx, query_subgraph_idx, relabel=True ):
+    return load_query_graphs( args, source_graph_idx, relabel=relabel )[ query_subgraph_idx ]
 
 
 def get_record_scopes( args ) -> dict[ str, str ]:
@@ -501,7 +527,7 @@ def get_record_scopes( args ) -> dict[ str, str ]:
     record_scope_filepath = get_abs_file_path( record_scope_filepath )
     record_scope_file = open( record_scope_filepath, "r" )
     for idx, record_scope in enumerate( record_scope_file.read().strip().split( "\n" ) ):
-        record_scopes[ str( idx ) ] = record_scope
+        record_scopes[ str( idx + 1 ) ] = record_scope
     return record_scopes
 
 
@@ -513,7 +539,7 @@ def get_design_patterns( args ) -> dict[ str, str ]:
     for row in list( pattern_type_file.read().strip().split( "\n" ) ):
         node_id = row.split( " " )[ 0 ]
         pattern_type = row.split( " " )[ 1 ]
-        design_patterns[ str( int( node_id ) - 1 ) ] = pattern_type
+        design_patterns[ str( int( node_id ) ) ] = pattern_type
     return design_patterns
 
 
@@ -547,7 +573,7 @@ def get_node_labels( G, record_scopes=None, design_patterns=None ):
     return { node_id: map_node_label_idx( node_id, data, **label_args ) for node_id, data in G.nodes( data=True ) }
 
 
-def combine_graph( source, query, matching_colors: dict[ int, str ] = None ):
+def combine_graph( source, query, pivot=None, matching_colors: dict[ int, str ] = None ):
     # Create a combined graph
     combined_graph = nx.compose( source, query )
 
@@ -555,8 +581,10 @@ def combine_graph( source, query, matching_colors: dict[ int, str ] = None ):
     node_matching = [ ]
     for node_id, node_data in combined_graph.nodes( data=True ):
         if node_id in query.nodes and node_id in source.nodes:
-            if "pivot" in node_data and bool( node_data["pivot"] ):
-                node_matching.append( 2 ) # Node is pivot
+            if pivot is not None and node_id == pivot:
+                node_matching.append( 2 )
+            elif "pivot" in node_data and bool( node_data[ "pivot" ] ):
+                node_matching.append( 2 )  # Node is pivot
             else:
                 node_matching.append( 1 )  # Nodes in both source and query
         elif node_id in query.nodes:

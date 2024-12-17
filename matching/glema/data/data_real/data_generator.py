@@ -195,8 +195,6 @@ def generate_iso_subgraph( graph, pivot, no_of_nodes, avg_degree, std_degree, *a
     subgraph = None
     iteration = 0
 
-    # TODO handle pivot !!!
-
     while (
             subgraph is None
             or subgraph.number_of_nodes() < 2
@@ -205,7 +203,9 @@ def generate_iso_subgraph( graph, pivot, no_of_nodes, avg_degree, std_degree, *a
         chose_nodes = np.random.choice(
             [ 0, 1 ], size=graph_nodes, replace=True, p=[ 1 - node_ratio, node_ratio ]
         )
-        remove_nodes = np.where( chose_nodes == 0 )[ 0 ]
+        remove_nodes = list( np.where( chose_nodes == 0 )[ 0 ] )
+        if pivot is not None and pivot in remove_nodes:
+            remove_nodes.remove( pivot )
         subgraph = graph.copy()
         subgraph.remove_nodes_from( remove_nodes )
 
@@ -215,7 +215,6 @@ def generate_iso_subgraph( graph, pivot, no_of_nodes, avg_degree, std_degree, *a
             if node_ratio > 1:
                 node_ratio = 1
             iteration = 0
-            # utils.save_graph_debug( graph, "iso_debug.png" )
 
     return subgraph
 
@@ -296,6 +295,10 @@ def add_random_edges( current_graph, NE, min_edges=61, max_edges=122 ):
             # print('Unconnected', unconnected
 
         num_edges = np.random.randint( min_edges, max_edges + 1 )
+        # target num_edges can be higher than max possible edges in a directed graph
+        num_nodes = max( 0, current_graph.number_of_nodes() )
+        max_num_edges = int( num_nodes * (num_nodes - 1) / 2 )
+        num_edges = min( num_edges, max_num_edges )
 
         while current_graph.number_of_edges() < num_edges:
             old_1, old_2 = np.random.choice( current_graph.nodes, 2, replace=False )
@@ -337,7 +340,8 @@ def add_random_nodes(
 
 
 def random_modify( graph, NN, NE, node_start_id, min_edges, max_edges ):
-    num_steps = np.random.randint( 1, graph.number_of_nodes() + graph.number_of_edges() )
+    num_steps_max = max( graph.number_of_nodes() + graph.number_of_edges(), 2 )
+    num_steps = np.random.randint( 1, num_steps_max )
     modify_type = None
 
     while num_steps > 0:
@@ -413,8 +417,6 @@ def generate_noniso_subgraph(
     max_edges = int( no_of_nodes * min( no_of_nodes - 1, avg_degree + std_degree ) / 2 )
     subgraph = None
     iteration = 0
-
-    # TODO handle pivot !!!
 
     while (
             subgraph is None
