@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.spatial import distance_matrix
 
-import matching.glema.common.utils as utils
+import matching.glema.common.utils.model_utils as model_utils
 from matching.glema.common.dataset import onehot_encoding_node
 
 
@@ -132,7 +132,7 @@ class GLeMaNet( torch.nn.Module ):
 
         self.embede = nn.Linear( 2 * args.embedding_dim, d_graph_layer, bias=False )
         self.theta = args.al_scale
-        self.zeros = torch.zeros( 1 ).to( utils.get_device() )
+        self.zeros = torch.zeros( 1 ).to( model_utils.get_device() )
         if args.ngpu > 0:
             self.zeros = self.zeros.cuda()
 
@@ -215,8 +215,8 @@ class GLeMaNet( torch.nn.Module ):
 class InferenceGNN:
     def __init__( self, args ) -> None:
         self.model = GLeMaNet( args )
-        self.device = utils.get_device()
-        self.model = utils.initialize_model(
+        self.device = model_utils.get_device()
+        self.model = model_utils.initialize_model(
             self.model, self.device, load_save_file=args.ckpt_path
         )
 

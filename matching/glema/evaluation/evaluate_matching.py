@@ -5,7 +5,9 @@ from collections import defaultdict
 
 import numpy as np
 import torch
-import matching.glema.common.utils as utils
+import matching.glema.common.utils.arg_utils as arg_utils
+import matching.glema.common.utils.io_utils as io_utils
+import matching.glema.common.utils.model_utils as model_utils
 from matching.glema.common.dataset import BaseDataset, collate_fn
 from matching.glema.common.model import GLeMaNet
 from torch.utils.data import DataLoader
@@ -38,13 +40,13 @@ def eval_mapping( groundtruth, predict_list, predict_prob ):
 
 
 def evaluate( args ):
-    data_path = utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
+    data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
     if args.directed:
         data_path += "_directed"
-    result_dir = utils.ensure_dir( args.result_dir, args )
+    result_dir = io_utils.ensure_dir( args.result_dir, args )
     result_file = f"result_matching{args.test_keys[ 9:-4 ]}.csv"
-    args.train_keys = utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
-    args.test_keys = utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
+    args.train_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
+    args.test_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
 
     with open( args.test_keys, "rb" ) as fp:
         test_keys = pickle.load( fp )
@@ -59,8 +61,8 @@ def evaluate( args ):
         sum( p.numel() for p in model.parameters() if p.requires_grad ),
     )
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = utils.get_device()
-    model = utils.initialize_model( model, device, load_save_file=args.ckpt_path )
+    device = model_utils.get_device()
+    model = model_utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
     test_dataset = BaseDataset( test_keys, data_path, embedding_dim=args.embedding_dim )
     test_dataloader = DataLoader(
@@ -171,7 +173,7 @@ def evaluate( args ):
 
 
 if __name__ == "__main__":
-    args = utils.parse_args()
+    args = arg_utils.parse_args()
     print( args )
 
     evaluate( args )

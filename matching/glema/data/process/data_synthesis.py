@@ -1,17 +1,17 @@
-import argparse
 import json
 import os
 import signal
 from contextlib import contextmanager
 from multiprocessing import Process, Queue
-from random import choice, seed, shuffle
+from random import choice, shuffle
 
 import networkx as nx
 import numpy as np
-
 from tqdm import tqdm
 
-import matching.glema.common.utils as utils
+import matching.glema.common.utils.arg_utils as arg_utils
+import matching.glema.common.utils.io_utils as io_utils
+import matching.glema.common.utils.misc_utils as misc_utils
 
 
 @contextmanager
@@ -28,7 +28,7 @@ def time_limit( seconds ):
 
 
 def read_config( config_file ):
-    with open( utils.get_abs_file_path( config_file ), "r", encoding="utf-8" ) as f:
+    with open( io_utils.get_abs_file_path( config_file ), "r", encoding="utf-8" ) as f:
         return json.load( f )
 
 
@@ -547,7 +547,7 @@ def generate_dataset( dataset_path, is_continue, number_source, num_process, *ar
 
 def save_per_source( graph_id, H, iso_subgraphs, noniso_subgraphs, dataset_path ):
     # Ensure path
-    subgraph_path = utils.get_abs_file_path( os.path.join( dataset_path, str( graph_id ) ) )
+    subgraph_path = io_utils.get_abs_file_path( os.path.join( dataset_path, str( graph_id ) ) )
     ensure_path( subgraph_path )
 
     # Save source graphs
@@ -631,10 +631,10 @@ def process( args ):
     config_file = f"{args.config_dir}{args.dataset}.json"
     is_continue = args.cont
 
-    utils.set_seed( args.seed )
+    misc_utils.set_seed( args.seed )
     dataset_path = os.path.join( args.dataset_dir,
                                  os.path.basename( config_file ).split( "." )[ 0 ] + "_train" )
-    dataset_path = utils.get_abs_file_path( dataset_path )
+    dataset_path = io_utils.get_abs_file_path( dataset_path )
     ensure_path( dataset_path )
     config = read_config( config_file )
     print( config )
@@ -646,8 +646,8 @@ def process( args ):
 
 
 if __name__ == "__main__":
-    args = utils.parse_args()
-    #args.dataset = "CPG"
+    args = arg_utils.parse_args()
+    # args.dataset = "CPG"
     # args.num_workers = 1
     # print( args )
     process( args )

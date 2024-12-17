@@ -1,31 +1,34 @@
 import os
 import pickle
-import random
 import time
 
 import numpy as np
 import torch
 import torch.nn as nn
-import matching.glema.common.utils as utils
-from matching.glema.common.dataset import BaseDataset, collate_fn, UnderSampler
-from matching.glema.common.model import GLeMaNet
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import accuracy_score
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 import torchinfo
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import roc_auc_score
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+
+import matching.glema.common.utils.arg_utils as arg_utils
+import matching.glema.common.utils.io_utils as io_utils
+import matching.glema.common.utils.misc_utils as misc_utils
+import matching.glema.common.utils.model_utils as model_utils
+from matching.glema.common.dataset import BaseDataset, collate_fn
+from matching.glema.common.model import GLeMaNet
 
 
 def main( args ):
-    utils.set_seed( args.seed )
-    data_path = utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
+    misc_utils.set_seed( args.seed )
+    data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
     if args.directed:
         data_path += "_directed"
-    args.train_keys = utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
-    args.test_keys = utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
-    save_dir = utils.ensure_dir( args.ckpt_dir, args )
-    log_dir = utils.ensure_dir( args.log_dir, args )
+    args.train_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
+    args.test_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
+    save_dir = io_utils.ensure_dir( args.ckpt_dir, args )
+    log_dir = io_utils.ensure_dir( args.log_dir, args )
 
     # Read data. data is stored in format of dictionary. Each key has information about protein-ligand complex.
     with open( args.train_keys, "rb" ) as fp:
@@ -45,8 +48,8 @@ def main( args ):
     )
     torchinfo.summary( model )
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = utils.get_device()
-    model = utils.initialize_model( model, device, load_save_file=args.ckpt_path )
+    device = model_utils.get_device()
+    model = model_utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
     # Train and test dataset
     train_dataset = BaseDataset( train_keys, data_path, embedding_dim=args.embedding_dim )
@@ -80,7 +83,7 @@ def main( args ):
     # Loss function
     loss_fn = nn.BCELoss()
 
-    timestamp = utils.get_timestamp()
+    timestamp = misc_utils.get_timestamp()
 
     # Logging file
     log_file = open( os.path.join( log_dir, f"log_{timestamp}.csv" ), "w", encoding="utf-8" )
@@ -88,13 +91,13 @@ def main( args ):
         "epoch,train_losses,test_losses,train_acc,test_acc,train_roc,test_roc,train_time,test_time\n"
     )
     logger = SummaryWriter( log_dir=f'{log_dir}/{args.dataset}_{args.tactic}_{timestamp}' )
-    utils.save_args( args, f"{log_dir}/args_{timestamp}.json" )
+    arg_utils.save_args( args, f"{log_dir}/args_{timestamp}.json" )
 
     best_roc = 0
     early_stop_count = 0
 
     batch_count = 0
-    snapshot_interval = 20 # TODO maybe relative ???
+    snapshot_interval = 20  # TODO maybe relative ???
     confidence_thresh = 0.75
 
     for epoch in range( args.epoch ):
@@ -256,7 +259,7 @@ def main( args ):
             best_roc = test_roc
             ckpt_name = save_dir + "/best_model.pt"
             torch.save( model.state_dict(), ckpt_name )
-            utils.save_args( args, ckpt_name )
+            arg_utils.save_args( args, ckpt_name )
         else:
             early_stop_count += 1
             if early_stop_count >= 3:
@@ -267,14 +270,14 @@ def main( args ):
 
 
 if __name__ == "__main__":
-    args = utils.parse_args()
+    args = arg_utils.parse_args()
     args.directed = True
     # args.dataset = "KKI"
     # args.dataset = "SYNTHETIC_TINY"
     args.dataset = "CPG"
     args.batch_size = 128
     args.tactic = "jump"
-    args.embedding_dim = 6 # 5 labels + 1 pivot
+    args.embedding_dim = 6  # 5 labels + 1 anchor
     args.seed = 23
     print( args )
 

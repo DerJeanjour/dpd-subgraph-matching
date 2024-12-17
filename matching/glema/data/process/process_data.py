@@ -1,14 +1,12 @@
-# %%
-# Create sample train and test keys
-import argparse
 import os
 import pickle
-import sys
 
 import networkx as nx
 from tqdm import tqdm
 
-import matching.glema.common.utils as utils
+import matching.glema.common.utils.arg_utils as arg_utils
+import matching.glema.common.utils.io_utils as io_utils
+import matching.glema.common.utils.misc_utils as misc_utils
 
 
 def read_graphs( database_file_name, args, max_subgraph=-1 ):
@@ -16,7 +14,7 @@ def read_graphs( database_file_name, args, max_subgraph=-1 ):
     sizes = { }
     degrees = { }
 
-    pivot = None
+    anchor = None
     with open( database_file_name, "r", encoding="utf-8" ) as f:
         lines = [ line.strip() for line in f.readlines() ]
         tgraph, graph_cnt = None, 0
@@ -45,7 +43,7 @@ def read_graphs( database_file_name, args, max_subgraph=-1 ):
                     break
 
             if cols[ 0 ] == "p":
-                pivot = int( cols[ -1 ] )
+                anchor = int( cols[ -1 ] )
 
             elif cols[ 0 ] == "v":
                 node_id = int( cols[ 1 ] )
@@ -65,7 +63,7 @@ def read_graphs( database_file_name, args, max_subgraph=-1 ):
             sizes[ graph_cnt ] = tgraph.number_of_nodes()
             degrees[ graph_cnt ] = sum( dict( tgraph.degree ).values() ) / sizes[ graph_cnt ]
 
-    return graphs, sizes, degrees, pivot
+    return graphs, sizes, degrees, anchor
 
 
 def read_mapping( filename, max_subgraph=-1 ):
@@ -97,27 +95,27 @@ def read_mapping( filename, max_subgraph=-1 ):
     return mapping
 
 
-def mark_pivots( graphs, source_pivot, mappings=None ):
+def mark_anchors( graphs, source_anchor, mappings=None ):
     for graph_idx, graph in graphs.items():
 
-        graph_pivot_id = int( source_pivot )
+        graph_anchor_id = int( source_anchor )
         if mappings is not None:
             mapping = mappings[ graph_idx ]
             mapping = { snid: gnid for gnid, snid in mapping }
-            if graph_pivot_id in mapping:
-                graph_pivot_id = int( mapping[ graph_pivot_id ] )
+            if graph_anchor_id in mapping:
+                graph_anchor_id = int( mapping[ graph_anchor_id ] )
             else:
-                graph_pivot_id = -1
+                graph_anchor_id = -1
 
         for nid, ndata in graph.nodes( data=True ):
-            ndata[ "pivot" ] = 1 if nid == graph_pivot_id else 0
+            ndata[ "anchor" ] = 1 if nid == graph_anchor_id else 0
 
 
 def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
-    source_graphs, iso_sizes, iso_degrees, source_pivot = read_graphs(
+    source_graphs, iso_sizes, iso_degrees, source_anchor = read_graphs(
         "%s/%s/source.lg" % (data_dir, source_id),
         args=args )
-    mark_pivots( source_graphs, source_pivot )
+    mark_anchors( source_graphs, source_anchor )
     source_graph = source_graphs[ int( source_id ) ]
 
     iso_subgraphs_mapping = read_mapping(
@@ -131,12 +129,12 @@ def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
         "%s/%s/iso_subgraphs.lg" % (data_dir, source_id),
         max_subgraph=max_subgraph,
         args=args )
-    mark_pivots( iso_subgraphs, source_pivot, mappings=iso_subgraphs_mapping )
+    mark_anchors( iso_subgraphs, source_anchor, mappings=iso_subgraphs_mapping )
     noniso_subgraphs, noniso_sizes, noniso_degrees, _ = read_graphs(
         "%s/%s/noniso_subgraphs.lg" % (data_dir, source_id),
         max_subgraph=max_subgraph,
         args=args )
-    mark_pivots( noniso_subgraphs, source_pivot, mappings=noniso_subgraphs_mapping )
+    mark_anchors( noniso_subgraphs, source_anchor, mappings=noniso_subgraphs_mapping )
 
     return (
         source_graph,
@@ -191,11 +189,11 @@ def load_dataset( data_dir, list_source, save_dir, args, additional_tag="", max_
 
 
 def process( args ):
-    utils.set_seed( args.seed )
+    misc_utils.set_seed( args.seed )
 
     data_proccessed_dir = os.path.join( args.data_processed_dir, args.dataset )
     data_proccessed_dir = data_proccessed_dir.replace( "_train", "" )
-    data_proccessed_dir = utils.get_abs_file_path( data_proccessed_dir )
+    data_proccessed_dir = io_utils.get_abs_file_path( data_proccessed_dir )
     if args.directed:
         data_proccessed_dir += "_directed"
 
@@ -212,7 +210,7 @@ def process( args ):
             additional_tag = ""
 
         data_dir = os.path.join( args.dataset_dir, args.dataset )
-        data_dir = utils.get_abs_file_path( data_dir )
+        data_dir = io_utils.get_abs_file_path( data_dir )
 
         list_source = os.listdir( data_dir )
         list_source = list(
@@ -246,7 +244,7 @@ def process( args ):
     elif args.real:
 
         data_dir = os.path.join( args.dataset_dir, f"{args.dataset}_test" )
-        data_dir = utils.get_abs_file_path( data_dir )
+        data_dir = io_utils.get_abs_file_path( data_dir )
         list_source = os.listdir( data_dir )
         list_source = list(
             filter( lambda x: os.path.isdir( os.path.join( data_dir, x ) ), list_source )
@@ -265,7 +263,7 @@ def process( args ):
             train_keys = [ ]
         else:
             data_dir_train = os.path.join( args.dataset_dir, f"{args.dataset}_train" )
-            data_dir_train = utils.get_abs_file_path( data_dir_train )
+            data_dir_train = io_utils.get_abs_file_path( data_dir_train )
             list_source_train = os.listdir( data_dir_train )
             list_source_train = list(
                 filter(
@@ -366,7 +364,7 @@ def process( args ):
 
 
 if __name__ == "__main__":
-    args = utils.parse_args()
+    args = arg_utils.parse_args()
     # args.dataset = "CPG"
     # args.real = True
     # args.testonly = False

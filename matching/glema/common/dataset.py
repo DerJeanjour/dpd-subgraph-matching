@@ -1,20 +1,21 @@
 import os
 import pickle
-import random
 
 import networkx as nx
 import numpy as np
 import torch
-import matching.glema.common.utils as utils
 from scipy.spatial import distance_matrix
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
+
+import matching.glema.common.utils.io_utils as io_utils
+import matching.glema.common.utils.model_utils as model_utils
 
 
 def onehot_encoding_node( graph, embedding_dim ):
     H = [ ]
     for node_idx in graph.nodes:
-        H.append( utils.node_feature( graph, node_idx, embedding_dim ) )
+        H.append( model_utils.node_feature( graph, node_idx, embedding_dim ) )
     H = np.array( H )
     return H
 
@@ -22,7 +23,7 @@ def onehot_encoding_node( graph, embedding_dim ):
 class BaseDataset( Dataset ):
     def __init__( self, keys, data_dir, embedding_dim=20 ):
         self.keys = keys
-        self.data_dir = utils.get_abs_file_path( data_dir )
+        self.data_dir = io_utils.get_abs_file_path( data_dir )
         self.embedding_dim = embedding_dim
 
     def __len__( self ):

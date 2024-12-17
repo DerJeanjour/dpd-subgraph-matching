@@ -1,10 +1,11 @@
 import os.path
 
-import matching.glema.common.utils as utils
-import matching.glema.data.data_real.import_dataset as importer
-import matching.glema.data.data_real.data_generator as data_generator
-import matching.glema.data.data_real.data_synthesis as data_synthesis
-import matching.glema.data.process_data as data_processor
+import matching.glema.common.utils.arg_utils as arg_utils
+import matching.glema.common.utils.io_utils as io_utils
+import matching.glema.data.process.import_dataset as importer
+import matching.glema.data.process.data_generator as data_generator
+import matching.glema.data.process.data_synthesis as data_synthesis
+import matching.glema.data.process.process_data as data_processor
 
 
 def clean_up( args ):
@@ -14,8 +15,8 @@ def clean_up( args ):
         os.path.join( args.dataset_dir, f"{args.dataset}_test" ),
         os.path.join( args.data_processed_dir, f"{args.dataset}{'_directed' if args.directed else ''}" )
     ]
-    data_paths = [ utils.get_abs_file_path( path ) for path in data_paths ]
-    utils.delete_paths( data_paths )
+    data_paths = [ io_utils.get_abs_file_path( path ) for path in data_paths ]
+    io_utils.delete_paths( data_paths )
 
 
 def process( args ):
@@ -27,7 +28,7 @@ def process( args ):
 
 
 if __name__ == "__main__":
-    args = utils.parse_args()
+    args = arg_utils.parse_args()
     args.dataset = "CPG"
     args.seed = 42
     # args.num_workers = 1
