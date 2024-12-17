@@ -28,8 +28,7 @@ class BaseDataset( Dataset ):
     def __len__( self ):
         return len( self.keys )
 
-    def __getitem__( self, idx ):
-        # idx = 0
+    def get_data( self, idx ):
         key = self.keys[ idx ]
         with open( os.path.join( self.data_dir, key ), "rb" ) as f:
             data = pickle.load( f )
@@ -38,6 +37,12 @@ class BaseDataset( Dataset ):
             else:
                 query, source = data
                 mapping = [ ]
+        return query, source, mapping
+
+    def __getitem__( self, idx ):
+        # idx = 0
+        key = self.keys[ idx ]
+        query, source, mapping = self.get_data( idx )
 
         # Prepare subgraph
         n_query = query.number_of_nodes()

@@ -316,9 +316,10 @@ def initialize_model( model, device, load_save_file: str = None ):
     return model
 
 
-def onehot_encoding( label_idx, max_labels ):
-    onehot_vector = [ 0 ] * max_labels
-    onehot_vector[ label_idx - 1 ] = 1  # label start from 1
+def onehot_encoding( label_idx, pivot_idx, embedding_dim ):
+    onehot_vector = [ 0 ] * embedding_dim
+    onehot_vector[ label_idx ] = 1  # label start from 1
+    onehot_vector[ 0 ] = pivot_idx
     return onehot_vector
 
 
@@ -336,9 +337,13 @@ def one_of_k_encoding_unk( x, allowable_set ):
     return list( map( lambda s: x == s, allowable_set ) )
 
 
-def node_feature( graph, node_idx, max_nodes ):
+def node_feature( graph, node_idx, embedding_dim ):
     node = graph.nodes[ node_idx ]
-    return onehot_encoding( node[ "label" ], max_nodes )
+    label_idx = node[ "label" ]
+    pivot_idx = 0
+    if "pivot" in node:
+        pivot_idx = node[ "pivot" ]
+    return onehot_encoding( label_idx, pivot_idx, embedding_dim )
 
 
 # Function to save Args to JSON
@@ -444,7 +449,7 @@ def mark_pivot( args, G, source_graph_idx, mapping: [ int, int ] = None ):
                 if mapping is not None:
                     pivot = mapping[ pivot ]
                 for node_id, node_data in G.nodes( data=True ):
-                    node_data[ "pivot" ] = int( node_id ) == pivot
+                    node_data[ "pivot" ] = 1 if int( node_id ) == pivot else 0
 
 
 def load_source_mapping( args, source_graph_idx, flip=True ):
@@ -550,7 +555,7 @@ def map_node_label_idx( node_id, node_data,
     record_type = get_enum_by_idx( cpg_const.NodeLabel, node_label_idx )
     label = f"<{str( node_id )}>"
 
-    if "pivot" in node_data and bool( node_data[ "pivot" ] ):
+    if "pivot" in node_data and node_data[ "pivot" ] == 1:
         label = f"{label}\n[PIVOT]"
 
     if record_type == cpg_const.NodeLabel.RECORD:
@@ -583,7 +588,7 @@ def combine_graph( source, query, pivot=None, matching_colors: dict[ int, str ] 
         if node_id in query.nodes and node_id in source.nodes:
             if pivot is not None and node_id == pivot:
                 node_matching.append( 2 )
-            elif "pivot" in node_data and bool( node_data[ "pivot" ] ):
+            elif "pivot" in node_data and node_data[ "pivot" ] == 1:
                 node_matching.append( 2 )  # Node is pivot
             else:
                 node_matching.append( 1 )  # Nodes in both source and query

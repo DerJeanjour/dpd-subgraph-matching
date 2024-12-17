@@ -16,6 +16,7 @@ def read_graphs( database_file_name, args, max_subgraph=-1 ):
     sizes = { }
     degrees = { }
 
+    pivot = None
     with open( database_file_name, "r", encoding="utf-8" ) as f:
         lines = [ line.strip() for line in f.readlines() ]
         tgraph, graph_cnt = None, 0
@@ -43,8 +44,13 @@ def read_graphs( database_file_name, args, max_subgraph=-1 ):
                     tgraph = None
                     break
 
+            if cols[ 0 ] == "p":
+                pivot = int( cols[ -1 ] )
+
             elif cols[ 0 ] == "v":
-                tgraph.add_node( int( cols[ 1 ] ), label=int( cols[ 2 ] ) )
+                node_id = int( cols[ 1 ] )
+                label_idx = int( cols[ 2 ] )
+                tgraph.add_node( node_id, label=label_idx )
 
             elif cols[ 0 ] == "e":
                 node1, node2 = int( cols[ 1 ] ), int( cols[ 2 ] )
@@ -59,7 +65,7 @@ def read_graphs( database_file_name, args, max_subgraph=-1 ):
             sizes[ graph_cnt ] = tgraph.number_of_nodes()
             degrees[ graph_cnt ] = sum( dict( tgraph.degree ).values() ) / sizes[ graph_cnt ]
 
-    return graphs, sizes, degrees
+    return graphs, sizes, degrees, pivot
 
 
 def read_mapping( filename, max_subgraph=-1 ):
@@ -91,24 +97,47 @@ def read_mapping( filename, max_subgraph=-1 ):
     return mapping
 
 
+def mark_pivots( graphs, source_pivot, mappings=None ):
+    for graph_idx, graph in graphs.items():
+
+        graph_pivot_id = int( source_pivot )
+        if mappings is not None:
+            mapping = mappings[ graph_idx ]
+            mapping = { snid: gnid for gnid, snid in mapping }
+            if graph_pivot_id in mapping:
+                graph_pivot_id = int( mapping[ graph_pivot_id ] )
+            else:
+                graph_pivot_id = -1
+
+        for nid, ndata in graph.nodes( data=True ):
+            ndata[ "pivot" ] = 1 if nid == graph_pivot_id else 0
+
+
 def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
-    source_graph = read_graphs( "%s/%s/source.lg" % (data_dir, source_id), args )[ 0 ][
-        int( source_id )
-    ]
-    iso_subgraphs, iso_sizes, iso_degrees = read_graphs(
-        "%s/%s/iso_subgraphs.lg" % (data_dir, source_id), max_subgraph=max_subgraph, args=args
-    )
-    noniso_subgraphs, noniso_sizes, noniso_degrees = read_graphs(
-        "%s/%s/noniso_subgraphs.lg" % (data_dir, source_id), max_subgraph=max_subgraph, args=args
-    )
+    source_graphs, iso_sizes, iso_degrees, source_pivot = read_graphs(
+        "%s/%s/source.lg" % (data_dir, source_id),
+        args=args )
+    mark_pivots( source_graphs, source_pivot )
+    source_graph = source_graphs[ int( source_id ) ]
+
     iso_subgraphs_mapping = read_mapping(
         "%s/%s/iso_subgraphs_mapping.lg" % (data_dir, source_id),
-        max_subgraph=max_subgraph
-    )
+        max_subgraph=max_subgraph )
     noniso_subgraphs_mapping = read_mapping(
         "%s/%s/noniso_subgraphs_mapping.lg" % (data_dir, source_id),
+        max_subgraph=max_subgraph )
+
+    iso_subgraphs, iso_sizes, iso_degrees, _ = read_graphs(
+        "%s/%s/iso_subgraphs.lg" % (data_dir, source_id),
         max_subgraph=max_subgraph,
-    )
+        args=args )
+    mark_pivots( iso_subgraphs, source_pivot, mappings=iso_subgraphs_mapping )
+    noniso_subgraphs, noniso_sizes, noniso_degrees, _ = read_graphs(
+        "%s/%s/noniso_subgraphs.lg" % (data_dir, source_id),
+        max_subgraph=max_subgraph,
+        args=args )
+    mark_pivots( noniso_subgraphs, source_pivot, mappings=noniso_subgraphs_mapping )
+
     return (
         source_graph,
         iso_subgraphs,

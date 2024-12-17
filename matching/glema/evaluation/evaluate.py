@@ -138,8 +138,8 @@ def main( args ):
 
 if __name__ == "__main__":
     args = utils.parse_args()
-    #model_ckpt = "training/save/KKI_jump_directed_promising/best_model.pt"
-    model_ckpt = "training/save/CPG_jump_directed_best/best_model.pt"
+    #model_ckpt = "training/save/CPG_best_no_pivot_emb/best_model.pt"
+    model_ckpt = "training/save/CPG_best_with_pivot_emb/best_model.pt"
     args = utils.load_args( args, model_ckpt )
     args.ckpt_path = model_ckpt
     args.batch_size = 128

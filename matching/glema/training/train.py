@@ -274,7 +274,7 @@ if __name__ == "__main__":
     args.dataset = "CPG"
     args.batch_size = 128
     args.tactic = "jump"
-    args.embedding_dim = 5
+    args.embedding_dim = 6 # 5 labels + 1 pivot
     args.seed = 23
     print( args )
 
