@@ -12,19 +12,25 @@ import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.model_utils as model_utils
 
 
-def onehot_encoding_node( graph, embedding_dim ):
+def onehot_encoding_node( graph, embedding_dim, anchored=True ):
     H = [ ]
     for node_idx in graph.nodes:
-        H.append( model_utils.node_feature( graph, node_idx, embedding_dim ) )
+        H.append( model_utils.node_feature( graph, node_idx, embedding_dim, anchored=anchored ) )
     H = np.array( H )
     return H
 
 
 class BaseDataset( Dataset ):
-    def __init__( self, keys, data_dir, embedding_dim=20 ):
+    def __init__( self, keys, args ):
+
+        data_dir = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
+        if args.directed:
+            data_dir += "_directed"
+
         self.keys = keys
         self.data_dir = io_utils.get_abs_file_path( data_dir )
-        self.embedding_dim = embedding_dim
+        self.embedding_dim = args.embedding_dim
+        self.anchored = args.anchored
 
     def __len__( self ):
         return len( self.keys )
@@ -48,12 +54,12 @@ class BaseDataset( Dataset ):
         # Prepare subgraph
         n_query = query.number_of_nodes()
         adj_query = nx.to_numpy_array( query ) + np.eye( n_query )
-        H_query = onehot_encoding_node( query, self.embedding_dim )
+        H_query = onehot_encoding_node( query, self.embedding_dim, anchored=self.anchored )
 
         # Prepare source graph
         n_source = source.number_of_nodes()
         adj_source = nx.to_numpy_array( source ) + np.eye( n_source )
-        H_source = onehot_encoding_node( source, self.embedding_dim )
+        H_source = onehot_encoding_node( source, self.embedding_dim, anchored=self.anchored )
 
         # Aggregation node encoding
         agg_adj1 = np.zeros( (n_query + n_source, n_query + n_source) )

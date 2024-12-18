@@ -222,17 +222,18 @@ class InferenceGNN:
 
         self.model.eval()
         self.embedding_dim = args.embedding_dim
+        self.anchored = args.anchored
 
     def prepare_single_input( self, m1, m2 ):
         # Prepare subgraph
         n1 = m1.number_of_nodes()
         adj1 = nx.to_numpy_array( m1 ) + np.eye( n1 )
-        H1 = onehot_encoding_node( m1, self.embedding_dim )
+        H1 = onehot_encoding_node( m1, self.embedding_dim, anchored=self.anchored )
 
         # Prepare source graph
         n2 = m2.number_of_nodes()
         adj2 = nx.to_numpy_array( m2 ) + np.eye( n2 )
-        H2 = onehot_encoding_node( m2, self.embedding_dim )
+        H2 = onehot_encoding_node( m2, self.embedding_dim, anchored=self.anchored )
 
         # Aggregation node encoding
         agg_adj1 = np.zeros( (n1 + n2, n1 + n2) )

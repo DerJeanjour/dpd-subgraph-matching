@@ -22,6 +22,8 @@ def parse_args( use_default=False ):
                          type=str, default="CPG" )
     parser.add_argument( "--directed", action="store_true", help="directed graph" )
     parser.add_argument( "--iso", action="store_true", help="wheather using iso/noniso" )
+    parser.add_argument( "--anchored", action="store_true",
+                         default=False, help="wheather embeddings of graphs are anchored" )
     parser.add_argument( "--device", help="torch device",
                          type=str, default=str( model_utils.get_device() ) )
 

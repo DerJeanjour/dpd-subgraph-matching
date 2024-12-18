@@ -31,10 +31,13 @@ def initialize_model( model, device, load_save_file: str = None ):
     return model
 
 
-def onehot_encoding( label_idx, anchor_idx, embedding_dim ):
+def onehot_encoding( label_idx, anchor_idx, embedding_dim, anchored=True ):
     onehot_vector = [ 0 ] * embedding_dim
-    onehot_vector[ label_idx ] = 1  # label start from 1
-    onehot_vector[ 0 ] = anchor_idx
+    if anchored:
+        onehot_vector[ 0 ] = anchor_idx  # TODO put it to the end ?!
+        onehot_vector[ label_idx ] = 1  # label start from 1
+    else:
+        onehot_vector[ label_idx - 1 ] = 1  # label start from 1
     return onehot_vector
 
 
@@ -52,13 +55,13 @@ def one_of_k_encoding_unk( x, allowable_set ):
     return list( map( lambda s: x == s, allowable_set ) )
 
 
-def node_feature( graph, node_idx, embedding_dim ):
+def node_feature( graph, node_idx, embedding_dim, anchored=True ):
     node = graph.nodes[ node_idx ]
     label_idx = node[ "label" ]
     anchor_idx = 0
-    if "anchor" in node:
+    if anchored and "anchor" in node:
         anchor_idx = node[ "anchor" ]
-    return onehot_encoding( label_idx, anchor_idx, embedding_dim )
+    return onehot_encoding( label_idx, anchor_idx, embedding_dim, anchored=anchored )
 
 
 def get_shape_of_tensors( input_tensors ):

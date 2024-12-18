@@ -44,7 +44,7 @@ def evaluate( args ):
     if args.directed:
         data_path += "_directed"
     result_dir = io_utils.ensure_dir( args.result_dir, args )
-    result_file = f"result_matching{args.test_keys[ 9:-4 ]}.csv"
+    result_file = f"result_matching.csv"
     args.train_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
     args.test_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
 
@@ -64,7 +64,7 @@ def evaluate( args ):
     device = model_utils.get_device()
     model = model_utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
-    test_dataset = BaseDataset( test_keys, data_path, embedding_dim=args.embedding_dim )
+    test_dataset = BaseDataset( test_keys, args )
     test_dataloader = DataLoader(
         test_dataset,
         args.batch_size,
@@ -174,6 +174,11 @@ def evaluate( args ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
+    #model_ckpt = "training/save/CPG_best_no_anchor_emb/best_model.pt"
+    model_ckpt = "training/save/CPG_best_with_anchor_emb/best_model.pt"
+    args = arg_utils.load_args( args, model_ckpt )
+    args.ckpt_path = model_ckpt
+    args.batch_size = 128
     print( args )
 
     evaluate( args )

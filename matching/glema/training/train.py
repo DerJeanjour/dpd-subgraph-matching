@@ -25,15 +25,15 @@ def main( args ):
     data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
     if args.directed:
         data_path += "_directed"
-    args.train_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
-    args.test_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
+    train_key_file = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
+    test_key_file = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
     save_dir = io_utils.ensure_dir( args.ckpt_dir, args )
     log_dir = io_utils.ensure_dir( args.log_dir, args )
 
     # Read data. data is stored in format of dictionary. Each key has information about protein-ligand complex.
-    with open( args.train_keys, "rb" ) as fp:
+    with open( train_key_file, "rb" ) as fp:
         train_keys = pickle.load( fp )
-    with open( args.test_keys, "rb" ) as fp:
+    with open( test_key_file, "rb" ) as fp:
         test_keys = pickle.load( fp )
 
     # Print simple statistics about dude data and pdbbind data
@@ -52,8 +52,8 @@ def main( args ):
     model = model_utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
     # Train and test dataset
-    train_dataset = BaseDataset( train_keys, data_path, embedding_dim=args.embedding_dim )
-    test_dataset = BaseDataset( test_keys, data_path, embedding_dim=args.embedding_dim )
+    train_dataset = BaseDataset( train_keys, args )
+    test_dataset = BaseDataset( test_keys, args )
 
     # num_train_iso = len([0 for k in train_keys if 'iso' in k])
     # num_train_non = len([0 for k in train_keys if 'non' in k])
@@ -277,7 +277,10 @@ if __name__ == "__main__":
     args.dataset = "CPG"
     args.batch_size = 128
     args.tactic = "jump"
-    args.embedding_dim = 6  # 5 labels + 1 anchor
+    args.anchored = True
+    args.embedding_dim = 5  # possible labels
+    if args.anchored:
+        args.embedding_dim += 1  # labels + 1 anchor embedding
     args.seed = 23
     print( args )
 
