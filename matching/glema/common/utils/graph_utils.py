@@ -107,6 +107,15 @@ def mark_anchor( args, G, source_graph_idx, mapping: [ int, int ] = None ):
                     node_data[ "anchor" ] = 1 if int( node_id ) == anchor else 0
 
 
+def get_anchor( G ):
+    anchor_nid = -1
+    for n, n_data in G.nodes( data=True ):
+        if "anchor" in n_data and n_data[ "anchor" ] == 1:
+            anchor_nid = n
+            break
+    return anchor_nid
+
+
 def load_source_mapping( args, source_graph_idx, flip=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
@@ -232,6 +241,37 @@ def get_node_labels( G, record_scopes=None, design_patterns=None ):
         "design_patterns": design_patterns
     }
     return { node_id: map_node_label_idx( node_id, data, **label_args ) for node_id, data in G.nodes( data=True ) }
+
+
+def get_node_colors( G ):
+    anchor = get_anchor( G )
+    colors = [ "purple" if n == anchor else "grey" for n in G.nodes() ]
+    return colors
+
+
+def get_pattern_graphs_idxs( args, graphs ):
+    design_patterns = get_design_patterns( args )
+    pattern_graphs_idxs: dict[ cpg_const.DesignPatternType, list[ int ] ] = { }
+
+    for graph_idx, graph in graphs.items():
+
+        anchor_nid = get_anchor( graph )
+        if str( anchor_nid ) in design_patterns:
+
+            dp = misc_utils.get_enum_by_value(
+                cpg_const.DesignPatternType,
+                design_patterns[ str( anchor_nid ) ] )
+
+            if dp not in pattern_graphs_idxs:
+                pattern_graphs_idxs[ dp ] = list()
+            pattern_graphs_idxs[ dp ].append( graph_idx )
+
+    return pattern_graphs_idxs
+
+
+def get_pattern_graphs( args, graphs ):
+    pattern_graphs_idxs = get_pattern_graphs_idxs( args, graphs )
+    return { dp: [ graphs[ int( gidx ) ] for gidx in gidxs ] for dp, gidxs in pattern_graphs_idxs.items() }
 
 
 def combine_graph( source, query, anchor=None, matching_colors: dict[ int, str ] = None ):
