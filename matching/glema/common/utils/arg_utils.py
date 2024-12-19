@@ -96,7 +96,6 @@ def parse_args( use_default=False ):
                          type=str, default="datasets/" )
 
     # generating
-    parser.add_argument( "--cont", action="store_true", help="Continue generating" )
     parser.add_argument( "--num_subgraphs", default=2000, type=int, help="Number of subgraphs" )
     parser.add_argument( "--real", action="store_true" )
     parser.add_argument( "--testonly", action="store_true" )
@@ -112,6 +111,9 @@ def parse_args( use_default=False ):
     parser.add_argument( "--split_data",
                          help="If true, the dataset will be split into train and test without without generating train algorithmically.",
                          action="store_true", default=False )
+    parser.add_argument( "--induced",
+                         help="Generate induced subgraphs. An induced subgraph S of G preserves all edges between the nodes of the graph G",
+                         action="store_true", default=True )
 
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 

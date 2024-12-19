@@ -184,7 +184,7 @@ def edge_match( first_edge, second_edge ):
     return first_edge[ "label" ] == second_edge[ "label" ]
 
 
-def generate_iso_subgraph( graph, anchor, no_of_nodes, avg_degree, std_degree, *args, **kwargs ):
+def generate_iso_subgraph( graph, anchor, induced, no_of_nodes, avg_degree, std_degree, *args, **kwargs ):
     graph_nodes = graph.number_of_nodes()
     node_ratio = no_of_nodes / graph_nodes
     if node_ratio > 1:
@@ -215,6 +215,15 @@ def generate_iso_subgraph( graph, anchor, no_of_nodes, avg_degree, std_degree, *
             if node_ratio > 1:
                 node_ratio = 1
             iteration = 0
+
+    if not induced:
+        high = subgraph.number_of_edges() - subgraph.number_of_nodes() + 2
+        if high > 0:
+            modify_times = np.random.randint( 0, high )
+            for _ in range( modify_times ):
+                if subgraph.number_of_edges() <= min_edges:
+                    break
+                subgraph = remove_random_edge( subgraph )
 
     return subgraph
 
@@ -400,6 +409,7 @@ def random_modify( graph, NN, NE, node_start_id, min_edges, max_edges ):
 def generate_noniso_subgraph(
         graph,
         anchor,
+        induced,
         no_of_nodes,
         avg_degree,
         std_degree,
@@ -454,6 +464,13 @@ def generate_noniso_subgraph(
             max_edges,
         )
 
+    if not induced:
+        high = subgraph.number_of_edges() - subgraph.number_of_nodes() + 2
+        if high > 0:
+            modify_times = np.random.randint( 0, high )
+            for _ in range( modify_times ):
+                subgraph = remove_random_edge( subgraph )
+
     subgraph, graph_nodes = random_modify(
         subgraph,
         number_label_node,
@@ -495,11 +512,10 @@ def generate_noniso_subgraph(
     return subgraph
 
 
-def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, source_graph_anchor, *args, **kwargs ):
+def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, anchor, induced, *args, **kwargs ):
     list_iso_subgraphs = [ ]
     list_noniso_subgraphs = [ ]
 
-    # for _ in tqdm( range( number_subgraph_per_source ) ):
     for i in range( number_subgraph_per_source ):
 
         generated_subgraph = None
@@ -507,14 +523,12 @@ def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, sourc
             no_of_nodes = np.random.randint( 2, graph.number_of_nodes() + 1 )
             prob = np.random.randint( 0, 2 )
             if prob == 1:
-                # print( f"Generate iso subgraph {i}/{number_subgraph_per_source}" )
                 generated_subgraph = generate_iso_subgraph(
-                    graph, source_graph_anchor, no_of_nodes, *args, **kwargs
+                    graph, anchor, induced, no_of_nodes, *args, **kwargs
                 )
             else:
-                # print( f"Generate non iso subgraph {i}/{number_subgraph_per_source}" )
                 generated_subgraph = generate_noniso_subgraph(
-                    graph, source_graph_anchor, no_of_nodes, *args, **kwargs
+                    graph, anchor, induced, no_of_nodes, *args, **kwargs
                 )
 
         if prob == 1:
@@ -527,81 +541,54 @@ def generate_subgraphs( graph, number_subgraph_per_source, progress_queue, sourc
     return list_iso_subgraphs, list_noniso_subgraphs
 
 
-def generate_one_sample( idx, progress_queue, number_subgraph_per_source,
+def generate_one_sample( idx, progress_queue, induced, number_subgraph_per_source,
                          source_graphs, source_graph_mappings, source_graph_anchors,
                          *arg, **kwarg ):
     source_graph = source_graphs[ idx ]
     source_graph_mapping = source_graph_mappings[ idx ]
     source_graph_anchor = source_graph_anchors[ idx ]
     iso_subgraphs, noniso_subgraphs = generate_subgraphs(
-        source_graph, number_subgraph_per_source, progress_queue, source_graph_anchor, *arg, **kwarg
+        source_graph,
+        number_subgraph_per_source,
+        progress_queue,
+        source_graph_anchor,
+        induced,
+        *arg, **kwarg
     )
 
     return source_graph, source_graph_mapping, source_graph_anchor, iso_subgraphs, noniso_subgraphs
 
 
-def generate_batch( start_idx, stop_idx, number_source, dataset_path, progress_queue, *args, **kwargs ):
+def generate_batch( start_idx, stop_idx, number_source, dataset_path, progress_queue, induced, *args, **kwargs ):
     for idx in range( start_idx, stop_idx ):
-        # print( "SAMPLE %d/%d" % (idx + 1, number_source) )
         graph, mapping, anchor, iso_subgraphs, noniso_subgraphs = generate_one_sample(
-            idx, progress_queue, *args, **kwargs
+            idx, progress_queue, induced, *args, **kwargs
         )
         save_per_source( idx, graph, mapping, anchor, iso_subgraphs, noniso_subgraphs, dataset_path )
 
 
-def generate_dataset( dataset_path, is_continue, number_source, num_process, num_subgraphs, *args, **kwargs ):
+def generate_dataset( dataset_path, number_source, num_process, num_subgraphs, induced, *args, **kwargs ):
     print( "Generating..." )
     list_processes = [ ]
     progress_queue = Queue()
 
-    if is_continue is not False:
-        print( "Continue generating..." )
-        generated_sample = os.listdir( dataset_path )
-        generated_sample = [ int( x ) for x in generated_sample ]
-        remaining_sample = np.array(
-            sorted( set( range( number_source ) ) - set( generated_sample ) )
+    batch_size = int( number_source / num_process ) + 1
+    start_idx = 0
+    stop_idx = start_idx + batch_size
+
+    for idx in range( num_process ):
+        list_processes.append(
+            Process(
+                target=generate_batch,
+                args=(start_idx, stop_idx, number_source, dataset_path, progress_queue, induced),
+                kwargs=kwargs,
+            )
         )
-        gap_list = remaining_sample[ 1: ] - remaining_sample[ :-1 ]
-        gap_idx = np.where( gap_list > 1 )[ 0 ] + 1
-        if len( gap_idx ) < 1:
-            list_idx = [ (remaining_sample[ 0 ], remaining_sample[ -1 ] + 1) ]
-        else:
-            list_idx = (
-                    [ (remaining_sample[ 0 ], remaining_sample[ gap_idx[ 0 ] ]) ]
-                    + [
-                        (remaining_sample[ gap_idx[ i ] ], remaining_sample[ gap_idx[ i + 1 ] ])
-                        for i in range( gap_idx.shape[ 0 ] - 1 )
-                    ]
-                    + [ (remaining_sample[ gap_idx[ -1 ] ], remaining_sample[ -1 ] + 1) ]
-            )
 
-        for start_idx, stop_idx in list_idx:
-            list_processes.append(
-                Process(
-                    target=generate_batch,
-                    args=(start_idx, stop_idx, number_source, dataset_path, progress_queue),
-                    kwargs=kwargs,
-                )
-            )
-
-    else:
-        batch_size = int( number_source / num_process ) + 1
-        start_idx = 0
-        stop_idx = start_idx + batch_size
-
-        for idx in range( num_process ):
-            list_processes.append(
-                Process(
-                    target=generate_batch,
-                    args=(start_idx, stop_idx, number_source, dataset_path, progress_queue),
-                    kwargs=kwargs,
-                )
-            )
-
-            start_idx = stop_idx
-            stop_idx += batch_size
-            if stop_idx > number_source:
-                stop_idx = number_source
+        start_idx = stop_idx
+        stop_idx += batch_size
+        if stop_idx > number_source:
+            stop_idx = number_source
 
     for p in list_processes:
         p.start()
@@ -711,7 +698,7 @@ def split_source_graphs( source_graphs, source_graph_mappings, source_graph_anch
     return train_data, test_data, train_data_mapping, test_data_mapping, train_data_anchors, test_data_anchors
 
 
-def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
+def process_dataset( args, path, ds_name, num_subgraphs ):
     total_graph, transaction_by_nid, anchors_by_transaction = read_dataset( path, ds_name )
     (source_graphs,
      source_graph_mapping,
@@ -740,10 +727,10 @@ def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
         ensure_path( dataset_path_train )
         generate_dataset(
             dataset_path=dataset_path_train,
-            is_continue=is_continue,
             source_graphs=source_graphs_train,
             source_graph_mappings=source_graphs_train_mapping,
             source_graph_anchors=source_graphs_train_anchors,
+            induced=args.induced,
             num_process=args.num_workers,
             num_subgraphs=num_subgraphs,
             **config
@@ -756,10 +743,10 @@ def process_dataset( args, path, ds_name, is_continue, num_subgraphs ):
     ensure_path( dataset_path_test )
     generate_dataset(
         dataset_path=dataset_path_test,
-        is_continue=is_continue,
         source_graphs=source_graphs_test,
         source_graph_mappings=source_graphs_test_mapping,
         source_graph_anchors=source_graphs_test_anchors,
+        induced=args.induced,
         num_process=args.num_workers,
         num_subgraphs=num_subgraphs,
         **config
@@ -783,7 +770,6 @@ def process( args ):
             args=args,
             path=raw_dataset_dir,
             ds_name=dataset,
-            is_continue=args.cont,
             num_subgraphs=args.num_subgraphs,
         )
 
@@ -794,5 +780,6 @@ if __name__ == "__main__":
     # args.split_data = True
     # args.num_workers = 1
     # args.num_subgraphs = 20  # 2000
+    # args.induced = True
     # print( args )
     process( args )

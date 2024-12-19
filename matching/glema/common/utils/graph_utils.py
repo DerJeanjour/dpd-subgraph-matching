@@ -2,9 +2,11 @@ import os
 from collections import defaultdict
 
 import networkx as nx
+import numpy as np
 
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
+import matching.glema.common.utils.plot_utils as plot_utils
 import matching.misc.cpg_const as cpg_const
 import matching.misc.utils as utils
 
@@ -20,6 +22,10 @@ def random_subgraph( G, k: int ):
 def inject_edge_errors( G, e: int = 1 ):
     return utils.inject_edge_errors( G, e )
 
+def top_pr_ranked_node( G ):
+    pr = nx.pagerank( G )
+    pr = dict( sorted( pr.items(), key=lambda item: item[ 1 ], reverse=True ) )
+    return list( pr.keys() )[ 0 ]
 
 def read_mapping( mapping_file, sg2g=False ):
     mapping = dict()
@@ -268,10 +274,12 @@ def get_pattern_graphs_idxs( args, graphs ):
 
     return pattern_graphs_idxs
 
+def filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs ):
+    return { dp: [ graphs[ int( gidx ) ] for gidx in gidxs ] for dp, gidxs in pattern_graphs_idxs.items() }
 
 def get_pattern_graphs( args, graphs ):
     pattern_graphs_idxs = get_pattern_graphs_idxs( args, graphs )
-    return { dp: [ graphs[ int( gidx ) ] for gidx in gidxs ] for dp, gidxs in pattern_graphs_idxs.items() }
+    return filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs )
 
 
 def combine_graph( source, query, anchor=None, matching_colors: dict[ int, str ] = None ):
@@ -308,3 +316,99 @@ def combine_graph( source, query, anchor=None, matching_colors: dict[ int, str ]
     node_colors = [ matching_colors[ matching ] for matching in node_matching ]
     edge_colors = [ matching_colors[ matching ] for matching in edge_matching ]
     return combined_graph, node_colors, edge_colors
+
+
+def plot_interactions( args, model, src_idx, query_idx, threshold=0.5 ):
+    def compute_interactions( model, source_graph, query_graph, threshold ):
+        """Compute high-confidence interaction scores between nodes of the query graph and source graph."""
+        interaction_matrix = model.predict_embedding( [ query_graph ], [ source_graph ] )[ 0 ].cpu().detach().numpy()
+        x_coord, y_coord = np.where( interaction_matrix > threshold )
+        n_query_nodes = query_graph.number_of_nodes()
+        interaction_dict = { }
+        for x, y in zip( x_coord, y_coord ):
+            if x < n_query_nodes <= y:
+                interaction_dict[ (x, y - n_query_nodes) ] = interaction_matrix[ x ][ y ]
+            elif x >= n_query_nodes > y and (y, x - n_query_nodes) not in interaction_dict:
+                interaction_dict[ (y, x - n_query_nodes) ] = interaction_matrix[ x ][ y ]
+        return interaction_dict
+
+    def map_nodes( interactions, query_graph ):
+        """Map query graph nodes to source graph nodes based on interaction probabilities."""
+        mapping = { }
+        for q_node in query_graph.nodes:
+            matches = [ (g_node, score) for (q, g_node), score in interactions.items() if q == q_node ]
+            if matches:
+                max_score = max( matches, key=lambda x: x[ 1 ] )[ 1 ]
+                mapping[ q_node ] = [ g for g, s in matches if s == max_score ]
+            else:
+                mapping[ q_node ] = [ ]
+        return mapping
+
+    def get_node_labels_and_colors( graph, mappings, ground_truth ):
+        """Get labels and colors for graph nodes based on predicted and ground-truth mappings."""
+        labels = { node: "" for node in graph.nodes }
+        for q_node, g_nodes in mappings.items():
+            for g_node in g_nodes:
+                labels[ g_node ] = f"{labels[ g_node ]},{q_node}" if labels[ g_node ] else str( q_node )
+
+        colors = { node: "gray" for node in graph.nodes }
+        for node, label in labels.items():
+            if not label:
+                colors[ node ] = "gold" if ground_truth[ node ] != -1 else "gray"
+                continue
+            if any( ground_truth[ node ] == int( q ) for q in label.split( "," ) ):
+                colors[ node ] = "lime"
+            elif colors[ node ] == "gray":
+                colors[ node ] = "pink"
+
+        for g_node, q_node in ground_truth.items():
+            if not labels[ g_node ] and q_node != -1:
+                labels[ g_node ] = str( q_node )
+
+        return labels, colors
+
+    def get_edge_colors( graph, query_graph, labels, colors ):
+        """Assign colors to graph edges based on node mapping relationships."""
+        edge_colors = { edge: "whitesmoke" for edge in graph.edges }
+        for edge in graph.edges:
+            n1, n2 = edge
+            n1_labels, n2_labels = labels[ n1 ], labels[ n2 ]
+
+            if colors[ n1 ] == "gray" or colors[ n2 ] == "gray":
+                continue
+
+            pairs = [
+                (int( a ), int( b ))
+                for a in n1_labels.split( "," ) for b in n2_labels.split( "," )
+                if (int( a ), int( b )) not in query_graph.edges and (int( b ), int( a )) not in query_graph.edges
+            ]
+            if len( pairs ) < len( n1_labels.split( "," ) ) * len( n2_labels.split( "," ) ):
+                if colors[ n1 ] == "lime" and colors[ n2 ] == "lime":
+                    edge_colors[ edge ] = "black"
+                elif "gold" in { colors[ n1 ], colors[ n2 ] }:
+                    edge_colors[ edge ] = "goldenrod"
+                elif "pink" in { colors[ n1 ], colors[ n2 ] }:
+                    edge_colors[ edge ] = "palevioletred"
+            elif "pink" in { colors[ n1 ], colors[ n2 ] }:
+                edge_colors[ edge ] = "palevioletred"
+
+        return edge_colors
+
+    """Compute interactions and plot the graph with matched subgraph highlights."""
+    src_graph = load_source_graph( args, src_idx, relabel=False )
+    query_graph = load_query_graph( args, src_idx, query_idx, relabel=False )
+    ground_truth = load_query_id_mapping( args, src_idx, query_idx, flip=False )
+
+    interactions = compute_interactions( model, src_graph, query_graph, threshold )
+    mappings = map_nodes( interactions, query_graph )
+    labels, colors = get_node_labels_and_colors( src_graph, mappings, ground_truth )
+    edges = get_edge_colors( src_graph, query_graph, labels, colors )
+
+    plot_utils.plot_graph(
+        src_graph,
+        nodeLabels=labels,
+        nodeColors=list( colors.values() ),
+        edgeColors=list( edges.values() ),
+        title="Matching",
+        with_label=True,
+    )

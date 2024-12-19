@@ -98,8 +98,8 @@ class BaseDataset( Dataset ):
         # if n1+n2 > 300 : return None
         sample = {
             "H": H,
-            "A1": agg_adj1,
-            "A2": agg_adj2,
+            "A1": agg_adj1, # intra adjacency
+            "A2": agg_adj2, # inter adjacency ("virtual edges" between target and source with same label)
             "Y": Y,
             "V": valid,
             "key": key,

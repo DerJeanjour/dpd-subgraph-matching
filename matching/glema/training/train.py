@@ -271,13 +271,11 @@ def main( args ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.directed = True
-    # args.dataset = "KKI"
-    # args.dataset = "SYNTHETIC_TINY"
     args.dataset = "CPG"
-    args.batch_size = 128
-    args.tactic = "jump"
+    args.directed = False
     args.anchored = True
+    args.tactic = "jump"
+    args.batch_size = 128
     args.embedding_dim = 5  # possible labels
     if args.anchored:
         args.embedding_dim += 1  # labels + 1 anchor embedding

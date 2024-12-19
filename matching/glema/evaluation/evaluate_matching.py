@@ -174,8 +174,10 @@ def evaluate( args ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    #model_ckpt = "training/save/CPG_best_no_anchor_emb/best_model.pt"
-    model_ckpt = "training/save/CPG_best_with_anchor_emb/best_model.pt"
+    # model_ckpt = "training/save/CPG_directed/best_model.pt"
+    # model_ckpt = "training/save/CPG_directed_anchored/best_model.pt"
+    model_ckpt = "training/save/CPG_undirected_anchored/best_model.pt"
+    # model_ckpt = "training/save/CPG_undirected/best_model.pt"
     args = arg_utils.load_args( args, model_ckpt )
     args.ckpt_path = model_ckpt
     args.batch_size = 128

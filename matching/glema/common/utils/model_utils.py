@@ -34,7 +34,7 @@ def initialize_model( model, device, load_save_file: str = None ):
 def onehot_encoding( label_idx, anchor_idx, embedding_dim, anchored=True ):
     onehot_vector = [ 0 ] * embedding_dim
     if anchored:
-        onehot_vector[ 0 ] = anchor_idx  # TODO put it to the end ?!
+        onehot_vector[ 0 ] = anchor_idx # TODO idea maybe use a normalized distance to anchor? -> so every subgraph must have an anchor!
         onehot_vector[ label_idx ] = 1  # label start from 1
     else:
         onehot_vector[ label_idx - 1 ] = 1  # label start from 1

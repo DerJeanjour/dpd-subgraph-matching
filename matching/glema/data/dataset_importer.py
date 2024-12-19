@@ -29,17 +29,18 @@ def process( args ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG"
+    args.dataset = "CPG_augm"
     args.seed = 42
     # args.num_workers = 1
-    args.split_data = True
+    args.split_data = False
+    args.induced = True
     args.import_subgraph_radius = 4
     args.import_subgraph_max = 40
     args.import_subgraph_min = 2
     args.num_subgraphs = 64
     args.real = True
     args.testonly = False
-    args.directed = True
+    args.directed = False
     args.max_subgraph = -1
     print( args )
 

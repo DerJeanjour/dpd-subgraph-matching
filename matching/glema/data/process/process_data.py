@@ -7,6 +7,7 @@ from tqdm import tqdm
 import matching.glema.common.utils.arg_utils as arg_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
+import matching.glema.common.utils.graph_utils as graph_utils
 
 
 def read_graphs( database_file_name, args, max_subgraph=-1 ):
@@ -107,8 +108,19 @@ def mark_anchors( graphs, source_anchor, mappings=None ):
             else:
                 graph_anchor_id = -1
 
+        anchor_marked = False
         for nid, ndata in graph.nodes( data=True ):
             ndata[ "anchor" ] = 1 if nid == graph_anchor_id else 0
+            if ndata[ "anchor" ] == 1:
+                anchor_marked = True
+
+        if not anchor_marked:
+            # if no anchor is present (should only be true for non iso subgraph) -> set new anchor by pr score
+            gen_anchor = graph_utils.top_pr_ranked_node( graph )
+            graph.nodes[ gen_anchor ][ "anchor" ] = 1
+
+        if graph_utils.get_anchor( graph ) < 0:
+            raise ValueError
 
 
 def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
