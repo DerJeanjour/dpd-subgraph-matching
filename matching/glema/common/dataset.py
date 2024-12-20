@@ -21,6 +21,9 @@ def onehot_encoding_node( graph, embedding_dim, anchored=True ):
 
 
 class BaseDataset( Dataset ):
+
+    # TODO implement a dataset, that can sample smaller graphs and bigger ones by the current training performance!
+
     def __init__( self, keys, args ):
 
         data_dir = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )

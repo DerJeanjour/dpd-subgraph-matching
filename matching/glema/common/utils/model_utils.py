@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 
@@ -7,6 +9,61 @@ import matching.misc.utils as utils
 
 def get_device( force_cpu=False ) -> torch.device:
     return utils.get_device( force_cpu=force_cpu )
+
+
+def get_latest_model_version( args ) -> int:
+    version = 1
+    model_name = get_model_name( args.dataset, args.directed, args.anchored, version=version )
+    model_ckpt_dir = io_utils.get_abs_file_path( args.ckpt_dir )
+
+    existing_model_names = io_utils.get_filenames_in_dir( model_ckpt_dir, only_files=False )
+    if model_name not in existing_model_names:
+        return 0
+
+    exists = True
+    while exists:
+        model_name = model_name.replace( f"v{version}", f"v{version + 1}" )
+        if model_name not in existing_model_names:
+            exists = False
+        else:
+            version += 1
+
+    return version
+
+
+def get_dataset_name( dataset: str, directed: bool, ) -> str:
+    dataset_name = dataset
+    if directed:
+        dataset_name += "_directed"
+    return dataset_name
+
+
+def get_model_name( dataset: str, directed: bool, anchored: bool, version: int = 1 ) -> str:
+    model_name = f"{dataset}_{'directed' if directed else 'undirected'}"
+    if anchored:
+        model_name += "_anchored"
+    model_name += f"_v{version}"
+    return model_name
+
+
+def get_model_ckpt_dir( args, model_name=None, version=None, iteration=False ):
+    if model_name is None:
+        if version is None:
+            version = 1
+        model_name = get_model_name( args.dataset, args.directed, args.anchored, version=version )
+
+    model_ckpt_dir = io_utils.get_abs_file_path( args.ckpt_dir )
+    if iteration:
+        temp_version = version
+        version = get_latest_model_version( args ) + 1
+        model_name = model_name.replace( f"v{temp_version}", f"v{version}" )
+
+    return os.path.join( model_ckpt_dir, model_name ), version
+
+
+def get_model_ckpt( args, model_name=None, version=None, iteration=False ):
+    model_ckpt_dir, _ = get_model_ckpt_dir( args, model_name=model_name, version=version, iteration=iteration )
+    return os.path.join( model_ckpt_dir, "model.pt" )
 
 
 def model_uses_cuda( model: torch.nn.Module ) -> bool:
@@ -34,7 +91,8 @@ def initialize_model( model, device, load_save_file: str = None ):
 def onehot_encoding( label_idx, anchor_idx, embedding_dim, anchored=True ):
     onehot_vector = [ 0 ] * embedding_dim
     if anchored:
-        onehot_vector[ 0 ] = anchor_idx # TODO idea maybe use a normalized distance to anchor? -> so every subgraph must have an anchor!
+        onehot_vector[
+            0 ] = anchor_idx  # TODO idea maybe use a normalized distance to anchor?
         onehot_vector[ label_idx ] = 1  # label start from 1
     else:
         onehot_vector[ label_idx - 1 ] = 1  # label start from 1

@@ -22,13 +22,19 @@ from matching.glema.common.model import GLeMaNet
 
 def main( args ):
     misc_utils.set_seed( args.seed )
-    data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
-    if args.directed:
-        data_path += "_directed"
+
+    dataset_name = model_utils.get_dataset_name( args.dataset, args.directed )
+    data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, dataset_name ) )
+    print( f"Starting training model on dataset: {dataset_name}" )
+
     train_key_file = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
     test_key_file = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
-    save_dir = io_utils.ensure_dir( args.ckpt_dir, args )
-    log_dir = io_utils.ensure_dir( args.log_dir, args )
+
+    save_dir, model_version = model_utils.get_model_ckpt_dir( args, iteration=True )
+    save_dir = io_utils.ensure_dir( save_dir )
+    model_name = model_utils.get_model_name( args.dataset, args.directed, args.anchored, version=model_version )
+    log_dir = os.path.join( args.log_dir, dataset_name )
+    log_dir = io_utils.ensure_dir( log_dir )
 
     # Read data. data is stored in format of dictionary. Each key has information about protein-ligand complex.
     with open( train_key_file, "rb" ) as fp:
@@ -47,9 +53,8 @@ def main( args ):
         sum( p.numel() for p in model.parameters() if p.requires_grad ),
     )
     torchinfo.summary( model )
-    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     device = model_utils.get_device()
-    model = model_utils.initialize_model( model, device, load_save_file=args.ckpt_path )
+    model = model_utils.initialize_model( model, device )
 
     # Train and test dataset
     train_dataset = BaseDataset( train_keys, args )
@@ -90,8 +95,8 @@ def main( args ):
     log_file.write(
         "epoch,train_losses,test_losses,train_acc,test_acc,train_roc,test_roc,train_time,test_time\n"
     )
-    logger = SummaryWriter( log_dir=f'{log_dir}/{args.dataset}_{args.tactic}_{timestamp}' )
-    arg_utils.save_args( args, f"{log_dir}/args_{timestamp}.json" )
+    logger = SummaryWriter( log_dir=f'{log_dir}/{model_name}_{timestamp}' )
+    arg_utils.save_args( args, version=model_version )
 
     best_roc = 0
     early_stop_count = 0
@@ -257,9 +262,9 @@ def main( args ):
         if test_roc > best_roc:
             early_stop_count = 0
             best_roc = test_roc
-            ckpt_name = save_dir + "/best_model.pt"
+            ckpt_name = os.path.join( save_dir, "model.pt" )
             torch.save( model.state_dict(), ckpt_name )
-            arg_utils.save_args( args, ckpt_name )
+            arg_utils.save_args( args, version=model_version )
         else:
             early_stop_count += 1
             if early_stop_count >= 3:
@@ -273,7 +278,7 @@ if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "CPG_augm"
     args.directed = False
-    args.anchored = True
+    args.anchored = False
     args.tactic = "jump"
     args.batch_size = 128
     args.embedding_dim = 5  # possible labels

@@ -39,12 +39,13 @@ def eval_mapping( groundtruth, predict_list, predict_prob ):
     return np.concatenate( [ acc, np.array( [ MRR ] ) ] )
 
 
-def evaluate( args ):
-    data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, args.dataset ) )
-    if args.directed:
-        data_path += "_directed"
-    result_dir = io_utils.ensure_dir( args.result_dir, args )
-    result_file = f"result_matching.csv"
+def main( args, version ):
+    dataset_name = model_utils.get_dataset_name( args.dataset, args.directed )
+    data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, dataset_name ) )
+    model_name = model_utils.get_model_name( args.dataset, args.directed, args.anchored, version=version )
+    result_dir = os.path.join( args.result_dir, model_name )
+    result_dir = io_utils.ensure_dir( result_dir )
+    result_file = "result_matching.csv"
     args.train_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
     args.test_keys = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
 
@@ -174,13 +175,13 @@ def evaluate( args ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    # model_ckpt = "training/save/CPG_directed/best_model.pt"
-    # model_ckpt = "training/save/CPG_directed_anchored/best_model.pt"
-    model_ckpt = "training/save/CPG_undirected_anchored/best_model.pt"
-    # model_ckpt = "training/save/CPG_undirected/best_model.pt"
-    args = arg_utils.load_args( args, model_ckpt )
-    args.ckpt_path = model_ckpt
+    args.dataset = "CPG_augm"
+    args.directed = False
+    args.anchored = True
+    version = model_utils.get_latest_model_version( args )
+    args = arg_utils.load_args( args, version=version )
+
     args.batch_size = 128
     print( args )
 
-    evaluate( args )
+    main( args, version )

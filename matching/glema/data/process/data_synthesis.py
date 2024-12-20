@@ -24,6 +24,9 @@ def ensure_path( path ):
 
 
 def add_features( graph, NN, NE ):
+
+    # TODO generate anchor first, make bsp tree and put labels accordingly
+
     nodes = np.array( list( graph.nodes ) )
     edges = np.array( list( graph.edges ) )
 

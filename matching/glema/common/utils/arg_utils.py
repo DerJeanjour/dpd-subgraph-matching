@@ -118,21 +118,21 @@ def parse_args( use_default=False ):
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 
 
-def save_args( args, filename: str ) -> None:
+def save_args( args, version=None ) -> None:
     # Convert Args class attributes to a dictionary
     args_dict = { k: v for k, v in args.__dict__.items() if not k.startswith( '__' ) and not callable( v ) }
 
-    if not filename.endswith( ".json" ):
-        filename += ".json"
+    model_ckpt_dir, _ = model_utils.get_model_ckpt_dir( args, version=version )
+    filename = os.path.join( model_ckpt_dir, "args.json" )
 
     # Write dictionary to JSON file
     with open( io_utils.get_abs_file_path( filename ), 'w' ) as f:
         json.dump( args_dict, f, indent=4 )
 
 
-def load_args( args, filename: str ):
-    if not filename.endswith( ".json" ):
-        filename += ".json"
+def load_args( args, version=None ):
+    model_ckpt_dir, version = model_utils.get_model_ckpt_dir( args, version=version )
+    filename = os.path.join( model_ckpt_dir, "args.json" )
 
     # Read JSON file
     with open( io_utils.get_abs_file_path( filename ), 'r' ) as f:
@@ -141,6 +141,6 @@ def load_args( args, filename: str ):
     # Set the attributes of Args from the dictionary
     for key, value in args_dict.items():
         setattr( args, key, value )
-        # args[ key ] = value
 
+    args.ckpt_path = model_utils.get_model_ckpt( args, version=version )
     return args

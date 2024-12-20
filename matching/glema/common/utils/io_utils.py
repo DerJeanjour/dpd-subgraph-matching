@@ -31,23 +31,7 @@ def get_filenames_in_dir( dir_path, only_files=True ):
     return utils.get_filenames_in_dir( dir_path, only_files=only_files )
 
 
-def ensure_dir( dir, args ):
-    dir = os.path.join( dir, f"{args.dataset}_{args.tactic}" )
-    if args.tactic == "static":
-        dir += f"{args.nhop}"
-
-    if args.nhead > 1:
-        dir += f"_nhead{args.nhead}"
-
-    if args.branch != "both":
-        dir += "_" + args.branch
-
-    if args.directed:
-        dir += "_directed"
-
-    if args.tag != "":
-        dir += "_" + args.tag
-
+def ensure_dir( dir ):
     dir = get_abs_file_path( dir )
 
     # make save dir if it doesn't exist
