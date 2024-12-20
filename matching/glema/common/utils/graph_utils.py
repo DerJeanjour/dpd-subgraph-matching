@@ -22,10 +22,12 @@ def random_subgraph( G, k: int ):
 def inject_edge_errors( G, e: int = 1 ):
     return utils.inject_edge_errors( G, e )
 
+
 def top_pr_ranked_node( G ):
     pr = nx.pagerank( G )
     pr = dict( sorted( pr.items(), key=lambda item: item[ 1 ], reverse=True ) )
     return list( pr.keys() )[ 0 ]
+
 
 def read_mapping( mapping_file, sg2g=False ):
     mapping = dict()
@@ -131,6 +133,25 @@ def load_source_mapping( args, source_graph_idx, flip=True ):
     return misc_utils.flip_key_values( mapping ) if flip else mapping
 
 
+def relabel_nodes( G, mapping ):
+
+    complete_mapping = { }
+    for k, v in mapping.items():
+        if k in G.nodes:
+            complete_mapping[ k ] = v
+
+    ids = sorted( complete_mapping.values() )
+    for n in G.nodes():
+        if n not in mapping.keys():
+            if n not in ids:
+                complete_mapping[ n ] = n
+            else:
+                complete_mapping[ n ] = ids[ -1 ] + 1
+            ids = sorted( complete_mapping.values() )
+            
+    return nx.relabel_nodes( G, complete_mapping )
+
+
 def load_source_graph( args, source_graph_idx, relabel=True ):
     dataset_type = "test" if args.test_data else "train"
     dataset = f"{args.dataset}_{dataset_type}"
@@ -142,7 +163,7 @@ def load_source_graph( args, source_graph_idx, relabel=True ):
     mark_anchor( args, source, source_graph_idx )
     if relabel:
         source_mapping = load_source_mapping( args, source_graph_idx )
-        source = nx.relabel_nodes( source, source_mapping )
+        source = relabel_nodes( source, source_mapping )
     return source
 
 
@@ -186,9 +207,9 @@ def load_query_graphs( args, source_graph_idx, relabel=True ):
         query_id_mappings = load_query_id_mappings( args, source_graph_idx )
         source_id_mapping = load_source_mapping( args, source_graph_idx )
         for query_graph_idx, query in queries.items():
-            query = nx.relabel_nodes( query, query_id_mappings[ query_graph_idx ] )
+            query = relabel_nodes( query, query_id_mappings[ query_graph_idx ] )
             mark_anchor( args, query, source_graph_idx )
-            query = nx.relabel_nodes( query, source_id_mapping )
+            query = relabel_nodes( query, source_id_mapping )
             queries[ query_graph_idx ] = query
     return queries
 
@@ -274,8 +295,10 @@ def get_pattern_graphs_idxs( args, graphs ):
 
     return pattern_graphs_idxs
 
+
 def filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs ):
     return { dp: [ graphs[ int( gidx ) ] for gidx in gidxs ] for dp, gidxs in pattern_graphs_idxs.items() }
+
 
 def get_pattern_graphs( args, graphs ):
     pattern_graphs_idxs = get_pattern_graphs_idxs( args, graphs )
