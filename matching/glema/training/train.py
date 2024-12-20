@@ -271,7 +271,7 @@ def main( args ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG"
+    args.dataset = "CPG_augm"
     args.directed = False
     args.anchored = True
     args.tactic = "jump"
