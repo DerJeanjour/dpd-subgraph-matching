@@ -19,7 +19,7 @@ def get_dataset_name( args ) -> str:
     return dataset_name
 
 
-def get_model_name( args, version: int ) -> str:
+def get_model_name( args, version: int, tag=None ) -> str:
     if version < 1:
         print( f"model version can't be smaller then 1, but got: {version}" )
         raise ValueError
@@ -27,13 +27,15 @@ def get_model_name( args, version: int ) -> str:
     model_name = f"{args.dataset}_{'directed' if args.directed else 'undirected'}"
     if args.anchored:
         model_name += "_anchored"
+    if tag is not None:
+        model_name += f"_{tag}"
     model_name += f"_v{version}"
     return model_name
 
 
-def get_latest_model_version( args ) -> int:
+def get_latest_model_version( args, tag=None ) -> int:
     version = 1
-    model_name = get_model_name( args, version )
+    model_name = get_model_name( args, version, tag=tag )
     model_ckpt_dir = io_utils.get_abs_file_path( args.ckpt_dir )
 
     existing_model_names = io_utils.get_filenames_in_dir( model_ckpt_dir, only_files=False )
