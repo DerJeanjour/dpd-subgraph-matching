@@ -19,8 +19,11 @@ import matching.glema.common.utils.model_utils as model_utils
 from matching.glema.common.dataset import BaseDataset, collate_fn
 from matching.glema.common.model import GLeMaNet
 
+from matching.glema.evaluation.evaluate import main as evaluate
+from matching.glema.evaluation.evaluate_matching import main as evaluate_matching
 
-def main( args ):
+
+def train( args ):
     misc_utils.set_seed( args.seed )
 
     dataset_name = model_utils.get_dataset_name( args )
@@ -292,6 +295,7 @@ def main( args ):
                 train_dataset.increase_complexity()
 
     log_file.close()
+    return version
 
 
 if __name__ == "__main__":
@@ -308,4 +312,6 @@ if __name__ == "__main__":
     args.seed = 23
     print( args )
 
-    main( args )
+    version = train( args )
+    evaluate( args, version )
+    evaluate_matching( args, version )
