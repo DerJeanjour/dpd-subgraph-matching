@@ -14,9 +14,10 @@ def plot_graph(
         nodeColors=None,
         edgeColors=None,
         title=None,
+        pos=None
 ):
     utils.plot_graph( graph, nodeLabels=nodeLabels, with_label=with_label, nodeColors=nodeColors, edgeColors=edgeColors,
-                      title=title )
+                      title=title, pos=pos )
 
 
 def save_graph_debug( G, file_name ):

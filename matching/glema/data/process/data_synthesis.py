@@ -11,6 +11,7 @@ import matching.glema.common.utils.graph_utils as graph_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.data.process.data_generator as generator
+import matching.misc.cpg_const as cpg_const
 
 
 def read_config( config_file ):
@@ -23,36 +24,80 @@ def ensure_path( path ):
         os.mkdir( path )
 
 
-def add_features( graph, NN, NE ):
-
-    # TODO generate anchor first, make bsp tree and put labels accordingly
-
-    nodes = np.array( list( graph.nodes ) )
-    edges = np.array( list( graph.edges ) )
-
-    node_labels = np.random.randint( 1, NN + 1, len( nodes ) ).tolist()
-    edge_labels = np.random.randint( 1, NE + 1, len( edges ) ).tolist()
-
-    labelled_nodes = [
-        (nodes[ k ], { "label": node_labels[ k ], "color": "green" })
-        for k in range( len( nodes ) )
-    ]
-    labelled_edges = [
-        (edges[ k ][ 0 ], edges[ k ][ 1 ], { "label": edge_labels[ k ], "color": "green" })
-        for k in range( len( edges ) )
-    ]
-
-    G = nx.Graph()
-    G.add_nodes_from( labelled_nodes )
-    G.add_edges_from( labelled_edges )
-
+def add_features( graph, NN, NE, strict_edges=False ):
     # add anchor by pagerank score
-    anchor = graph_utils.top_pr_ranked_node( G )
-    for _, data in G.nodes( data=True ):
+    anchor = graph_utils.top_pr_ranked_node( graph )
+    for _, data in graph.nodes( data=True ):
         data[ "anchor" ] = 0
-    G.nodes[ anchor ][ "anchor" ] = 1
+    graph.nodes[ anchor ][ "anchor" ] = 1
 
-    return G, anchor
+    # add node labels
+    bft_tree = nx.traversal.dfs_tree( nx.Graph( graph ), anchor )
+    even_depth_label = misc_utils.get_enum_idx( cpg_const.NodeLabel.RECORD )
+    odd_depth_labels = [ i for i in list( range( 1, NN + 1 ) ) if i != even_depth_label ]
+    stack = [ (anchor, 0) ]
+    while stack:
+        current_node, depth = stack.pop()
+        if depth % 2 == 0:
+            graph.nodes[ current_node ][ "label" ] = even_depth_label
+        else:
+            graph.nodes[ current_node ][ "label" ] = np.random.choice( odd_depth_labels )
+        for child in bft_tree.successors( current_node ):
+            stack.append( (child, depth + 1) )
+
+    # add edge labels and optionally remove invalid edges
+    edges_to_remove = list()
+    for source_nid, target_nid, edata in graph.edges( data=True ):
+
+        source_label = graph.nodes[ source_nid ][ "label" ]
+        target_label = graph.nodes[ target_nid ][ "label" ]
+
+        if source_label == even_depth_label and target_label == even_depth_label:
+            edges_to_remove.append( (source_nid, target_nid) )
+            continue
+        if source_label in odd_depth_labels and target_label in odd_depth_labels:
+            edges_to_remove.append( (source_nid, target_nid) )
+            continue
+
+        edata[ "label" ] = np.random.randint( 1, NE + 1, 1 )[ 0 ]
+    if strict_edges:
+        for source_nid, target_nid in edges_to_remove:
+            graph.remove_edge( source_nid, target_nid )
+
+    return graph, anchor
+
+
+def generate_connected_graph(
+        avg_source_size,
+        std_source_size,
+        avg_degree,
+        std_degree, ):
+    graph = None
+    iteration = 0
+    no_of_nodes = int( np.random.normal( avg_source_size, std_source_size ) )
+    while no_of_nodes < 2:
+        no_of_nodes = int( np.random.normal( avg_source_size, std_source_size ) )
+    degree = np.random.normal( avg_degree, std_degree )
+    if degree < 1:
+        degree = 1
+    if degree > no_of_nodes - 1:
+        degree = no_of_nodes - 1
+    probability_for_edge_creation = degree / (no_of_nodes - 1)
+
+    while (
+            graph is None
+            or nx.is_empty( graph )
+            or not nx.is_connected( graph )
+    ):  # make sure the generated graph is connected
+        graph = nx.erdos_renyi_graph(
+            no_of_nodes, probability_for_edge_creation, directed=False
+        )
+        iteration += 1
+        if iteration > 5:
+            probability_for_edge_creation *= 1.05
+            iteration = 0
+
+    return graph
 
 
 def generate_one_sample(
@@ -66,49 +111,30 @@ def generate_one_sample(
         number_label_node,
         number_label_edge,
 ):
-    generated_pattern = None
-    iteration = 0
-    no_of_nodes = int( np.random.normal( avg_source_size, std_source_size ) )
-    while no_of_nodes < 2:
-        no_of_nodes = int( np.random.normal( avg_source_size, std_source_size ) )
-    degree = np.random.normal( avg_degree, std_degree )
-    if degree < 1:
-        degree = 1
-    if degree > no_of_nodes - 1:
-        degree = no_of_nodes - 1
-    probability_for_edge_creation = degree / (no_of_nodes - 1)
+    graph = generate_connected_graph( avg_source_size, std_source_size,
+                                      avg_degree, std_degree )
+    graph, graph_anchor = add_features( graph,
+                                        number_label_node,
+                                        number_label_edge,
+                                        strict_edges=True )
+    graph_mapping = { node_id: node_id for node_id in graph.nodes() }
 
-    while (
-            generated_pattern is None
-            or nx.is_empty( generated_pattern )
-            or not nx.is_connected( generated_pattern )
-    ):  # make sure the generated graph is connected
-        generated_pattern = nx.erdos_renyi_graph(
-            no_of_nodes, probability_for_edge_creation, directed=False
-        )
-        iteration += 1
-        if iteration > 5:
-            probability_for_edge_creation *= 1.05
-            iteration = 0
-
-    labelled_pattern, pattern_anchor = add_features(
-        generated_pattern, number_label_node, number_label_edge
-    )
-
-    pattern_mapping = { node_id: node_id for node_id in labelled_pattern.nodes() }
+    if not nx.is_connected( graph ):
+        print( "Graph is not connected!" )
+        raise ValueError
 
     iso_subgraphs, noniso_subgraphs = generator.generate_subgraphs(
-        labelled_pattern,
+        graph,
         number_subgraph_per_source,
         progress_queue,
-        pattern_anchor,
+        graph_anchor,
         induced,
         avg_degree,
         std_degree,
         number_label_node,
         number_label_edge
     )
-    return labelled_pattern, pattern_mapping, pattern_anchor, iso_subgraphs, noniso_subgraphs
+    return graph, graph_mapping, graph_anchor, iso_subgraphs, noniso_subgraphs
 
 
 def generate_batch( start_idx, stop_idx, number_source, dataset_path, progress_queue, induced, *args, **kwargs ):

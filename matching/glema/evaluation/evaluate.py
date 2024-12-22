@@ -130,6 +130,10 @@ def main( args, version ):
             ]
         )
 
+        print( f"Conf=[{conf_step}] Roc=[{test_roc:.3}] Acc=[{test_acc:.3}]"
+               f" Prec=[{test_pre:.3}] Rec=[{test_rec:.3}] F1=[{test_f1s:.3}]"
+               f" AvgPrec=[{test_prc:.3}]" )
+
     with open( os.path.join( result_dir, result_file ), "w", encoding="utf-8" ) as f:
         f.write(
             "Confident,Execution Time,ROC AUC,PR AUC,Precision,Recall,F1-Score,Accuracy\n"
@@ -143,7 +147,7 @@ if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "CPG_augm"
     args.directed = False
-    args.anchored = False
+    args.anchored = True
     version = model_utils.get_latest_model_version( args )
     model_name = model_utils.get_model_name( args, version )
     args = arg_utils.load_args( args, model_name )

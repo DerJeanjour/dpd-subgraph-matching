@@ -1,8 +1,8 @@
 import copy
 import datetime
 import os
-import shutil
 import random
+import shutil
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -96,10 +96,12 @@ def plot_graph( G,
                 nodeLabels=None,
                 nodeColors=None,
                 edgeColors=None,
-                title=None ):
+                title=None,
+                pos=None ):
     plt.figure( figsize=(6, 4) )
 
-    pos = nx.spring_layout( G, seed=42 )
+    if pos is None:
+        pos = nx.spring_layout( G, seed=42 )
     node_size = 200
     if not with_label:
         node_size *= 0.1

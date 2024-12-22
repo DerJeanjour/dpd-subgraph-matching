@@ -297,12 +297,17 @@ def train( args ):
     log_file.close()
     return version
 
+def write_evaluation( args, version ):
+    model_name = model_utils.get_model_name( args, version )
+    args = arg_utils.load_args( args, model_name )
+    evaluate( args, version )
+    evaluate_matching( args, version )
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "CPG_augm"
     args.directed = False
-    args.anchored = False
+    args.anchored = True
     args.tactic = "jump"
     args.batch_size = 128
     args.curriculum_training_steps = 2  # graph complexity increase every x epochs
@@ -313,5 +318,5 @@ if __name__ == "__main__":
     print( args )
 
     version = train( args )
-    evaluate( args, version )
-    evaluate_matching( args, version )
+    write_evaluation( args, version )
+
