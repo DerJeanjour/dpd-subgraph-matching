@@ -2,9 +2,9 @@ import os.path
 
 import matching.glema.common.utils.arg_utils as arg_utils
 import matching.glema.common.utils.io_utils as io_utils
-import matching.glema.data.process.import_dataset as importer
 import matching.glema.data.process.data_generator as data_generator
 import matching.glema.data.process.data_synthesis as data_synthesis
+import matching.glema.data.process.import_dataset as importer
 import matching.glema.data.process.process_data as data_processor
 
 

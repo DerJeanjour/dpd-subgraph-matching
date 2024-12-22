@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import torch
 import torch.nn as nn
@@ -11,14 +12,33 @@ def get_device( force_cpu=False ) -> torch.device:
     return utils.get_device( force_cpu=force_cpu )
 
 
+def get_dataset_name( args ) -> str:
+    dataset_name = args.dataset
+    if args.directed:
+        dataset_name += "_directed"
+    return dataset_name
+
+
+def get_model_name( args, version: int ) -> str:
+    if version < 1:
+        print( f"model version can't be smaller then 1, but got: {version}" )
+        raise ValueError
+
+    model_name = f"{args.dataset}_{'directed' if args.directed else 'undirected'}"
+    if args.anchored:
+        model_name += "_anchored"
+    model_name += f"_v{version}"
+    return model_name
+
+
 def get_latest_model_version( args ) -> int:
     version = 1
-    model_name = get_model_name( args.dataset, args.directed, args.anchored, version=version )
+    model_name = get_model_name( args, version )
     model_ckpt_dir = io_utils.get_abs_file_path( args.ckpt_dir )
 
     existing_model_names = io_utils.get_filenames_in_dir( model_ckpt_dir, only_files=False )
     if model_name not in existing_model_names:
-        return 0
+        return -1  # no model exists for args
 
     exists = True
     while exists:
@@ -31,38 +51,13 @@ def get_latest_model_version( args ) -> int:
     return version
 
 
-def get_dataset_name( dataset: str, directed: bool, ) -> str:
-    dataset_name = dataset
-    if directed:
-        dataset_name += "_directed"
-    return dataset_name
-
-
-def get_model_name( dataset: str, directed: bool, anchored: bool, version: int = 1 ) -> str:
-    model_name = f"{dataset}_{'directed' if directed else 'undirected'}"
-    if anchored:
-        model_name += "_anchored"
-    model_name += f"_v{version}"
-    return model_name
-
-
-def get_model_ckpt_dir( args, model_name=None, version=None, iteration=False ):
-    if model_name is None:
-        if version is None:
-            version = 1
-        model_name = get_model_name( args.dataset, args.directed, args.anchored, version=version )
-
+def get_model_ckpt_dir( args, model_name: str ) -> str:
     model_ckpt_dir = io_utils.get_abs_file_path( args.ckpt_dir )
-    if iteration:
-        temp_version = version
-        version = get_latest_model_version( args ) + 1
-        model_name = model_name.replace( f"v{temp_version}", f"v{version}" )
-
-    return os.path.join( model_ckpt_dir, model_name ), version
+    return os.path.join( model_ckpt_dir, model_name )
 
 
-def get_model_ckpt( args, model_name=None, version=None, iteration=False ):
-    model_ckpt_dir, _ = get_model_ckpt_dir( args, model_name=model_name, version=version, iteration=iteration )
+def get_model_ckpt( args, model_name ):
+    model_ckpt_dir = get_model_ckpt_dir( args, model_name )
     return os.path.join( model_ckpt_dir, "model.pt" )
 
 
@@ -124,3 +119,23 @@ def node_feature( graph, node_idx, embedding_dim, anchored=True ):
 
 def get_shape_of_tensors( input_tensors ):
     return [ tuple( tensor.shape ) for tensor in input_tensors ]
+
+def load_complexity_keys( args, train=True ):
+        dataset_name = get_dataset_name( args )
+        data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, dataset_name ) )
+
+        tag = "train" if train else "test"
+        complexity_keys = {
+            k: io_utils.get_abs_file_path( os.path.join( data_path, k_keys ) ) for k, k_keys in {
+                1: f"{tag}_keys_graph_size_0_5.pkl",
+                2: f"{tag}_keys_graph_size_5_10.pkl",
+                3: f"{tag}_keys_graph_size_10_15.pkl",
+                4: f"{tag}_keys_graph_size_15_20.pkl",
+                5: f"{tag}_keys_graph_size_20_30.pkl",
+                6: f"{tag}_keys_graph_size_30_40.pkl",
+            }.items() }
+        for k, k_keys_file in complexity_keys.items():
+            with open( k_keys_file, "rb" ) as fp:
+                complexity_keys[ k ] = pickle.load( fp )
+
+        return complexity_keys

@@ -19,6 +19,10 @@ def random_subgraph( G, k: int ):
     return utils.random_subgraph( G, k )
 
 
+def subgraph( G, n, k: int ):
+    return nx.ego_graph( G, n, radius=k, undirected=True )
+
+
 def inject_edge_errors( G, e: int = 1 ):
     return utils.inject_edge_errors( G, e )
 
@@ -27,6 +31,38 @@ def top_pr_ranked_node( G ):
     pr = nx.pagerank( G )
     pr = dict( sorted( pr.items(), key=lambda item: item[ 1 ], reverse=True ) )
     return list( pr.keys() )[ 0 ]
+
+
+def is_iso_subgraph( graph, subgraph ):
+    def node_match( first_node, second_node ):
+        anchor_match = first_node[ "anchor" ] == second_node[ "anchor" ]
+        label_match = first_node[ "label" ] == second_node[ "label" ]
+        return anchor_match and label_match
+
+    def edge_match( first_edge, second_edge ):
+        return first_edge[ "label" ] == second_edge[ "label" ]
+
+    """
+    return nx.is_isomorphic( graph, subgraph,
+                             node_match=node_match,
+                             edge_match=edge_match )
+    """
+    matcher = nx.algorithms.isomorphism.GraphMatcher( graph, subgraph,
+                             node_match=node_match,
+                             edge_match=edge_match )
+    return matcher.subgraph_is_isomorphic()
+
+
+def max_spanning_radius( G, start_node ):
+    bft_tree = nx.traversal.bfs_tree( nx.Graph( G ), start_node )
+    stack = [ (start_node, 0) ]
+    max_radius = 0
+    while stack:
+        current_node, depth = stack.pop()
+        max_radius = max( max_radius, depth )
+        for child in bft_tree.successors( current_node ):
+            stack.append( (child, depth + 1) )
+    return max_radius
 
 
 def read_mapping( mapping_file, sg2g=False ):
@@ -134,21 +170,25 @@ def load_source_mapping( args, source_graph_idx, flip=True ):
 
 
 def relabel_nodes( G, mapping ):
-
     complete_mapping = { }
     for k, v in mapping.items():
         if k in G.nodes:
             complete_mapping[ k ] = v
 
-    ids = sorted( complete_mapping.values() )
+    ids = sorted( [ *complete_mapping.values(), *G.nodes() ] )
     for n in G.nodes():
         if n not in mapping.keys():
+            complete_mapping[ n ] = ids[ -1 ] + 1
+            """
             if n not in ids:
-                complete_mapping[ n ] = n
+                # complete_mapping[ n ] = n
+                complete_mapping[ n ] = -n
             else:
-                complete_mapping[ n ] = ids[ -1 ] + 1
+                # complete_mapping[ n ] = ids[ -1 ] + 1
+                complete_mapping[ n ] = ids[ 0 ] - 1
+            """
             ids = sorted( complete_mapping.values() )
-            
+
     return nx.relabel_nodes( G, complete_mapping )
 
 

@@ -32,6 +32,8 @@ def parse_args( use_default=False ):
                          type=int, default=30 )
     parser.add_argument( "--batch_size", help="batch_size",
                          type=int, default=32 )
+    parser.add_argument( "--curriculum_training_steps", help="Increase graph complexity every x epoch.",
+                         type=int, default=-1 )
     parser.add_argument( "--tactic", help="tactic of defining number of hops",
                          type=str, default="static", choices=[ "static", "cont", "jump" ] )
     parser.add_argument( "--branch", help="choosing branch",
@@ -118,21 +120,24 @@ def parse_args( use_default=False ):
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 
 
-def save_args( args, version=None ) -> None:
+def get_model_args_path( args, model_name: str ) -> str:
+    model_ckpt_dir = model_utils.get_model_ckpt_dir( args, model_name )
+    return os.path.join( model_ckpt_dir, "args.json" )
+
+
+def save_args( args, model_name: str ) -> None:
+    filename = get_model_args_path( args, model_name )
+
     # Convert Args class attributes to a dictionary
     args_dict = { k: v for k, v in args.__dict__.items() if not k.startswith( '__' ) and not callable( v ) }
-
-    model_ckpt_dir, _ = model_utils.get_model_ckpt_dir( args, version=version )
-    filename = os.path.join( model_ckpt_dir, "args.json" )
 
     # Write dictionary to JSON file
     with open( io_utils.get_abs_file_path( filename ), 'w' ) as f:
         json.dump( args_dict, f, indent=4 )
 
 
-def load_args( args, version=None ):
-    model_ckpt_dir, version = model_utils.get_model_ckpt_dir( args, version=version )
-    filename = os.path.join( model_ckpt_dir, "args.json" )
+def load_args( args, model_name: str ):
+    filename = get_model_args_path( args, model_name )
 
     # Read JSON file
     with open( io_utils.get_abs_file_path( filename ), 'r' ) as f:
@@ -142,5 +147,5 @@ def load_args( args, version=None ):
     for key, value in args_dict.items():
         setattr( args, key, value )
 
-    args.ckpt_path = model_utils.get_model_ckpt( args, version=version )
+    args.ckpt_path = model_utils.get_model_ckpt( args, model_name )
     return args

@@ -23,9 +23,9 @@ from matching.glema.common.model import GLeMaNet
 
 
 def main( args, version ):
-    dataset_name = model_utils.get_dataset_name( args.dataset, args.directed )
+    dataset_name = model_utils.get_dataset_name( args)
     data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, dataset_name ) )
-    model_name = model_utils.get_model_name( args.dataset, args.directed, args.anchored, version=version )
+    model_name = model_utils.get_model_name( args, version )
     result_dir = os.path.join( args.result_dir, model_name )
     result_dir = io_utils.ensure_dir( result_dir )
     result_file = "result.csv"
@@ -143,9 +143,10 @@ if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "CPG_augm"
     args.directed = False
-    args.anchored = True
+    args.anchored = False
     version = model_utils.get_latest_model_version( args )
-    args = arg_utils.load_args( args, version=version )
+    model_name = model_utils.get_model_name( args, version )
+    args = arg_utils.load_args( args, model_name )
 
     args.batch_size = 128
     print( args )

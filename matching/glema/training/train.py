@@ -23,16 +23,18 @@ from matching.glema.common.model import GLeMaNet
 def main( args ):
     misc_utils.set_seed( args.seed )
 
-    dataset_name = model_utils.get_dataset_name( args.dataset, args.directed )
+    dataset_name = model_utils.get_dataset_name( args )
     data_path = io_utils.get_abs_file_path( os.path.join( args.data_processed_dir, dataset_name ) )
     print( f"Starting training model on dataset: {dataset_name}" )
 
     train_key_file = io_utils.get_abs_file_path( os.path.join( data_path, args.train_keys ) )
     test_key_file = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
 
-    save_dir, model_version = model_utils.get_model_ckpt_dir( args, iteration=True )
+    version = model_utils.get_latest_model_version( args )
+    version = max( version, 1 ) + 1
+    model_name = model_utils.get_model_name( args, version )
+    save_dir = model_utils.get_model_ckpt_dir( args, model_name )
     save_dir = io_utils.ensure_dir( save_dir )
-    model_name = model_utils.get_model_name( args.dataset, args.directed, args.anchored, version=model_version )
     log_dir = os.path.join( args.log_dir, dataset_name )
     log_dir = io_utils.ensure_dir( log_dir )
 
@@ -57,7 +59,15 @@ def main( args ):
     model = model_utils.initialize_model( model, device )
 
     # Train and test dataset
-    train_dataset = BaseDataset( train_keys, args )
+    uses_curriculum_training = args.curriculum_training_steps > 0
+    train_complexity_start = -1
+    train_complexity_keys = None
+    if uses_curriculum_training:
+        # setup curriculum training
+        train_complexity_start = 1
+        train_complexity_keys = model_utils.load_complexity_keys( args )
+
+    train_dataset = BaseDataset( train_keys, args, k_start=train_complexity_start, k_keys=train_complexity_keys )
     test_dataset = BaseDataset( test_keys, args )
 
     # num_train_iso = len([0 for k in train_keys if 'iso' in k])
@@ -96,7 +106,7 @@ def main( args ):
         "epoch,train_losses,test_losses,train_acc,test_acc,train_roc,test_roc,train_time,test_time\n"
     )
     logger = SummaryWriter( log_dir=f'{log_dir}/{model_name}_{timestamp}' )
-    arg_utils.save_args( args, version=model_version )
+    arg_utils.save_args( args, model_name )
 
     best_roc = 0
     early_stop_count = 0
@@ -106,7 +116,11 @@ def main( args ):
     confidence_thresh = 0.75
 
     for epoch in range( args.epoch ):
-        print( "EPOCH", epoch )
+        epoch_info = f"Starting epoch {epoch}"
+        if uses_curriculum_training:
+            train_k = train_dataset.get_complexity_limit()
+            epoch_info += f" [k={train_k if train_k > 0 else 'unlimited'}]"
+        print( epoch_info )
         st = time.time()
         # Collect losses of each iteration
         train_losses = [ ]
@@ -259,17 +273,23 @@ def main( args ):
         logger.add_scalar( 'time/test', time_test, epoch )
         logger.add_scalar( 'time/total', time_total, epoch )
 
+        is_pretrain = uses_curriculum_training and train_dataset.get_complexity_limit() > 0
         if test_roc > best_roc:
             early_stop_count = 0
             best_roc = test_roc
-            ckpt_name = os.path.join( save_dir, "model.pt" )
+            ckpt_name = model_utils.get_model_ckpt( args, model_name )
             torch.save( model.state_dict(), ckpt_name )
-            arg_utils.save_args( args, version=model_version )
-        else:
+        elif not is_pretrain:
             early_stop_count += 1
+            print( f"Increases early stop counter to {early_stop_count}/{3}" )
             if early_stop_count >= 3:
                 # Early stopping
                 break
+
+        if uses_curriculum_training:
+            if epoch > 0 and epoch % args.curriculum_training_steps == 0:
+                # increase complexity limit every x epochs
+                train_dataset.increase_complexity()
 
     log_file.close()
 
@@ -281,6 +301,7 @@ if __name__ == "__main__":
     args.anchored = False
     args.tactic = "jump"
     args.batch_size = 128
+    args.curriculum_training_steps = 2  # graph complexity increase every x epochs
     args.embedding_dim = 5  # possible labels
     if args.anchored:
         args.embedding_dim += 1  # labels + 1 anchor embedding

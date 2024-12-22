@@ -1,4 +1,5 @@
 from enum import Enum
+from itertools import zip_longest
 
 import matching.misc.utils as utils
 
@@ -36,3 +37,7 @@ def flip_key_values( data: dict[ any, any ] ) -> dict[ any, any ]:
     for key, value in data.items():
         flipped_data[ value ] = key
     return flipped_data
+
+
+def zip_merge( lists ):
+    return [ item for group in zip_longest( *lists ) for item in group if item is not None ]

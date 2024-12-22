@@ -5,9 +5,9 @@ import networkx as nx
 from tqdm import tqdm
 
 import matching.glema.common.utils.arg_utils as arg_utils
+import matching.glema.common.utils.graph_utils as graph_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
-import matching.glema.common.utils.graph_utils as graph_utils
 
 
 def read_graphs( database_file_name, args, max_subgraph=-1 ):
@@ -124,11 +124,13 @@ def mark_anchors( graphs, source_anchor, mappings=None ):
 
 
 def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
-    source_graphs, iso_sizes, iso_degrees, source_anchor = read_graphs(
+    source_graphs, source_sizes, source_degrees, source_anchor = read_graphs(
         "%s/%s/source.lg" % (data_dir, source_id),
         args=args )
     mark_anchors( source_graphs, source_anchor )
     source_graph = source_graphs[ int( source_id ) ]
+    source_size = source_sizes[ int( source_id ) ]
+    source_degree = source_degrees[ int( source_id ) ]
 
     iso_subgraphs_mapping = read_mapping(
         "%s/%s/iso_subgraphs_mapping.lg" % (data_dir, source_id),
@@ -154,8 +156,10 @@ def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
         noniso_subgraphs,
         iso_subgraphs_mapping,
         noniso_subgraphs_mapping,
+        source_size,
         iso_sizes,
         noniso_sizes,
+        source_degree,
         iso_degrees,
         noniso_degrees,
     )
@@ -163,41 +167,51 @@ def load_graph_data( data_dir, source_id, args, max_subgraph=-1 ):
 
 # Load and save
 def load_dataset( data_dir, list_source, save_dir, args, additional_tag="", max_subgraph=-1 ):
-    size_dict = { }
-    degree_dict = { }
+    source_size_dict = { }
+    source_degree_dict = { }
+    subgraph_size_dict = { }
+    subgraph_degree_dict = { }
 
     for source_id in tqdm( list_source ):
         (
-            graph,
+            source,
             iso_subgraphs,
             noniso_subgraphs,
             iso_subgraphs_mapping,
             noniso_subgraphs_mapping,
+            source_size,
             iso_sizes,
             noniso_sizes,
+            source_degree,
             iso_degrees,
             noniso_degrees,
         ) = load_graph_data( data_dir, source_id, max_subgraph=max_subgraph, args=args )
 
         for key, data in iso_subgraphs.items():
             fname = "%s_%d_iso_%s" % (source_id, key, additional_tag)
-            size_dict[ fname ] = iso_sizes[ key ]
-            degree_dict[ fname ] = iso_degrees[ key ]
+            source_size_dict[ fname ] = source_size
+            source_degree_dict[ fname ] = source_degree
+            subgraph_size_dict[ fname ] = iso_sizes[ key ]
+            subgraph_degree_dict[ fname ] = iso_degrees[ key ]
             with open( f"{save_dir}/{fname}", "wb" ) as f:
-                pickle.dump( [ data, graph, iso_subgraphs_mapping[ key ] ], f )
+                pickle.dump( [ data, source, iso_subgraphs_mapping[ key ] ], f )
 
         for key, data in noniso_subgraphs.items():
             fname = "%s_%d_non_%s" % (source_id, key, additional_tag)
-            size_dict[ fname ] = noniso_sizes[ key ]
-            degree_dict[ fname ] = noniso_degrees[ key ]
+            source_size_dict[ fname ] = source_size
+            source_degree_dict[ fname ] = source_degree
+            subgraph_size_dict[ fname ] = noniso_sizes[ key ]
+            subgraph_degree_dict[ fname ] = noniso_degrees[ key ]
             with open( f"{save_dir}/{fname}", "wb" ) as f:
-                pickle.dump( [ data, graph, noniso_subgraphs_mapping[ key ] ], f )
+                pickle.dump( [ data, source, noniso_subgraphs_mapping[ key ] ], f )
 
-    if additional_tag != "" and additional_tag == "test":
-        pickle.dump( size_dict, open( f"{save_dir}/subgraphs_size.pkl", "wb" ) )
-        pickle.dump( degree_dict, open( f"{save_dir}/subgraphs_degree.pkl", "wb" ) )
+    if additional_tag != "":
+        pickle.dump( source_size_dict, open( f"{save_dir}/{additional_tag}_graphs_size.pkl", "wb" ) )
+        pickle.dump( source_degree_dict, open( f"{save_dir}/{additional_tag}_graphs_degree.pkl", "wb" ) )
+        pickle.dump( subgraph_size_dict, open( f"{save_dir}/{additional_tag}_subgraphs_size.pkl", "wb" ) )
+        pickle.dump( subgraph_degree_dict, open( f"{save_dir}/{additional_tag}_subgraphs_degree.pkl", "wb" ) )
 
-    return list( size_dict.keys() )
+    return list( subgraph_size_dict.keys() )
 
 
 def process( args ):
@@ -302,77 +316,84 @@ def process( args ):
     with open( "%s/test_keys.pkl" % data_proccessed_dir, "wb" ) as f:
         pickle.dump( test_keys, f )
 
-    if args.real or (not args.real and args.testonly):
-        size_dict = pickle.load( open( f"{data_proccessed_dir}/subgraphs_size.pkl", "rb" ) )
-        degree_dict = pickle.load( open( f"{data_proccessed_dir}/subgraphs_degree.pkl", "rb" ) )
+    if args.real:
 
-        nondense_0_20 = list(
-            filter( lambda x: size_dict[ x ] <= 20 and degree_dict[ x ] <= 3, test_keys )
-        )
-        nondense_20_40 = list(
-            filter(
-                lambda x: size_dict[ x ] > 20 and size_dict[ x ] <= 40 and degree_dict[ x ] <= 3,
-                test_keys,
+        for tag in [ "train", "test" ]:
+            keys = test_keys if tag == "test" else train_keys
+            graph_size_dict = pickle.load( open( f"{data_proccessed_dir}/{tag}_graphs_size.pkl", "rb" ) )
+            graph_degree_dict = pickle.load( open( f"{data_proccessed_dir}/{tag}_graphs_degree.pkl", "rb" ) )
+            subgraph_size_dict = pickle.load( open( f"{data_proccessed_dir}/{tag}_subgraphs_size.pkl", "rb" ) )
+            subgraph_degree_dict = pickle.load( open( f"{data_proccessed_dir}/{tag}_subgraphs_degree.pkl", "rb" ) )
+
+            # source keys by graph size
+            graph_size_0_5 = list( filter( lambda x: graph_size_dict[ x ] <= 5, keys ) )
+            graph_size_5_10 = list( filter( lambda x: 5 < graph_size_dict[ x ] <= 10, keys ) )
+            graph_size_10_15 = list( filter( lambda x: 10 < graph_size_dict[ x ] <= 15, keys ) )
+            graph_size_15_20 = list( filter( lambda x: 15 < graph_size_dict[ x ] <= 20, keys ) )
+            graph_size_20_30 = list( filter( lambda x: 20 < graph_size_dict[ x ] <= 30, keys ) )
+            graph_size_30_40 = list( filter( lambda x: 30 < graph_size_dict[ x ] <= 40, keys ) )
+            graph_size_40_ = list( filter( lambda x: 40 < graph_size_dict[ x ], keys ) )
+
+            # query keys by graph size / non dense
+            nondense_0_20 = list(
+                filter( lambda x: subgraph_size_dict[ x ] <= 20 and subgraph_degree_dict[ x ] <= 3, keys )
             )
-        )
-        nondense_40_60 = list(
-            filter(
-                lambda x: size_dict[ x ] > 40 and size_dict[ x ] <= 60 and degree_dict[ x ] <= 3,
-                test_keys,
+            nondense_20_40 = list(
+                filter( lambda x: 20 < subgraph_size_dict[ x ] <= 40 and subgraph_degree_dict[ x ] <= 3, keys )
             )
-        )
-        nondense_60_ = list(
-            filter( lambda x: size_dict[ x ] >= 60 and degree_dict[ x ] <= 3, test_keys )
-        )
-
-        dense_0_20 = list(
-            filter( lambda x: size_dict[ x ] <= 20 and degree_dict[ x ] > 3, test_keys )
-        )
-        dense_20_40 = list(
-            filter(
-                lambda x: size_dict[ x ] > 20 and size_dict[ x ] <= 40 and degree_dict[ x ] > 3,
-                test_keys,
+            nondense_40_60 = list(
+                filter( lambda x: 40 < subgraph_size_dict[ x ] <= 60 and subgraph_degree_dict[ x ] <= 3, keys )
             )
-        )
-        dense_40_60 = list(
-            filter(
-                lambda x: size_dict[ x ] > 40 and size_dict[ x ] <= 60 and degree_dict[ x ] > 3,
-                test_keys,
+            nondense_60_ = list(
+                filter( lambda x: subgraph_size_dict[ x ] >= 60 and subgraph_degree_dict[ x ] <= 3, keys )
             )
-        )
-        dense_60_ = list(
-            filter( lambda x: size_dict[ x ] >= 60 and degree_dict[ x ] > 3, test_keys )
-        )
 
-        with open(
-                "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_0_20"), "wb"
-        ) as f:
-            pickle.dump( nondense_0_20, f )
+            # query keys by graph size / dense
+            dense_0_20 = list(
+                filter( lambda x: subgraph_size_dict[ x ] <= 20 and subgraph_degree_dict[ x ] > 3, keys )
+            )
+            dense_20_40 = list(
+                filter( lambda x: 20 < subgraph_size_dict[ x ] <= 40 and subgraph_degree_dict[ x ] > 3, keys )
+            )
+            dense_40_60 = list(
+                filter( lambda x: 40 < subgraph_size_dict[ x ] <= 60 and subgraph_degree_dict[ x ] > 3, keys )
+            )
+            dense_60_ = list(
+                filter( lambda x: subgraph_size_dict[ x ] >= 60 and subgraph_degree_dict[ x ] > 3, keys )
+            )
 
-        with open(
-                "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_20_40"), "wb"
-        ) as f:
-            pickle.dump( nondense_20_40, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "graph_size_0_5"), "wb" ) as f:
+                pickle.dump( graph_size_0_5, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "graph_size_5_10"), "wb" ) as f:
+                pickle.dump( graph_size_5_10, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "graph_size_10_15"), "wb" ) as f:
+                pickle.dump( graph_size_10_15, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "graph_size_15_20"), "wb" ) as f:
+                pickle.dump( graph_size_15_20, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "graph_size_20_30"), "wb" ) as f:
+                pickle.dump( graph_size_20_30, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "graph_size_30_40"), "wb" ) as f:
+                pickle.dump( graph_size_30_40, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "graph_size_40_"), "wb" ) as f:
+                pickle.dump( graph_size_40_, f )
 
-        with open(
-                "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_40_60"), "wb"
-        ) as f:
-            pickle.dump( nondense_40_60, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "nondense_0_20"), "wb" ) as f:
+                pickle.dump( nondense_0_20, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "nondense_20_40"), "wb" ) as f:
+                pickle.dump( nondense_20_40, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "nondense_40_60"), "wb" ) as f:
+                pickle.dump( nondense_40_60, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "nondense_60_"), "wb" ) as f:
+                pickle.dump( nondense_60_, f )
 
-        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "nondense_60_"), "wb" ) as f:
-            pickle.dump( nondense_60_, f )
-
-        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_0_20"), "wb" ) as f:
-            pickle.dump( dense_0_20, f )
-
-        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_20_40"), "wb" ) as f:
-            pickle.dump( dense_20_40, f )
-
-        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_40_60"), "wb" ) as f:
-            pickle.dump( dense_40_60, f )
-
-        with open( "%s/test_keys_%s.pkl" % (data_proccessed_dir, "dense_60_"), "wb" ) as f:
-            pickle.dump( dense_60_, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "dense_0_20"), "wb" ) as f:
+                pickle.dump( dense_0_20, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "dense_20_40"), "wb" ) as f:
+                pickle.dump( dense_20_40, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "dense_40_60"), "wb" ) as f:
+                pickle.dump( dense_40_60, f )
+            with open( "%s/%s_keys_%s.pkl" % (data_proccessed_dir, tag, "dense_60_"), "wb" ) as f:
+                pickle.dump( dense_60_, f )
 
 
 if __name__ == "__main__":
