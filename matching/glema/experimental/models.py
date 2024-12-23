@@ -296,7 +296,7 @@ class GINConv( pyg_nn.MessagePassing ):
 class InferenceGNN:
 
     def __init__( self, args ) -> None:
-        self.model = OrderEmbedder( 1, args.hidden_dim, args )
+        self.model = OrderEmbedder( args.embedding_dim, args.hidden_dim, args )
         self.device = model_utils.get_device()
         self.model = model_utils.initialize_model(
             self.model, self.device, load_save_file=args.ckpt_path
@@ -304,6 +304,7 @@ class InferenceGNN:
 
         self.model.eval()
         self.anchored = args.anchored
+        self.embedding_dim = args.embedding_dim
 
     def to_input( self, batch ):
         sources, queries = [ ], [ ]
@@ -326,6 +327,8 @@ class InferenceGNN:
         return sources, queries
 
     def prepare_single_input( self, source, query ):
+        source = utils.prepare_node_features( source, self.embedding_dim, self.anchored )
+        query = utils.prepare_node_features( query, self.embedding_dim, self.anchored )
         return source, query
 
     def prepare_multi_input( self, sources, queries ):
@@ -341,7 +344,6 @@ class InferenceGNN:
 
         sources, queries = inputs
         with torch.no_grad():
-
             emb_sources, emb_queries = (
                 self.model.emb_model( sources ),
                 self.model.emb_model( queries ))

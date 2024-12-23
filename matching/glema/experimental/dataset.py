@@ -28,6 +28,7 @@ class BaseDataset( Dataset ):
 
         self.data_dir = io_utils.get_abs_file_path( data_dir )
         self.anchored = args.anchored
+        self.embedding_dim = args.embedding_dim
 
     def __len__( self ):
         return len( self.full_keys[0] )
@@ -107,6 +108,10 @@ class BaseDataset( Dataset ):
 
     def __getitem__( self, idx ):
         pos_source, pos_query, _, neg_source, neg_query, _ = self.get_data( idx )
+        pos_source = utils.prepare_node_features( pos_source, self.embedding_dim, self.anchored )
+        pos_query = utils.prepare_node_features( pos_query, self.embedding_dim, self.anchored )
+        neg_source = utils.prepare_node_features( neg_source, self.embedding_dim, self.anchored )
+        neg_query = utils.prepare_node_features( neg_query, self.embedding_dim, self.anchored )
         return pos_source, pos_query, neg_source, neg_query
 
 

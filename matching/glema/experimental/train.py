@@ -17,22 +17,9 @@ import matching.glema.common.utils.arg_utils as arg_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.common.utils.model_utils as model_utils
-import matching.glema.experimental.models as models
+import matching.glema.experimental.utils as utils
 from matching.glema.experimental.dataset import BaseDataset, collate_fn
-
-
-def build_model( args ):
-    model = models.OrderEmbedder( 1, args.hidden_dim, args )
-    model.to( model_utils.get_device() )
-    return model
-
-
-def build_optimizer( model: nn.Module, args ) -> optim.Optimizer:
-    weight_decay = args.weight_decay
-    filter_fn = filter( lambda p: p.requires_grad, model.parameters() )
-    if args.opt == 'adam':
-        optimizer = optim.Adam( filter_fn, lr=args.lr, weight_decay=weight_decay )
-    return optimizer
+from matching.glema.experimental.evaluate import main as evaluate
 
 
 def train( args ):
@@ -64,7 +51,7 @@ def train( args ):
     print( f"Number of test data: {len( test_keys )}" )
 
     # Initialize model
-    model = build_model( args )
+    model = utils.build_model( args )
     print(
         "Number of parameters: ",
         sum( p.numel() for p in model.parameters() if p.requires_grad ),
@@ -90,7 +77,7 @@ def train( args ):
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_fn,
-        #multiprocessing_context='fork' if torch.backends.mps.is_available() else None
+        # multiprocessing_context='fork' if torch.backends.mps.is_available() else None
     )
 
     test_dataloader = DataLoader(
@@ -99,7 +86,7 @@ def train( args ):
         shuffle=False,
         num_workers=args.num_workers,
         collate_fn=collate_fn,
-        #multiprocessing_context='fork' if torch.backends.mps.is_available() else None
+        # multiprocessing_context='fork' if torch.backends.mps.is_available() else None
     )
 
     timestamp = misc_utils.get_timestamp()
@@ -120,7 +107,7 @@ def train( args ):
     confidence_thresh = 0.75
 
     # Optimizer
-    optimizer = build_optimizer( model, args )
+    optimizer = utils.build_optimizer( model, args )
     clf_opt = optim.Adam( model.clf_model.parameters(), lr=args.lr )
 
     for epoch in range( args.epoch ):
@@ -176,11 +163,11 @@ def train( args ):
             # batch_acc = torch.mean( (pred == labels).type( torch.float ) )
 
             # Print loss at the end of tqdm bar
-            loss_norm = loss.cpu().item() / pos_target.num_graphs
-            pbar.set_postfix_str( "Loss: %.4f" % loss_norm )
+            # loss_norm = loss.cpu().item() / pos_target.num_graphs
+            pbar.set_postfix_str( "Loss: %.4f" % loss.cpu().item() )
 
             # Collect loss, true label and predicted label
-            train_losses.append( loss_norm )
+            train_losses.append( loss.cpu().item() )
             train_true.append( labels.cpu().numpy() )
             train_pred.append( pred.cpu().numpy() )
 
@@ -229,8 +216,8 @@ def train( args ):
                 raw_pred *= -1
 
             # Collect loss, true label and predicted label
-            loss_norm = loss.cpu().item() / pos_target.num_graphs
-            test_losses.append( loss_norm )
+            # loss_norm = loss.cpu().item() / pos_target.num_graphs
+            test_losses.append( loss.cpu().item() )
             test_true.append( labels.cpu().numpy() )
             test_pred.append( pred.cpu().numpy() )
             test_raw_preds.append( raw_pred.cpu().numpy() )
@@ -322,6 +309,12 @@ def train( args ):
     return version
 
 
+def write_evaluation( args, version ):
+    model_name = model_utils.get_model_name( args, version, tag=args.model_tag )
+    args = arg_utils.load_args( args, model_name )
+    evaluate( args, version )
+
+
 if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "CPG_augm"
@@ -331,6 +324,9 @@ if __name__ == "__main__":
     args.curriculum_training_steps = 2  # graph complexity increase every x epochs
     args.seed = 23
     args.num_workers = 0
+    args.embedding_dim = 5  # possible labels
+    if args.anchored:
+        args.embedding_dim += 1  # labels + 1 anchor embedding
 
     # new
     args.model_tag = "experimental_SAGE"
@@ -360,5 +356,5 @@ if __name__ == "__main__":
     # args.test = False
 
     print( args )
-
     version = train( args )
+    write_evaluation( args, version )
