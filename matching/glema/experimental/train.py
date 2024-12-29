@@ -324,7 +324,7 @@ if __name__ == "__main__":
     args.curriculum_training_steps = 2  # graph complexity increase every x epochs
     args.seed = 23
     args.num_workers = 0
-    args.embedding_dim = 5  # possible labels
+    args.embedding_dim = 0  # possible labels
     if args.anchored:
         args.embedding_dim += 1  # labels + 1 anchor embedding
 
