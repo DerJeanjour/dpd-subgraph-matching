@@ -11,8 +11,9 @@ from torch.utils.data.sampler import Sampler
 
 import matching.glema.common.utils.graph_utils as graph_utils
 import matching.glema.common.utils.io_utils as io_utils
-import matching.glema.common.utils.model_utils as model_utils
 import matching.glema.common.utils.misc_utils as misc_utils
+import matching.glema.common.utils.model_utils as model_utils
+
 
 def onehot_encoding_node( graph, embedding_dim, anchored=True ):
     H = [ ]
@@ -24,7 +25,7 @@ def onehot_encoding_node( graph, embedding_dim, anchored=True ):
 
 class BaseDataset( Dataset ):
 
-    def __init__( self, keys, args, k_start=-1, k_keys=None ):
+    def __init__( self, keys, args, k_start=-1, k_keys=None, max_size=-1, balanced=True ):
 
         dataset_name = model_utils.get_dataset_name( args )
         data_dir = os.path.join( args.data_processed_dir, dataset_name )
@@ -33,6 +34,8 @@ class BaseDataset( Dataset ):
         self.full_keys = keys
         self.k_keys = k_keys
         self.k = k_start if k_keys is not None else -1
+        self.balanced = balanced
+        self.len = len( self.full_keys ) if max_size < 0 else min( max_size, len( self.full_keys ) )
         self.set_keys_by_k()
 
         self.data_dir = io_utils.get_abs_file_path( data_dir )
@@ -40,7 +43,28 @@ class BaseDataset( Dataset ):
         self.anchored = args.anchored
 
     def __len__( self ):
-        return len( self.full_keys )
+        return self.len
+
+    def balance_keys( self, keys, shuffle=True ):
+        """
+        Balances the data keys by ensuring an equal number of isomorphic and non-isomorphic keys.
+        """
+        iso_keys = [ key for key in keys if "iso" in key ]
+        non_iso_keys = [ key for key in keys if "non" in key ]
+
+        if shuffle:
+            random.shuffle( iso_keys )
+            random.shuffle( non_iso_keys )
+
+        data_limit = min( len( iso_keys ), len( non_iso_keys ), self.len // 2 )
+        iso_keys = iso_keys[ :data_limit ]
+        non_iso_keys = non_iso_keys[ :data_limit ]
+
+        balanced_keys = misc_utils.zip_merge( [ iso_keys, non_iso_keys ] )
+        if shuffle:
+            random.shuffle( balanced_keys )
+
+        return balanced_keys
 
     def set_keys_by_k( self ):
         if self.k_keys is not None and self.k in self.k_keys.keys():
@@ -53,11 +77,18 @@ class BaseDataset( Dataset ):
                 k -= 1
 
             keys = misc_utils.zip_merge( keys )
-            random.shuffle( keys )
             self.keys = keys
         else:
             self.keys = self.full_keys
             self.k = -1
+
+        if self.balanced:
+            self.keys = self.balance_keys( self.keys )
+
+    def get_key_split( self ):
+        iso_keys = [ key for key in self.keys if "iso" in key ]
+        non_iso_keys = [ key for key in self.keys if "non" in key ]
+        return iso_keys, non_iso_keys
 
     def increase_complexity( self, k_inc=1 ):
         if self.k >= 0:

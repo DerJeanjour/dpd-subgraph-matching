@@ -34,6 +34,10 @@ def parse_args( use_default=False ):
                          type=int, default=32 )
     parser.add_argument( "--curriculum_training_steps", help="Increase graph complexity every x epoch.",
                          type=int, default=-1 )
+    parser.add_argument( "--max_test_data", help="Sets the max test data size used while training.",
+                         type=int, default=-1 )
+    parser.add_argument( "--max_train_data", help="Sets the max train data size used while training.",
+                         type=int, default=-1 )
     parser.add_argument( "--tactic", help="tactic of defining number of hops",
                          type=str, default="static", choices=[ "static", "cont", "jump" ] )
     parser.add_argument( "--branch", help="choosing branch",

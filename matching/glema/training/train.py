@@ -70,8 +70,13 @@ def train( args ):
         train_complexity_start = 1
         train_complexity_keys = model_utils.load_complexity_keys( args )
 
-    train_dataset = BaseDataset( train_keys, args, k_start=train_complexity_start, k_keys=train_complexity_keys )
-    test_dataset = BaseDataset( test_keys, args )
+    max_train_data_size = -1 if args.max_train_data < 0 else args.max_train_data
+    max_test_data_size = -1 if args.max_test_data < 0 else args.max_test_data
+
+    train_dataset = BaseDataset( train_keys, args,
+                                 k_start=train_complexity_start, k_keys=train_complexity_keys,
+                                 max_size=max_train_data_size )
+    test_dataset = BaseDataset( test_keys, args, max_size=max_test_data_size )
 
     # num_train_iso = len([0 for k in train_keys if 'iso' in k])
     # num_train_non = len([0 for k in train_keys if 'non' in k])
@@ -305,11 +310,13 @@ def write_evaluation( args, version ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG_augm"
+    args.dataset = "CPG_augm_large"
     args.directed = False
     args.anchored = True
     args.tactic = "jump"
     args.batch_size = 128
+    args.max_test_data = 100_000
+    args.max_train_data = args.max_test_data * 10
     args.curriculum_training_steps = 2  # graph complexity increase every x epochs
     args.embedding_dim = 5  # possible labels
     if args.anchored:
