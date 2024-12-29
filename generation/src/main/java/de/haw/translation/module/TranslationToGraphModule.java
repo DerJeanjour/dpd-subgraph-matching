@@ -34,17 +34,42 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
     @Override
     protected Graph processImpl( final TranslationResult result, final PipeContext ctx ) {
 
-        log.info( "Converting result to graph ..." );
         if ( result == null ) {
             throw new IllegalArgumentException( "Can't convert null result!" );
         }
 
-        final Application neo4j = new Application();
-        ReflectionUtils.setInt( neo4j, "depth", ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ) );
+        final int minDepth = ctx.get( PipeContext.CPG_MIN_DEPTH_KEY, 8, Integer.class );
+        int depth = ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class );
 
+        while ( depth >= minDepth ) {
+            try {
+                return this.translateGraph( result, ctx, depth );
+            } catch ( Exception e ) {
+                log.error( "Failed to parse CPG in depth {}: {}", depth, e.getMessage() );
+                depth--;
+            } catch ( OutOfMemoryError e ) {
+                // TODO this is very unsafe and will not guarantee correct process
+                log.error( "Failed to parse CPG in depth {}: {}", depth, e.getMessage() );
+                System.gc();
+                depth--;
+            }
+        }
+
+        throw new IllegalStateException( "Couldn't parse CPG results with min depth of " + minDepth );
+    }
+
+    private Graph translateGraph( final TranslationResult result, final PipeContext ctx, final int depth ) {
+        log.info( "Converting CPG result to graph with depth {} ...", depth );
+        final Application neo4j = new Application();
+        ReflectionUtils.setInt( neo4j, "depth", depth );
         final Pair<List<DefaultNodeBuilder>, List<DefaultRelationshipBuilder>> jsonData = neo4j.translateCPGToOGMBuilders(
                 result );
-        return this.toGraph( neo4j.buildJsonGraph( jsonData.getFirst(), jsonData.getSecond() ), ctx );
+
+        final Graph graph = this.toGraph( neo4j.buildJsonGraph( jsonData.getFirst(), jsonData.getSecond() ), ctx );
+        if ( this.graphIsEmpty( graph ) ) {
+            throw new IllegalStateException( "Translated graph is empty." );
+        }
+        return graph;
     }
 
     private Graph toGraph( final JsonGraph json, final PipeContext ctx ) {
@@ -90,6 +115,10 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
         }
 
         return graph;
+    }
+
+    private boolean graphIsEmpty( final Graph graph ) {
+        return graph == null || graph.getNodeCount() == 0;
     }
 
 }

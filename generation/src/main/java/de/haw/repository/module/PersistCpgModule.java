@@ -18,7 +18,11 @@ public class PersistCpgModule<Target> extends PipeModule<Graph, Graph, Target> {
 
         final int depth = ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class );
         final boolean purge = ctx.get( PipeContext.CPG_REPOSITORY_PURGE_KEY, true, Boolean.class );
-        client.writeGraph( graph, ctx.get( PipeContext.CPG_DEPTH_KEY, 10, Integer.class ), purge );
+
+        if( purge ) {
+            client.clearAll();
+        }
+        client.writeGraph( graph, depth );
 
         return graph;
     }
