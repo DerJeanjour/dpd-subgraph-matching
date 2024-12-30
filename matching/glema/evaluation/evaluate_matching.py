@@ -66,7 +66,7 @@ def main( args, version ):
     device = model_utils.get_device()
     model = model_utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
-    test_dataset = BaseDataset( test_keys, args )
+    test_dataset = BaseDataset( test_keys, args, balanced=False )
     test_dataloader = DataLoader(
         test_dataset,
         args.batch_size,
@@ -176,7 +176,7 @@ def main( args, version ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG_augm"
+    args.dataset = "CPG_augm_large"
     args.directed = False
     args.anchored = True
     version = model_utils.get_latest_model_version( args )

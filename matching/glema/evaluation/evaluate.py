@@ -47,7 +47,7 @@ def main( args, version ):
     device = model_utils.get_device()
     model = model_utils.initialize_model( model, device, load_save_file=args.ckpt_path )
 
-    test_dataset = BaseDataset( test_keys, args )
+    test_dataset = BaseDataset( test_keys, args, balanced=False )
     test_dataloader = DataLoader(
         test_dataset,
         args.batch_size,

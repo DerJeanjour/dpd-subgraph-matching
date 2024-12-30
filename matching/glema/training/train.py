@@ -18,7 +18,6 @@ import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.common.utils.model_utils as model_utils
 from matching.glema.common.dataset import BaseDataset, collate_fn
 from matching.glema.common.model import GLeMaNet
-
 from matching.glema.evaluation.evaluate import main as evaluate
 from matching.glema.evaluation.evaluate_matching import main as evaluate_matching
 
@@ -34,7 +33,7 @@ def train( args ):
     test_key_file = io_utils.get_abs_file_path( os.path.join( data_path, args.test_keys ) )
 
     version = model_utils.get_latest_model_version( args )
-    version = max( version, 1 ) + 1
+    version = max( version, 0 ) + 1
     model_name = model_utils.get_model_name( args, version )
     save_dir = model_utils.get_model_ckpt_dir( args, model_name )
     save_dir = io_utils.ensure_dir( save_dir )
@@ -295,18 +294,20 @@ def train( args ):
                 break
 
         if uses_curriculum_training:
-            if epoch > 0 and epoch % args.curriculum_training_steps == 0:
+            if (epoch + 1) % args.curriculum_training_steps == 0:
                 # increase complexity limit every x epochs
                 train_dataset.increase_complexity()
 
     log_file.close()
     return version
 
+
 def write_evaluation( args, version ):
     model_name = model_utils.get_model_name( args, version )
     args = arg_utils.load_args( args, model_name )
     evaluate( args, version )
     evaluate_matching( args, version )
+
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
@@ -317,7 +318,7 @@ if __name__ == "__main__":
     args.batch_size = 128
     args.max_test_data = 100_000
     args.max_train_data = args.max_test_data * 10
-    args.curriculum_training_steps = 2  # graph complexity increase every x epochs
+    args.curriculum_training_steps = 1  # graph complexity increase every x epochs
     args.embedding_dim = 5  # possible labels
     if args.anchored:
         args.embedding_dim += 1  # labels + 1 anchor embedding
@@ -326,4 +327,3 @@ if __name__ == "__main__":
 
     version = train( args )
     write_evaluation( args, version )
-
