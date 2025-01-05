@@ -1,6 +1,8 @@
 from enum import Enum
 from itertools import zip_longest
 
+import numpy as np
+
 import matching.misc.utils as utils
 
 
@@ -41,3 +43,14 @@ def flip_key_values( data: dict[ any, any ] ) -> dict[ any, any ]:
 
 def zip_merge( lists ):
     return [ item for group in zip_longest( *lists ) for item in group if item is not None ]
+
+
+def partition_list( lst, batch_size ):
+    """Partition a list into smaller lists of a specified batch size."""
+    return [ lst[ i:i + batch_size ] for i in range( 0, len( lst ), batch_size ) ]
+
+
+def map_num_array_to_range( arr: list, r_min: int = 0, r_max: int = 1 ):
+    arr = np.array( arr )
+    x = arr.max()
+    return (arr / x) * (r_max - r_min) + r_min

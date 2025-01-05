@@ -94,6 +94,7 @@ def random_subgraph( G, k ):
 def plot_graph( G,
                 with_label=False,
                 nodeLabels=None,
+                nodeSizes=None,
                 nodeColors=None,
                 edgeColors=None,
                 title=None,
@@ -102,9 +103,9 @@ def plot_graph( G,
 
     if pos is None:
         pos = nx.spring_layout( G, seed=42 )
-    node_size = 200
-    if not with_label:
-        node_size *= 0.1
+
+    if nodeSizes is None:
+        nodeSizes = 200
     if not nodeColors:
         nodeColors = "skyblue"
     if not edgeColors:
@@ -130,7 +131,7 @@ def plot_graph( G,
              with_labels=with_label,
              labels=nodeLabels,
              node_color=nodeColors,
-             node_size=node_size,
+             node_size=nodeSizes,
              font_size=6,
              font_color="black",
              width=0.5,

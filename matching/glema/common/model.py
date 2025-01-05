@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from scipy.spatial import distance_matrix
 
+import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.common.utils.model_utils as model_utils
 from matching.glema.common.dataset import onehot_encoding_node
 
@@ -312,3 +313,22 @@ class InferenceGNN:
         input_tensors = self.input_to_tensor( list_inputs )
         results = self.model.get_refined_adjs2( input_tensors )
         return results
+
+    def predict_batch( self, sources, queries, y_labels=None, conf=0.5, bulk_size=128 ):
+        data_size = min( len( sources ), len( queries ) )
+
+        source_batches = misc_utils.partition_list( sources[ :data_size ], bulk_size )
+        query_batches = misc_utils.partition_list( queries[ :data_size ], bulk_size )
+        predictions = [ ]
+        for source_batch, query_batch in zip( source_batches, query_batches ):
+            predictions.extend( self.predict_label( query_batch, source_batch ).cpu().detach().numpy() )
+
+        x_labels = [ 1.0 if p > conf else 0.0 for p in predictions ]
+        y_labels = [ 0.0 * data_size ] if y_labels is None else y_labels[ :data_size ]
+        return predictions, (x_labels, y_labels)
+
+    def predict( self, source, query, y_label=None, conf=0.5 ):
+        y_labels = None if y_label is None else [ y_label ]
+        pred, (x, y) = self.predict_batch( [ source ], [ query ],
+                                           y_labels=y_labels, conf=conf, bulk_size=1 )
+        return pred[ 0 ], (x[ 0 ], y[ 0 ])

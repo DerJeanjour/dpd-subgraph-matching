@@ -337,12 +337,21 @@ def get_pattern_graphs_idxs( args, graphs ):
 
 
 def filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs ):
-    return { dp: [ graphs[ int( gidx ) ] for gidx in gidxs ] for dp, gidxs in pattern_graphs_idxs.items() }
+    return { dp.value: [ graphs[ int( gidx ) ] for gidx in gidxs ] for dp, gidxs in pattern_graphs_idxs.items() }
 
+def filter_no_pattern_graphs_with_idx( graphs, pattern_graphs_idxs, max_size=-1 ):
+    pattern_idxs = [value for values in pattern_graphs_idxs.values() for value in values]
+    graphs_w_o_patterns = [ graph for gidx, graph in graphs.items() if gidx not in pattern_idxs ]
+    if max_size > 0:
+        graphs_w_o_patterns = graphs_w_o_patterns[ :max_size ]
+    return graphs_w_o_patterns
 
-def get_pattern_graphs( args, graphs ):
+def get_pattern_graphs( args, graphs, include_w_o_pattern=False ):
     pattern_graphs_idxs = get_pattern_graphs_idxs( args, graphs )
-    return filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs )
+    pattern_graphs = filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs )
+    if include_w_o_pattern:
+        pattern_graphs[ "N/D" ] = filter_no_pattern_graphs_with_idx( graphs, pattern_graphs_idxs )
+    return pattern_graphs
 
 
 def combine_graph( source, query, anchor=None, matching_colors: dict[ int, str ] = None ):

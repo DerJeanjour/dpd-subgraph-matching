@@ -313,7 +313,7 @@ if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "CPG_augm_large"
     args.directed = False
-    args.anchored = True
+    args.anchored = False
     args.tactic = "jump"
     args.batch_size = 128
     args.max_test_data = 100_000

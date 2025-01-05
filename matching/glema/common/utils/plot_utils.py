@@ -10,14 +10,16 @@ import matching.misc.utils as utils
 def plot_graph(
         graph: nx.Graph,
         nodeLabels=None,
+        node_sizes=None,
         with_label=True,
         nodeColors=None,
         edgeColors=None,
         title=None,
         pos=None
 ):
-    utils.plot_graph( graph, nodeLabels=nodeLabels, with_label=with_label, nodeColors=nodeColors, edgeColors=edgeColors,
-                      title=title, pos=pos )
+    utils.plot_graph( graph, nodeLabels=nodeLabels, nodeSizes=node_sizes,
+                      with_label=with_label, nodeColors=nodeColors,
+                      edgeColors=edgeColors, title=title, pos=pos )
 
 
 def save_graph_debug( G, file_name ):
