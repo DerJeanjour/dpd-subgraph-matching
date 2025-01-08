@@ -80,7 +80,6 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
 
          */
 
-
         return result;
     }
 

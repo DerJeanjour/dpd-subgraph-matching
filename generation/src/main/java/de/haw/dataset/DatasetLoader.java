@@ -8,17 +8,17 @@ import java.io.File;
 
 public class DatasetLoader {
 
-    private static final String BASE_PATH_SELF = "";
+    public static final String BASE_PATH_SELF = "";
 
-    private static final String BASE_PATH_JAVA = "datasets/java/";
+    public static final String BASE_PATH_JAVA = "datasets/java/";
 
-    private static final String BASE_PATH_TEST = BASE_PATH_JAVA + "test/";
+    public static final String BASE_PATH_TEST = BASE_PATH_JAVA + "test/";
 
-    private static final String BASE_PATH_PATTERN_EXAMPLES = BASE_PATH_TEST + "patterns/";
+    public static final String BASE_PATH_PATTERN_EXAMPLES = BASE_PATH_TEST + "patterns/";
 
-    private static final String BASE_PATH_P_MART = BASE_PATH_JAVA + "p-mart/";
+    public static final String BASE_PATH_P_MART = BASE_PATH_JAVA + "p-mart/";
 
-    private static final String BASE_PATH_DPDf = BASE_PATH_JAVA + "dpdf/java_projects/";
+    public static final String BASE_PATH_DPDf = BASE_PATH_JAVA + "dpdf/java_projects/";
 
     public static File load( final Dataset dataset ) {
         return FileUtils.get( getDirOfDataset( dataset.getType() ) + dataset.getProjectName() + "/" );

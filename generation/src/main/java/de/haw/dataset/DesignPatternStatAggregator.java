@@ -13,7 +13,7 @@ import java.util.TreeMap;
 @Slf4j
 public class DesignPatternStatAggregator {
 
-    public static Map<String, Integer> aggregateStats( final List<Dataset> datasets ) {
+    public static Map<String, DatasetDesignPatterns> aggregateStats( final List<Dataset> datasets ) {
 
         final Map<String, Integer> aggregated = new TreeMap<>();
         final Map<String, DatasetDesignPatterns> datasetDesignPatterns = new HashMap<>();
@@ -38,7 +38,8 @@ public class DesignPatternStatAggregator {
             } );
         }
 
-        return aggregated;
+        log.info( "Aggregated stats: {}", aggregated );
+        return datasetDesignPatterns;
     }
 
 }

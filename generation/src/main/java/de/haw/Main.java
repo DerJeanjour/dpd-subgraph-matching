@@ -2,11 +2,14 @@ package de.haw;
 
 import de.haw.application.ConvertAndExportCpgDatasets;
 import de.haw.application.model.TranslationRequest;
+import de.haw.dataset.DesignPatternStatAggregator;
 import de.haw.dataset.model.Dataset;
+import de.haw.dataset.model.DatasetDesignPatterns;
 import de.haw.dataset.model.DatasetFactory;
 import de.haw.dataset.model.DatasetType;
 import de.haw.dataset.module.AttachPatternsToContext;
 import de.haw.dataset.module.LoadDatasetFileModule;
+import de.haw.dataset.scripts.DirectorySizeSummary;
 import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
@@ -15,13 +18,11 @@ import de.haw.processing.module.*;
 import de.haw.repository.model.CpgEdgeType;
 import de.haw.repository.module.PersistCpgModule;
 import de.haw.translation.module.GenerateCpgModule;
-import de.haw.translation.module.TranslationToGraphAlternative;
 import de.haw.translation.module.TranslationToGraphModule;
 import lombok.extern.slf4j.Slf4j;
 import org.graphstream.graph.Graph;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public class Main {
@@ -31,30 +32,59 @@ public class Main {
         MemoryUtils.logMemoryStats();
 
         //test();
+        //aggregateStats();
         convertDatasets();
     }
 
     private static void convertDatasets() {
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 6 );
+        final List<TranslationRequest> translationRequests = getDpdfRequests();
+        ConvertAndExportCpgDatasets.of( true ).process( translationRequests, ctx );
+    }
 
+    private static void aggregateStats() {
+        //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
+        DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
+    }
+
+    private static List<TranslationRequest> getPmartRequests() {
         //final List<Dataset> datasets = DatasetFactory.getAll( DatasetType.P_MART );
-        final List<TranslationRequest> translationRequests = Arrays.asList(
-                TranslationRequest.of( DatasetFactory.PMD, 8 ),
+        return Arrays.asList( TranslationRequest.of( DatasetFactory.PMD, 8 ),
                 TranslationRequest.of( DatasetFactory.NUTCH, 8 ),
                 TranslationRequest.of( DatasetFactory.J_HOT_DRAW, 10 ),
                 TranslationRequest.of( DatasetFactory.J_UNIT, 10 ),
                 TranslationRequest.of( DatasetFactory.QUICK_UML, 10 ),
-                TranslationRequest.of( DatasetFactory.MAPPER_XML, 10 )
-        );
+                TranslationRequest.of( DatasetFactory.MAPPER_XML, 10 ) );
+    }
 
-        ConvertAndExportCpgDatasets.instance().process( translationRequests, PipeContext.empty() );
+    private static List<TranslationRequest> getDpdfRequests() {
+        final Set<String> blacklist = Set.of( "" );
+        final List<TranslationRequest> translationRequests = new ArrayList<>(
+                getDatasetsWithPatterns( DatasetType.DPDf ).stream()
+                        .filter( d -> !blacklist.contains( d.getProjectName() ) )
+                        .map( d -> TranslationRequest.of( d, 9 ) )
+                        .toList() );
+
+        final String datasetSizeFile = "datasets/java/dpdf/size_summary.csv";
+        final Map<String, Long> datasetSizes = DirectorySizeSummary.getDirectorySizes( datasetSizeFile );
+        translationRequests.sort( Comparator.comparing(
+                dto -> datasetSizes.getOrDefault( dto.getDataset().getProjectName(), Long.MAX_VALUE ) ) );
+        return translationRequests;
+    }
+
+    private static List<Dataset> getDatasetsWithPatterns( final DatasetType type ) {
+        final Map<String, DatasetDesignPatterns> datasetDesignPatterns = DesignPatternStatAggregator.aggregateStats(
+                DatasetFactory.getAll( type ) );
+        final List<Dataset> datasetsWithPatterns = datasetDesignPatterns.values()
+                .stream()
+                .map( DatasetDesignPatterns::getDataset )
+                .toList();
+        log.info( "Datasets with patterns size={})", datasetsWithPatterns.size() );
+        return datasetsWithPatterns;
     }
 
     private static void test() {
-        //DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.P_MART ) );
-        //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
-
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
         final Dataset dataset = DatasetFactory.PMD;
         final PipeContext ctx = PipeContext.empty();
@@ -64,41 +94,34 @@ public class Main {
 
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
 
-                /* load data */
-                .add( AttachPatternsToContext.instance() )
+                /* load data */.add( AttachPatternsToContext.instance() )
                 .add( LoadDatasetFileModule.instance() )
 
-                /* generate cpg */
-                .add( GenerateCpgModule.instance() )
+                /* generate cpg */.add( GenerateCpgModule.instance() )
                 //.add( PersistTranslationModule.instance() )
                 .add( TranslationToGraphModule.instance() )
                 //.add( TranslationToGraphAlternative.instance() )
 
-                /* prepare cpg */
-                .add( RemoveBlacklistElementsModule.instance() )
+                /* prepare cpg */.add( RemoveBlacklistElementsModule.instance() )
                 .add( FilterInternalScopeModule.instance() )
                 .add( PropagateRecordScopeModule.instance() )
                 //.add( ComputePagerankModule.instance() )
 
-                /* simplify cpg */
-                .add( SimplifyCpgEdgesModule.instance() )
+                /* simplify cpg */.add( SimplifyCpgEdgesModule.instance() )
                 .add( ComputeSSSPsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
 
-                /* patterns */
-                .add( MarkPatternsModule.instance() )
+                /* patterns */.add( MarkPatternsModule.instance() )
                 //.add( IsolateMarkedPatternsModule.instance() )
 
-                /* visualize */
-                .add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
+                /* visualize */.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
                 /*
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( CpgNodeTypeVisualizeModule.instance() )
                 .add( DisplayGraphModule.instance() )
                  */
 
-                /* persist */
-                .add( PersistCpgModule.instance() )
+                /* persist */.add( PersistCpgModule.instance() )
                 .build();
 
         final Graph cpg = pipe.process( dataset, ctx );
