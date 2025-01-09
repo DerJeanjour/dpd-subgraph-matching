@@ -22,6 +22,11 @@ def random_subgraph( G, k: int ):
 def subgraph( G, n, k: int ):
     return nx.ego_graph( G, n, radius=k, undirected=True )
 
+def subgraph_from_anchor_of_size( G, max_n ):
+    anchor = get_anchor( G )
+    bfs = nx.bfs_tree( G, source=anchor )
+    subset = list( bfs.nodes )[ :max_n ]
+    return G.subgraph( subset ).copy()
 
 def inject_edge_errors( G, e: int = 1 ):
     return utils.inject_edge_errors( G, e )
@@ -31,6 +36,11 @@ def top_pr_ranked_node( G ):
     pr = nx.pagerank( G )
     pr = dict( sorted( pr.items(), key=lambda item: item[ 1 ], reverse=True ) )
     return list( pr.keys() )[ 0 ]
+
+def is_connected( G, weak=True ) -> bool:
+    if G.is_directed():
+        return nx.is_weakly_connected( G ) if weak else nx.is_strongly_connected( G )
+    return nx.is_connected( G )
 
 
 def is_iso_subgraph( graph, subgraph ):
@@ -64,6 +74,75 @@ def max_spanning_radius( G, start_node ):
             stack.append( (child, depth + 1) )
     return max_radius
 
+def normalize_graph( G, max_distance=4, force_directed=False ):
+    G_norm = nx.DiGraph() if G.is_directed() or force_directed else nx.Graph()
+    anchor = get_anchor( G )
+    paths = { }
+    stack = [ (anchor, ("", [ ]), None, None) ]
+    furthest_distance = 0
+    while len( stack ) > 0:
+
+        current_node, (label_path, node_path), parent, parent_source = stack.pop( 0 )
+        if (current_node == anchor and parent is not None) or len( label_path ) >= max_distance:
+            continue
+
+        current_node_norm = G_norm.number_of_nodes()
+        label_path += str( G.nodes[ current_node ][ "label" ] )
+        distance = len( label_path ) - 1
+        if label_path not in paths.keys():
+            paths[ label_path ] = [ *node_path, current_node_norm ]
+            n_data: dict = G.nodes[ current_node ]
+            n_data[ "presence" ] = 0
+            n_data[ "distance" ] = distance
+            G_norm.add_node( current_node_norm, **n_data )
+            if parent is not None:
+                G_norm.add_edge( parent, current_node_norm )
+        else:
+            current_node_norm = paths[ label_path ][ -1 ]
+
+        node_path = paths[ label_path ]
+        for n in node_path:
+            G_norm.nodes[ n ][ "presence" ] += 1
+
+        if distance > furthest_distance:
+            furthest_distance = distance
+
+        for child in G.neighbors( current_node ):
+            if child == parent_source:
+                continue
+            stack.append( (child, (label_path, node_path), current_node_norm, current_node) )
+
+    return G_norm, furthest_distance
+
+
+def connect_graphs_at_anchor( graphs, keep_radius=-1 ):
+    if len( graphs ) == 0:
+        return nx.Graph()
+
+    G = nx.DiGraph() if graphs[ 0 ].is_directed() else nx.Graph()
+
+    anchor = None
+    for G_source in graphs:
+        source_anchor = get_anchor( G_source )
+        if keep_radius > 0:
+            G_source = subgraph( G_source, source_anchor, keep_radius )
+        mapping = { }
+        for nid, ndata in G_source.nodes( data=True ):
+            new_nid = G.number_of_nodes()
+            if nid == source_anchor:
+                if anchor is not None:
+                    mapping[ nid ] = anchor
+                    continue
+                anchor = new_nid
+            G.add_node( G.number_of_nodes(), **ndata )
+            mapping[ nid ] = new_nid
+        for source_nid, target_nid, edata in G_source.edges( data=True ):
+            G.add_edge( mapping[ source_nid ], mapping[ target_nid ], **edata )
+
+    if not is_connected( G ):
+        raise AssertionError( f"Graphs couldn't be connected at anchor!" )
+
+    return G
 
 def read_mapping( mapping_file, sg2g=False ):
     mapping = dict()
@@ -388,6 +467,59 @@ def combine_graph( source, query, anchor=None, matching_colors: dict[ int, str ]
     node_colors = [ matching_colors[ matching ] for matching in node_matching ]
     edge_colors = [ matching_colors[ matching ] for matching in edge_matching ]
     return combined_graph, node_colors, edge_colors
+
+def get_all_norm_paths( graph ):
+    paths = [ ]
+    root = get_anchor( graph )
+    dfs_tree = nx.dfs_tree( graph, root )
+
+    def dfs( node, path_ids, path_labels ):
+        path_ids.append( node )
+        path_labels.append( str( graph.nodes[ node ][ 'label' ] ) )
+        children = list( dfs_tree.successors( node ) )
+        if not children:
+            paths.append( (list( path_ids ), "".join( path_labels )) )
+        else:
+            for child in children:
+                dfs( child, path_ids, path_labels )
+        path_ids.pop()
+        path_labels.pop()
+
+    dfs( root, [ ], [ ] )
+    return paths
+
+def combine_normalized( source: nx.Graph, query: nx.Graph, matching_colors: dict[ int, str ] = None ):
+    source = source.copy()
+    query = query.copy()
+
+    def find_longest_overlap( query_label, source_labels ):
+        for length in range( len( query_label ), 0, -1 ):
+            prefix = query_label[ :length ]
+            for source_label, source_ids in source_labels.items():
+                if source_label.startswith( prefix ):
+                    return prefix, source_ids[ :length ]
+        return None, None
+
+    source_paths = get_all_norm_paths( source )
+    query_paths = get_all_norm_paths( query )
+    source_labels = { labels: ids for ids, labels in source_paths }
+    source_node_count = len( source.nodes )
+    mapping = { }
+    for query_ids, query_label in query_paths:
+        matched_prefix, matched_ids = find_longest_overlap( query_label, source_labels )
+        if matched_prefix:
+            for qid, sid in zip( query_ids[ :len( matched_prefix ) ], matched_ids ):
+                mapping[ qid ] = sid
+            # If there are unmatched query nodes, assign new IDs
+            for qid in query_ids[ len( matched_prefix ): ]:
+                mapping[ qid ] = qid + source_node_count + 1
+        else:
+            # If no match at all, assign new IDs
+            for qid in query_ids:
+                mapping[ qid ] = qid + source_node_count + 1
+
+    query = nx.relabel_nodes( query, mapping )
+    return combine_graph( source, query, get_anchor( source ), matching_colors=matching_colors )
 
 
 def plot_interactions( args, model, src_idx, query_idx, threshold=0.5 ):

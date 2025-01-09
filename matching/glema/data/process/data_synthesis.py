@@ -71,7 +71,8 @@ def generate_connected_graph(
         avg_source_size,
         std_source_size,
         avg_degree,
-        std_degree, ):
+        std_degree,
+        directed=False ):
     graph = None
     iteration = 0
     no_of_nodes = int( np.random.normal( avg_source_size, std_source_size ) )
@@ -87,10 +88,10 @@ def generate_connected_graph(
     while (
             graph is None
             or nx.is_empty( graph )
-            or not nx.is_connected( graph )
+            or not graph_utils.is_connected( graph )
     ):  # make sure the generated graph is connected
         graph = nx.erdos_renyi_graph(
-            no_of_nodes, probability_for_edge_creation, directed=False
+            no_of_nodes, probability_for_edge_creation, directed=directed
         )
         iteration += 1
         if iteration > 5:

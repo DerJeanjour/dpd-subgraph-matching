@@ -7,9 +7,9 @@ from scipy.spatial import distance_matrix
 def onehot_encoding( label_idx, anchor_idx, embedding_dim, anchored=True ):
     onehot_vector = [ 0 ] * embedding_dim
     if anchored:
-        onehot_vector[
-            0 ] = anchor_idx  # TODO idea maybe use a normalized distance to anchor?
-        onehot_vector[ label_idx ] = 1  # label start from 1
+        onehot_vector[ 0 ] = anchor_idx
+        if anchor_idx < 1: # TODO for testing, remove me
+            onehot_vector[ label_idx ] = 1  # label start from 1
     else:
         onehot_vector[ label_idx - 1 ] = 1  # label start from 1
     return onehot_vector
