@@ -38,7 +38,7 @@ public class Main {
 
     private static void convertDatasets() {
         final PipeContext ctx = PipeContext.empty();
-        ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 6 );
+        ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 7 );
         final List<TranslationRequest> translationRequests = getDpdfRequests();
         ConvertAndExportCpgDatasets.of( true ).process( translationRequests, ctx );
     }

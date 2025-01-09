@@ -22,14 +22,14 @@ def clean_up( args ):
 def process( args ):
     importer.import_datasets( args )
     data_generator.process( args )
-    if not args.split_data:
-        data_synthesis.process( args )
-    data_processor.process( args )
+    #if not args.split_data:
+    #    data_synthesis.process( args )
+    #data_processor.process( args )
 
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG_augm_large"
+    args.dataset = "CPG_all"
     args.seed = 42
     # args.num_workers = 1
     args.split_data = False
@@ -38,6 +38,7 @@ if __name__ == "__main__":
     args.import_subgraph_max = 40
     args.import_subgraph_min = 2
     args.num_subgraphs = 512
+    #args.num_subgraphs = 4
     args.real = True
     args.testonly = False
     args.directed = False
