@@ -18,8 +18,9 @@ from tqdm import tqdm
 import matching.glema.common.utils.arg_utils as arg_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.model_utils as model_utils
-from matching.glema.common.dataset import BaseDataset, collate_fn
+from matching.glema.common.dataset import BaseDataset
 from matching.glema.common.model import GLeMaNet
+from matching.glema.common.encoding import collate_fn
 
 
 def main( args, version ):

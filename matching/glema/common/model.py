@@ -1,13 +1,10 @@
-import networkx as nx
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from scipy.spatial import distance_matrix
 
 import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.common.utils.model_utils as model_utils
-from matching.glema.common.dataset import onehot_encoding_node
+from matching.glema.common.encoding import encode_sample, collate_fn
 
 
 class GLeMa( torch.nn.Module ):
@@ -226,73 +223,16 @@ class InferenceGNN:
         self.anchored = args.anchored
 
     def prepare_single_input( self, m1, m2 ):
-        # Prepare subgraph
-        n1 = m1.number_of_nodes()
-        adj1 = nx.to_numpy_array( m1 ) + np.eye( n1 )
-        H1 = onehot_encoding_node( m1, self.embedding_dim, anchored=self.anchored )
-
-        # Prepare source graph
-        n2 = m2.number_of_nodes()
-        adj2 = nx.to_numpy_array( m2 ) + np.eye( n2 )
-        H2 = onehot_encoding_node( m2, self.embedding_dim, anchored=self.anchored )
-
-        # Aggregation node encoding
-        agg_adj1 = np.zeros( (n1 + n2, n1 + n2) )
-        agg_adj1[ :n1, :n1 ] = adj1
-        agg_adj1[ n1:, n1: ] = adj2
-        agg_adj2 = np.copy( agg_adj1 )
-        dm = distance_matrix( H1, H2 )
-        dm_new = np.zeros_like( dm )
-        dm_new[ dm == 0.0 ] = 1.0
-        agg_adj2[ :n1, n1: ] = np.copy( dm_new )
-        agg_adj2[ n1:, :n1 ] = np.copy( np.transpose( dm_new ) )
-
-        H1 = np.concatenate( [ H1, np.zeros( (n1, self.embedding_dim) ) ], 1 )
-        H2 = np.concatenate( [ np.zeros( (n2, self.embedding_dim) ), H2 ], 1 )
-        H = np.concatenate( [ H1, H2 ], 0 )
-
-        # node indice for aggregation
-        valid = np.zeros( (n1 + n2,) )
-        valid[ :n1 ] = 1
-
-        sample = {
-            "H": H,
-            "A1": agg_adj1,
-            "A2": agg_adj2,
-            "V": valid,
-        }
-
-        return sample
+        return encode_sample( m1, m2, self.embedding_dim, anchored=self.anchored )
 
     def input_to_tensor( self, batch_input ):
-        max_natoms = max( [ len( item[ "H" ] ) for item in batch_input if item is not None ] )
-        batch_size = len( batch_input )
-
-        H = np.zeros( (batch_size, max_natoms, batch_input[ 0 ][ "H" ].shape[ -1 ]) )
-        A1 = np.zeros( (batch_size, max_natoms, max_natoms) )
-        A2 = np.zeros( (batch_size, max_natoms, max_natoms) )
-        V = np.zeros( (batch_size, max_natoms) )
-
-        for i in range( batch_size ):
-            natom = len( batch_input[ i ][ "H" ] )
-
-            H[ i, :natom ] = batch_input[ i ][ "H" ]
-            A1[ i, :natom, :natom ] = batch_input[ i ][ "A1" ]
-            A2[ i, :natom, :natom ] = batch_input[ i ][ "A2" ]
-            V[ i, :natom ] = batch_input[ i ][ "V" ]
-
-        H = torch.from_numpy( H ).float()
-        A1 = torch.from_numpy( A1 ).float()
-        A2 = torch.from_numpy( A2 ).float()
-        V = torch.from_numpy( V ).float()
-
+        H, A1, A2, M, S, Y, V, keys = collate_fn( batch_input )
         H, A1, A2, V = (
             H.to( self.device ),
             A1.to( self.device ),
             A2.to( self.device ),
             V.to( self.device ),
         )
-
         return H, A1, A2, V
 
     def prepare_multi_input( self, list_subgraphs, list_graphs ):

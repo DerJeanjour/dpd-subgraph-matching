@@ -16,7 +16,8 @@ import matching.glema.common.utils.arg_utils as arg_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.common.utils.model_utils as model_utils
-from matching.glema.common.dataset import BaseDataset, collate_fn
+from matching.glema.common.dataset import BaseDataset
+from matching.glema.common.encoding import collate_fn
 from matching.glema.common.model import GLeMaNet
 from matching.glema.evaluation.evaluate import main as evaluate
 from matching.glema.evaluation.evaluate_matching import main as evaluate_matching
