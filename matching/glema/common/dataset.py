@@ -1,15 +1,19 @@
+import copy
 import os
 import pickle
 import random
 
+import networkx as nx
 import numpy as np
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
 
+import matching.glema.common.utils.graph_utils as graph_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.common.utils.model_utils as model_utils
 from matching.glema.common.encoding import encode_sample
+import matching.misc.cpg_const as cpg_const
 
 
 class BaseDataset( Dataset ):
@@ -117,6 +121,120 @@ class BaseDataset( Dataset ):
         query, source, mapping = self.get_data( idx )
         return encode_sample( query, source, self.embedding_dim,
                               anchored=self.anchored, key=key, mapping=mapping )
+
+
+class DesignPatternDataset( Dataset ):
+
+    def __init__( self, args, query_pattern=False,
+                  max_sources=-1, max_pattern_examples=10, subgraph_relation=1 ):
+        misc_utils.set_seed( args.seed )
+        self.embedding_dim = args.embedding_dim
+        self.anchored = args.anchored
+        self.normalized = args.normalized
+        self.query_pattern = query_pattern
+        self.subgraph_relation = subgraph_relation
+        self.sources = self.load_sources( args, args.dataset, max_sources=max_sources, shuffle=True )
+        self.source_patterns = self.load_source_patterns( args, args.dataset, self.sources )
+        self.record_scopes = self.load_record_scopes( args, args.dataset )
+        self.patterns = self.load_patterns( args, args.pattern_dataset, max_pattern_examples )
+        self.samples = [ ]
+        self.len = 0
+
+    def compute_samples( self ):
+        self.samples = self.construct_samples()
+        self.len = len( self.samples )
+
+    def get_sources( self ) -> dict[ int, nx.Graph ]:
+        return self.sources
+
+    def get_source_patterns( self ) -> dict[ int, str ]:
+        return self.source_patterns
+
+    def set_sources( self, sources: dict[ int, nx.Graph ] ) -> None:
+        self.sources = sources
+
+    def get_patterns( self ) -> dict[ str, list[ nx.Graph ] ]:
+        return self.patterns
+
+    def set_patterns( self, patterns: dict[ str, list[ nx.Graph ] ] ) -> None:
+        self.patterns = patterns
+
+    def construct_samples( self ):
+        samples = [ ]
+        for gidx, source in self.sources.items():
+            source_type = self.source_patterns[ gidx ]
+            record_scope = self.record_scopes[ gidx ]
+            for pattern_type, patterns in self.patterns.items():
+                for pattern in patterns:
+                    samples.append( (source, source_type,
+                                     pattern, pattern_type,
+                                     gidx, record_scope) )
+        return samples
+
+    def load_sources( self, args, dataset, max_sources=-1, shuffle=False ):
+        args = copy.deepcopy( args )
+        args.dataset = dataset
+        sources = graph_utils.load_source_graphs( args )
+        if shuffle:
+            keys = [ *sources.keys() ]
+            random.shuffle( keys )
+            sources = { k: sources[ k ] for k in keys }
+        if 0 < max_sources < len( sources ):
+            keys = [ *sources.keys() ][ :max_sources ]
+            sources = { k: sources[ k ] for k in keys }
+        return sources
+
+    def load_record_scopes( self, args, dataset ):
+        args = copy.deepcopy( args )
+        args.dataset = dataset
+        return { int( gidx )-1: name for gidx, name in graph_utils.get_record_scopes( args ).items() }
+
+    def load_patterns( self, args, dataset, max_pattern_examples, sources=None ):
+        args = copy.deepcopy( args )
+        args.dataset = dataset
+        if sources is None:
+            sources = self.load_sources( args, dataset )
+        patterns = graph_utils.get_pattern_graphs( args, sources )
+        if max_pattern_examples > 0:
+            patterns = { dp: examples[ :max_pattern_examples ] for dp, examples in patterns.items() }
+        return patterns
+
+    def load_source_patterns( self, args, dataset, sources ):
+        args = copy.deepcopy( args )
+        args.dataset = dataset
+        pattern_graph_idx = graph_utils.get_pattern_graphs_idxs( args, sources )
+        source_patterns: dict[ int, str ] = { }
+        for idx in sources.keys():
+            pattern = cpg_const.NO_DESIGN_PATTERN
+            for pattern_type, idxs in pattern_graph_idx.items():
+                if idx in idxs:
+                    pattern = pattern_type.value
+            source_patterns[ idx ] = pattern
+        return source_patterns
+
+    def __len__( self ):
+        return self.len
+
+    def get_data( self, idx ):
+        (source, source_type,
+         pattern, pattern_type,
+         gidx, record_scope) = self.samples[ idx ]
+
+        target_source = source if self.query_pattern else pattern
+        # target_source_type = source_type if self.query_pattern else pattern_type
+        target_query = pattern if self.query_pattern else source
+        # target_query_type = pattern_type if self.query_pattern else source_type
+
+        max_subgraph_size = target_source.number_of_nodes() // self.subgraph_relation
+        if max_subgraph_size < target_query.number_of_nodes():
+            target_query = graph_utils.subgraph_from_anchor_of_size( target_query, max_subgraph_size )
+
+        return target_source, target_query, (source_type, pattern_type, gidx, record_scope)
+
+    def __getitem__( self, idx ):
+        source, query, custom_key = self.get_data( idx )
+        return encode_sample( query, source, self.embedding_dim,
+                              anchored=self.anchored, key=custom_key, is_custom_key=True )
 
 
 class UnderSampler( Sampler ):

@@ -2,6 +2,9 @@ from enum import Enum
 
 NODE_PREFIX = "node_"
 
+NO_DESIGN_PATTERN = "N/A"
+
+
 class NodeAttr( Enum ):
     LABELS = NODE_PREFIX + "labels"
     SCOPED_RECORD_NAME = NODE_PREFIX + "scopedRecordName"

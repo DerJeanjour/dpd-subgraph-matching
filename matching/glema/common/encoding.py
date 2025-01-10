@@ -8,8 +8,8 @@ def onehot_encoding( label_idx, anchor_idx, embedding_dim, anchored=True ):
     onehot_vector = [ 0 ] * embedding_dim
     if anchored:
         onehot_vector[ 0 ] = anchor_idx
-        if anchor_idx < 1: # TODO for testing, remove me
-            onehot_vector[ label_idx ] = 1  # label start from 1
+        #if anchor_idx < 1: # TODO for testing, remove me
+        onehot_vector[ label_idx ] = 1  # label start from 1
     else:
         onehot_vector[ label_idx - 1 ] = 1  # label start from 1
     return onehot_vector
@@ -32,7 +32,7 @@ def onehot_encoding_node( graph, embedding_dim, anchored=True ):
     return H
 
 
-def encode_sample( query, source, embedding_dim, anchored=True, mapping=None, key=None ):
+def encode_sample( query, source, embedding_dim, anchored=True, mapping=None, key=None, is_custom_key=False ):
     # Prepare subgraph
     n_query = query.number_of_nodes()
     adj_query = nx.to_numpy_array( query ) + np.eye( n_query )
@@ -76,7 +76,7 @@ def encode_sample( query, source, embedding_dim, anchored=True, mapping=None, ke
 
     # iso to class
     Y = -1
-    if key is not None:
+    if key is not None and not is_custom_key:
         Y = 1 if "iso" in key else 0
 
     sample = {
