@@ -3,6 +3,7 @@ from collections import defaultdict
 
 import networkx as nx
 import numpy as np
+from tqdm import tqdm
 
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
@@ -286,13 +287,15 @@ def load_source_graph( args, source_graph_idx, relabel=True ):
     return source
 
 
-def load_source_graphs( args, relabel=True ):
+def load_source_graphs( args, relabel=True, with_loading_bar=False ):
     dataset_type = "test" if args.test_data else "train"
     dataset_path = os.path.join( args.dataset_dir, f"{args.dataset}_{dataset_type}" )
     dataset_path = io_utils.get_abs_file_path( dataset_path )
 
     source_graph_idxs = io_utils.get_filenames_in_dir( dataset_path, only_files=False )
     source_graph_idxs = sorted( [ int( idx ) for idx in source_graph_idxs ] )
+    if with_loading_bar:
+        source_graph_idxs = tqdm( source_graph_idxs )
 
     source_graphs = { }
     for source_graph_idx in source_graph_idxs:

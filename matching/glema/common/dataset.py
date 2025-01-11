@@ -12,8 +12,8 @@ import matching.glema.common.utils.graph_utils as graph_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
 import matching.glema.common.utils.model_utils as model_utils
-from matching.glema.common.encoding import encode_sample
 import matching.misc.cpg_const as cpg_const
+from matching.glema.common.encoding import encode_sample
 
 
 class BaseDataset( Dataset ):
@@ -128,15 +128,19 @@ class DesignPatternDataset( Dataset ):
     def __init__( self, args, query_pattern=False,
                   max_sources=-1, max_pattern_examples=10, subgraph_relation=1 ):
         misc_utils.set_seed( args.seed )
+
         self.embedding_dim = args.embedding_dim
         self.anchored = args.anchored
         self.normalized = args.normalized
         self.query_pattern = query_pattern
         self.subgraph_relation = subgraph_relation
+
         self.sources = self.load_sources( args, args.dataset, max_sources=max_sources, shuffle=True )
         self.source_patterns = self.load_source_patterns( args, args.dataset, self.sources )
-        self.record_scopes = self.load_record_scopes( args, args.dataset )
         self.patterns = self.load_patterns( args, args.pattern_dataset, max_pattern_examples )
+        self.source_record_scopes = self.load_record_scopes( args, args.dataset )
+        self.source_graph_record_scopes = self.compute_source_graph_record_scopes()
+        self.pattern_record_scopes = self.load_record_scopes( args, args.pattern_dataset )
         self.samples = [ ]
         self.len = 0
 
@@ -159,11 +163,22 @@ class DesignPatternDataset( Dataset ):
     def set_patterns( self, patterns: dict[ str, list[ nx.Graph ] ] ) -> None:
         self.patterns = patterns
 
+    def __transform_record_scopes( self, record_scopes: dict[ int, str ] ) -> dict[ str, str ]:
+        return { str( nid ): name for nid, name in record_scopes.items() }
+
+    def get_source_record_scopes( self ) -> dict[ str, str ]:
+        return self.__transform_record_scopes( self.source_record_scopes )
+
+    def get_pattern_record_scopes( self ) -> dict[ str, str ]:
+        return self.__transform_record_scopes( self.pattern_record_scopes )
+
     def construct_samples( self ):
         samples = [ ]
         for gidx, source in self.sources.items():
             source_type = self.source_patterns[ gidx ]
-            record_scope = self.record_scopes[ gidx ]
+            record_scope = self.source_graph_record_scopes[ gidx ]
+            if record_scope == "None":
+                print( f"Undefined scope for gidx {gidx}" )
             for pattern_type, patterns in self.patterns.items():
                 for pattern in patterns:
                     samples.append( (source, source_type,
@@ -172,9 +187,10 @@ class DesignPatternDataset( Dataset ):
         return samples
 
     def load_sources( self, args, dataset, max_sources=-1, shuffle=False ):
+        print( f"Loading sources from {dataset} ..." )
         args = copy.deepcopy( args )
         args.dataset = dataset
-        sources = graph_utils.load_source_graphs( args )
+        sources = graph_utils.load_source_graphs( args, with_loading_bar=True )
         if shuffle:
             keys = [ *sources.keys() ]
             random.shuffle( keys )
@@ -184,10 +200,18 @@ class DesignPatternDataset( Dataset ):
             sources = { k: sources[ k ] for k in keys }
         return sources
 
+    def compute_source_graph_record_scopes( self ):
+        source_graph_record_scopes = { }
+        for gidx, source in self.sources.items():
+            anchor = graph_utils.get_anchor( source )
+            record_scope = self.source_record_scopes[ anchor ]
+            source_graph_record_scopes[ gidx ] = record_scope
+        return source_graph_record_scopes
+
     def load_record_scopes( self, args, dataset ):
         args = copy.deepcopy( args )
         args.dataset = dataset
-        return { int( gidx )-1: name for gidx, name in graph_utils.get_record_scopes( args ).items() }
+        return { int( nid ): name for nid, name in graph_utils.get_record_scopes( args ).items() }
 
     def load_patterns( self, args, dataset, max_pattern_examples, sources=None ):
         args = copy.deepcopy( args )
@@ -221,20 +245,24 @@ class DesignPatternDataset( Dataset ):
          gidx, record_scope) = self.samples[ idx ]
 
         target_source = source if self.query_pattern else pattern
-        # target_source_type = source_type if self.query_pattern else pattern_type
         target_query = pattern if self.query_pattern else source
-        # target_query_type = pattern_type if self.query_pattern else source_type
 
         max_subgraph_size = target_source.number_of_nodes() // self.subgraph_relation
         if max_subgraph_size < target_query.number_of_nodes():
             target_query = graph_utils.subgraph_from_anchor_of_size( target_query, max_subgraph_size )
 
-        return target_source, target_query, (source_type, pattern_type, gidx, record_scope)
+        meta = {
+            "source_type": source_type,
+            "pattern_type": pattern_type,
+            "gidx": gidx,
+            "record_scope": record_scope
+        }
+        return target_source, target_query, meta
 
     def __getitem__( self, idx ):
-        source, query, custom_key = self.get_data( idx )
+        source, query, meta = self.get_data( idx )
         return encode_sample( query, source, self.embedding_dim,
-                              anchored=self.anchored, key=custom_key, is_custom_key=True )
+                              anchored=self.anchored, key=meta, is_custom_key=True )
 
 
 class UnderSampler( Sampler ):
