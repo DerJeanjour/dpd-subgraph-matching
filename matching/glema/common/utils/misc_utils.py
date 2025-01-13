@@ -55,5 +55,10 @@ def map_num_array_to_range( arr: list, r_min: int = 0, r_max: int = 1 ):
     x = arr.max()
     return (arr / x) * (r_max - r_min) + r_min
 
-def sort_dict_by_key(d, reverse=False):
-    return dict(sorted(d.items(), key=lambda item: item[0], reverse=reverse))
+
+def sort_dict_by_key( d, reverse=False ):
+    return dict( sorted( d.items(), key=lambda item: item[ 0 ], reverse=reverse ) )
+
+
+def sort_dict_by_value( d, reverse=False ):
+    return dict( sorted( d.items(), key=lambda item: item[ 1 ], reverse=reverse ) )

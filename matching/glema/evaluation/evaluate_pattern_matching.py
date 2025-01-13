@@ -38,75 +38,55 @@ def normalize_pattern_to_connected( patterns_all: dict[ str, list[ nx.Graph ] ],
     return norm_connected_pattern_graphs
 
 
-def filter_normalized_connected_patterns( norm_connected_pattern_graphs: dict[ str, nx.Graph ],
-                                          num_graphs=1, n_min=16, cut_at_n=-1, q=0.95, q_step=0.05
-                                          ) -> tuple[ dict[ str, list[ nx.Graph ] ], dict[ str, list[ float ] ] ]:
+def filter_normalized_by_presence( norm_connected_pattern_graphs: dict[ str, nx.Graph ],
+                                   num_graphs=1, n_start=12, n_decay=2 ):
     print( "Filter connected patterns by presence ..." )
     norm_pattern_graphs = { }
-    norm_pattern_graphs_q = { }
     for pattern_type in tqdm( norm_connected_pattern_graphs.keys() ):
         normalized = norm_connected_pattern_graphs[ pattern_type ]
         norm_pattern_graphs[ pattern_type ] = [ ]
-        norm_pattern_graphs_q[ pattern_type ] = [ ]
+        top_n = n_start
         while len( norm_pattern_graphs[ pattern_type ] ) < num_graphs:
-            if q < q_step:
-                break
-
-            node_presence = [ data[ "presence" ] for n, data in normalized.nodes( data=True ) ]
-            presence_thresh = np.quantile( node_presence, q )
-            n_keep = [ n for n, data in normalized.nodes( data=True ) if data[ "presence" ] >= presence_thresh ]
+            n_presence = [ data[ "presence" ] for n, data in normalized.nodes( data=True ) ]
+            presence_thresh = min( sorted( n_presence )[ -top_n: ] )
+            n_keep = [ nid for nid, data in normalized.nodes( data=True ) if data[ "presence" ] >= presence_thresh ]
             filtered = normalized.subgraph( n_keep )
-            if filtered.number_of_nodes() > n_min:
-                if cut_at_n > 0:
-                    filtered = graph_utils.subgraph_from_anchor_of_size( filtered, max_n=cut_at_n )
-                norm_pattern_graphs[ pattern_type ].append( filtered )
-                norm_pattern_graphs_q[ pattern_type ].append( q )
-            q -= q_step
-
-    return norm_pattern_graphs, norm_pattern_graphs_q
-
-
-def normalize_patterns_by_presence( dataset: DesignPatternDataset, inplace=True, cut_at_n=-1,
-                                    num_graphs=1, max_distance=8, n_min=16, q=0.95, q_step=0.05
-                                    ) -> dict[ str, list[ nx.Graph ] ]:
-    norm_connected_pattern_graphs = normalize_pattern_to_connected( dataset.get_patterns(),
-                                                                    max_distance=max_distance )
-    norm_pattern_graphs, _ = filter_normalized_connected_patterns( norm_connected_pattern_graphs, cut_at_n=cut_at_n,
-                                                                   num_graphs=num_graphs, n_min=n_min, q=q,
-                                                                   q_step=q_step )
-    if inplace:
-        dataset.set_patterns( norm_pattern_graphs )
+            norm_pattern_graphs[ pattern_type ].append( filtered )
+            top_n -= n_decay
     return norm_pattern_graphs
 
 
-def normalize_patterns( dataset: DesignPatternDataset, inplace=True, max_distance=8 ) -> dict[ str, list[ nx.Graph ] ]:
+def normalize_patterns_by_presence( patterns_all: dict[ str, list[ nx.Graph ] ],
+                                    num_graphs=1, max_distance=8,
+                                    n_start=12, n_decay=2 ) -> dict[ str, list[ nx.Graph ] ]:
+    norm_connected_pattern_graphs = normalize_pattern_to_connected( patterns_all,
+                                                                    max_distance=max_distance )
+    norm_pattern_graphs = filter_normalized_by_presence( norm_connected_pattern_graphs, num_graphs=num_graphs,
+                                                         n_start=n_start, n_decay=n_decay )
+    return norm_pattern_graphs
+
+
+def normalize_patterns( patterns_all: dict[ str, list[ nx.Graph ] ], max_distance=8 ) -> dict[ str, list[ nx.Graph ] ]:
     print( "Normalizing patterns ..." )
-    all_patterns_norm = { }
-    for dp_type, patterns in tqdm( dataset.get_patterns().items() ):
+    patterns_all_norm = { }
+    for dp_type, patterns in tqdm( patterns_all.items() ):
         norm_patterns = [ graph_utils.normalize_graph( dp, max_distance=max_distance )[ 0 ] for dp in patterns ]
-        all_patterns_norm[ dp_type ] = norm_patterns
-    if inplace:
-        dataset.set_patterns( all_patterns_norm )
-    return all_patterns_norm
+        patterns_all_norm[ dp_type ] = norm_patterns
+    return patterns_all_norm
 
 
-def normalize_sources( dataset: DesignPatternDataset, inplace=True, max_distance=8 ) -> dict[ int, nx.Graph ]:
+def normalize_sources( sources: dict[ int, nx.Graph ], max_distance=8 ) -> dict[ int, nx.Graph ]:
     print( "Normalizing sources ..." )
-    sources = dataset.get_sources()
     norm_sources = { }
     for gidx, source in tqdm( sources.items() ):
         norm_source, _ = graph_utils.normalize_graph( source, max_distance=max_distance )
         norm_sources[ gidx ] = norm_source
-    if inplace:
-        dataset.set_sources( norm_sources )
     return norm_sources
 
 
-def filter_sources( dataset: DesignPatternDataset, inplace=True, max_sources_per_pattern=-1 ):
+def filter_sources( sources: dict[ int, nx.Graph ], source_patterns: dict[ int, str ], max_sources_per_pattern=-1 ):
     print( "Filtering sources ..." )
-    sources = dataset.get_sources()
     pattern_idxs = { }
-    source_patterns = dataset.get_source_patterns()
     for gidx, source in tqdm( sources.items() ):
         pattern = source_patterns[ gidx ]
         if pattern not in pattern_idxs:
@@ -120,19 +100,16 @@ def filter_sources( dataset: DesignPatternDataset, inplace=True, max_sources_per
     for idxs in pattern_idxs.values():
         for gidx in idxs:
             filtered_sources[ gidx ] = sources[ gidx ]
-
-    if inplace:
-        dataset.set_sources( filtered_sources )
     return filtered_sources
 
 
-def sample_processor_k_normalized( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
+def sample_processor_k_normalized( source: nx.Graph, query: nx.Graph, meta: dict,
+                                   min_d_offset=1, max_d_offset=5 ) -> tuple[ list, list, list ]:
     sources, queries, metas = [ ], [ ], [ ]
     source, source_d = graph_utils.normalize_graph( source, max_distance=8 )
     if source_d < 3:
         return sources, queries, metas
-    min_d_offset = 1
-    max_d_offset = 5
+
     start_d = source_d
     last_d = -1
     for i in list( range( min_d_offset, max_d_offset + 1 ) ):
@@ -143,27 +120,52 @@ def sample_processor_k_normalized( source: nx.Graph, query: nx.Graph, meta: dict
         if last_d == query_d:
             continue
         last_d = query_d
-        # print( f"{i} - [source_d: {source_d}] [query_max_d: {query_max_d}] [query_d: {query_d}]" )
         query = graph_utils.subgraph_from_anchor_of_size( query, source.number_of_nodes() - 1 )
         queries.append( query )
         sources.append( source )
-        # pred_w = (query_d + min_d_offset) / source_d
+        # pred_w = query_d / source_d
         pred_w = query.number_of_nodes() / source.number_of_nodes()
-        meta_ = meta.copy()
-        meta_[ "pred_w" ] = pred_w
-        metas.append( meta_ )
+        _meta = meta.copy()
+        _meta[ "pred_w" ] = pred_w
+        metas.append( _meta )
     return sources, queries, metas
 
+def sample_processor_subgraph_normalized( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
+    combined, node_matches, _ = graph_utils.combine_normalized( source, query )
+    n_match = [ nid for nid, match in zip( combined.nodes(), node_matches ) if match == 1 ]
+    n_not_match = [ nid for nid, match in zip( combined.nodes(), node_matches ) if match < 0 ]
+
+    _meta = meta.copy()
+    _meta[ "n_match" ] = len( n_match )
+    _meta[ "n_not_match" ] = len( n_not_match )
+    if len( n_match ) == 0:
+        _meta[ "pred_w" ] = 0.0
+    else:
+        _meta[ "pred_w" ] = max( len( n_match ) - len( n_not_match ), 0 ) / len( n_match )
+        _meta[ "pred_w" ] = _meta[ "pred_w" ] * (3 / 4) + (1 / 4)
+
+    return sample_processor_default( source, query, _meta )
 
 def sample_processor_default( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
-    return [ source ], [ query ], [ meta ]
+    _meta = meta.copy()
+    _meta[ "pred_w" ] = _meta.get( "pred_w", 1.0 )
+    # _meta[ "pred_w" ] = float( cpg_const.NO_DESIGN_PATTERN not in [ meta[ "source_type" ], meta[ "pattern_type" ] ] )
+    # _meta[ "pred_w" ] = float( meta[ "source_type" ] == meta[ "pattern_type" ] )
+    if cpg_const.NO_DESIGN_PATTERN in [ meta[ "source_type" ], meta[ "pattern_type" ] ]:
+        _meta[ "pred_w" ] *= 0.1
+    elif meta[ "source_type" ] != meta[ "pattern_type" ]:
+        _meta[ "pred_w" ] *= 0.99
+    elif meta[ "source_type" ] == meta[ "pattern_type" ]:
+        _meta[ "pred_w" ] = min( _meta[ "pred_w" ] * 3.0, 1.0 )
+        _meta[ "pred_r" ] = 0.9
+    return [ source ], [ query ], [ _meta ]
 
 
 def inference( model: InferenceGNN, dataset: DesignPatternDataset, args, collect_graphs=False,
                sample_processor: Callable[
-                   [ nx.Graph, nx.Graph, dict ],
-                   [ list[ nx.Graph ], list[ nx.Graph ], list[ dict ] ]
-               ] = sample_processor_default ) -> tuple[ list, list, list, list ]:
+                   [ nx.Graph, nx.Graph, dict, dict ],
+                   tuple[ list[ nx.Graph ], list[ nx.Graph ], list[ dict ] ]
+               ] = sample_processor_default, **kwargs ) -> tuple[ list, list, list, list ]:
     print( "Inference of dataset ..." )
     preds, metas, all_source, all_queries = [ ], [ ], [ ], [ ]
     batches = misc_utils.partition_list( list( range( 0, dataset.__len__() ) ), args.batch_size )
@@ -171,7 +173,7 @@ def inference( model: InferenceGNN, dataset: DesignPatternDataset, args, collect
         sources, queries = [ ], [ ]
         for idx in batche_idxs:
             source, query, meta = dataset.get_data( idx )
-            source, query, meta = sample_processor( source, query, meta )
+            source, query, meta = sample_processor( source, query, meta, **kwargs )
             sources.extend( source )
             queries.extend( query )
             metas.extend( meta )
@@ -197,17 +199,30 @@ def group_by_source( metas ) -> dict[ int, dict[ str, list[ int ] ] ]:
     return groups_by_source
 
 
-def compute_source_preds_by_quantile( groups_by_source: dict[ int, dict[ str, list[ float ] ] ],
-                                      preds: list[ float ],
-                                      metas: list[ dict ] ) -> dict[ int, dict[ str, float ] ]:
+def aggregate_preds_mean( preds: list[ float ] ) -> float:
+    return float( np.mean( preds ) )
+
+
+def aggregate_preds_by_quantile( preds: list[ float ], q=0.8 ) -> float:
+    return float( np.quantile( preds, q ) )
+
+
+def compute_source_preds( groups_by_source: dict[ int, dict[ str, list[ float ] ] ],
+                          preds: list[ float ], metas: list[ dict ],
+                          pred_aggregator: Callable[ [ list[ float ], dict ], float ] = aggregate_preds_mean,
+                          **kwargs ) -> dict[ int, dict[ str, float ] ]:
     source_preds = { }
     for gidx, source_preds_idxs in groups_by_source.items():
         source_pattern_preds = { }
         for dp, idxs in source_preds_idxs.items():
             pattern_preds = [ preds[ idx ] for idx in idxs ]
             pattern_metas = [ metas[ idx ] for idx in idxs ]
-            pattern_preds = [ p * m.get( "pred_w", 1.0 ) for p, m in zip( pattern_preds, pattern_metas ) ]
-            source_pattern_preds[ dp ] = float( np.quantile( pattern_preds, 0.8 ) )
+            pattern_preds_weighted = []
+            for p, m in zip( pattern_preds, pattern_metas ):
+                p = m.get( "pred_r", p )
+                p *= m.get( "pred_w", 1.0 )
+                pattern_preds_weighted.append( p )
+            source_pattern_preds[ dp ] = pred_aggregator( pattern_preds_weighted, **kwargs )
         source_preds[ gidx ] = source_pattern_preds
     return source_preds
 
@@ -310,22 +325,33 @@ def main( args, version ):
     # initialize
     model = InferenceGNN( args )
     dataset = DesignPatternDataset( args, max_pattern_examples=30, query_pattern=False )
-    #filter_sources( dataset, max_sources_per_pattern=20 )
-    normalize_sources( dataset, max_distance=8 )
-    # normalize_patterns( dataset, max_distance=8 )
-    normalize_patterns_by_presence( dataset, num_graphs=1, max_distance=8,
-                                    n_min=16, cut_at_n=30 )
+    sources = dataset.get_sources()
+    # sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=20 )
+    sources = normalize_sources( sources, max_distance=8 )
+    patterns = dataset.get_patterns()
+    # patterns = normalize_patterns( patterns, max_distance=8 )
+    patterns = normalize_patterns_by_presence( patterns,
+                                               num_graphs=4, max_distance=6,
+                                               n_start=20, n_decay=4 )
+    dataset.set_sources( sources )
+    dataset.set_patterns( patterns )
     dataset.compute_samples()
 
     # inference
-    preds, metas, _, _ = inference( model, dataset, args, sample_processor=sample_processor_k_normalized )
+    preds, metas, _, _ = inference( model, dataset, args,
+                                    sample_processor=sample_processor_subgraph_normalized,
+                                    # sample_processor=sample_processor_k_normalized,
+                                    # min_d_offset=1, max_d_offset=5,
+                                    collect_graphs=False )
 
     # aggregate
     groups_by_source = group_by_source( metas )
-    source_preds = compute_source_preds_by_quantile( groups_by_source, preds, metas )
+    source_preds = compute_source_preds( groups_by_source, preds, metas,
+                                         pred_aggregator=aggregate_preds_by_quantile,
+                                         q=0.9 )
     source_types = compute_source_types( metas )
     true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds,
-                                                            conf=0.7, top_k=1 )
+                                                            conf=0.5, top_k=1 )
 
     # evaluate
     compute_cm( true_labels, pred_labels, pred_scores,

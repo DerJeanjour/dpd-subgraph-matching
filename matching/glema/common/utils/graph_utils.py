@@ -23,11 +23,13 @@ def random_subgraph( G, k: int ):
 def subgraph( G, n, k: int ):
     return nx.ego_graph( G, n, radius=k, undirected=True )
 
+
 def subgraph_from_anchor_of_size( G, max_n ):
     anchor = get_anchor( G )
     bfs = nx.bfs_tree( G, source=anchor )
     subset = list( bfs.nodes )[ :max_n ]
     return G.subgraph( subset ).copy()
+
 
 def inject_edge_errors( G, e: int = 1 ):
     return utils.inject_edge_errors( G, e )
@@ -37,6 +39,7 @@ def top_pr_ranked_node( G ):
     pr = nx.pagerank( G )
     pr = dict( sorted( pr.items(), key=lambda item: item[ 1 ], reverse=True ) )
     return list( pr.keys() )[ 0 ]
+
 
 def is_connected( G, weak=True ) -> bool:
     if G.is_directed():
@@ -59,8 +62,8 @@ def is_iso_subgraph( graph, subgraph ):
                              edge_match=edge_match )
     """
     matcher = nx.algorithms.isomorphism.GraphMatcher( graph, subgraph,
-                             node_match=node_match,
-                             edge_match=edge_match )
+                                                      node_match=node_match,
+                                                      edge_match=edge_match )
     return matcher.subgraph_is_isomorphic()
 
 
@@ -74,6 +77,7 @@ def max_spanning_radius( G, start_node ):
         for child in bft_tree.successors( current_node ):
             stack.append( (child, depth + 1) )
     return max_radius
+
 
 def normalize_graph( G, max_distance=4, force_directed=False ):
     G_norm = nx.DiGraph() if G.is_directed() or force_directed else nx.Graph()
@@ -144,6 +148,7 @@ def connect_graphs_at_anchor( graphs, keep_radius=-1 ):
         raise AssertionError( f"Graphs couldn't be connected at anchor!" )
 
     return G
+
 
 def read_mapping( mapping_file, sg2g=False ):
     mapping = dict()
@@ -421,12 +426,14 @@ def get_pattern_graphs_idxs( args, graphs ):
 def filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs ):
     return { dp.value: [ graphs[ int( gidx ) ] for gidx in gidxs ] for dp, gidxs in pattern_graphs_idxs.items() }
 
+
 def filter_no_pattern_graphs_with_idx( graphs, pattern_graphs_idxs, max_size=-1 ):
-    pattern_idxs = [value for values in pattern_graphs_idxs.values() for value in values]
+    pattern_idxs = [ value for values in pattern_graphs_idxs.values() for value in values ]
     graphs_w_o_patterns = [ graph for gidx, graph in graphs.items() if gidx not in pattern_idxs ]
     if max_size > 0:
         graphs_w_o_patterns = graphs_w_o_patterns[ :max_size ]
     return graphs_w_o_patterns
+
 
 def get_pattern_graphs( args, graphs, include_w_o_pattern=False ):
     pattern_graphs_idxs = get_pattern_graphs_idxs( args, graphs )
@@ -471,7 +478,8 @@ def combine_graph( source, query, anchor=None, matching_colors: dict[ int, str ]
     edge_colors = [ matching_colors[ matching ] for matching in edge_matching ]
     return combined_graph, node_colors, edge_colors
 
-def get_all_norm_paths( graph ):
+
+def get_all_norm_paths( graph ) -> list[ tuple[ list[ int ], str ] ]:
     paths = [ ]
     root = get_anchor( graph )
     dfs_tree = nx.dfs_tree( graph, root )
@@ -491,6 +499,7 @@ def get_all_norm_paths( graph ):
     dfs( root, [ ], [ ] )
     return paths
 
+
 def combine_normalized( source: nx.Graph, query: nx.Graph, matching_colors: dict[ int, str ] = None ):
     source = source.copy()
     query = query.copy()
@@ -506,7 +515,8 @@ def combine_normalized( source: nx.Graph, query: nx.Graph, matching_colors: dict
     source_paths = get_all_norm_paths( source )
     query_paths = get_all_norm_paths( query )
     source_labels = { labels: ids for ids, labels in source_paths }
-    source_node_count = len( source.nodes )
+    #source_node_offset = len( source.nodes )
+    source_node_offset = max( source.nodes() )
     mapping = { }
     for query_ids, query_label in query_paths:
         matched_prefix, matched_ids = find_longest_overlap( query_label, source_labels )
@@ -515,11 +525,11 @@ def combine_normalized( source: nx.Graph, query: nx.Graph, matching_colors: dict
                 mapping[ qid ] = sid
             # If there are unmatched query nodes, assign new IDs
             for qid in query_ids[ len( matched_prefix ): ]:
-                mapping[ qid ] = qid + source_node_count + 1
+                mapping[ qid ] = qid + source_node_offset + 1
         else:
             # If no match at all, assign new IDs
             for qid in query_ids:
-                mapping[ qid ] = qid + source_node_count + 1
+                mapping[ qid ] = qid + source_node_offset + 1
 
     query = nx.relabel_nodes( query, mapping )
     return combine_graph( source, query, get_anchor( source ), matching_colors=matching_colors )
