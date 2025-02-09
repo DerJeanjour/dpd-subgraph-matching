@@ -23,22 +23,32 @@ public class PatternReaderXml implements PatternReader {
     private final static Map<DesignPatternType, List<String>> ROLES_TO_COUNT = new HashMap<>() {{
         // add maybe concreteFactory, abstractProduct, products ???
         //put( DesignPatternType.ABSTRACT_FACTORY, Arrays.asList( "abstractFactory") );
-        put( DesignPatternType.ABSTRACT_FACTORY, Collections.emptyList() );
+        put( DesignPatternType.ABSTRACT_FACTORY, Arrays.asList( "concreteFactory") );
+        //put( DesignPatternType.ABSTRACT_FACTORY, Collections.emptyList() );
+
         // add maybe adaptee???
-        //put( DesignPatternType.ADAPTER, Arrays.asList( "adapter" ) );
-        put( DesignPatternType.ADAPTER, Collections.emptyList() );
+        put( DesignPatternType.ADAPTER, Arrays.asList( "adapter" ) );
+        //put( DesignPatternType.ADAPTER, Collections.emptyList() );
+
         // add maybe concreteBuilder???
         //put( DesignPatternType.BUILDER, Arrays.asList( "builder" ) );
-        put( DesignPatternType.BUILDER, Collections.emptyList() );
-        //put( DesignPatternType.FACADE, Arrays.asList( "facade" ) );
-        put( DesignPatternType.FACADE, Collections.emptyList() );
+        put( DesignPatternType.BUILDER, Arrays.asList( "concreteBuilder" ) );
+        //put( DesignPatternType.BUILDER, Collections.emptyList() );
+
+        put( DesignPatternType.FACADE, Arrays.asList( "facade" ) );
+        //put( DesignPatternType.FACADE, Collections.emptyList() );
+
         // add maybe concreteCreator???
         //put( DesignPatternType.FACTORY_METHOD, Arrays.asList( "creator" ) );
-        put( DesignPatternType.FACTORY_METHOD, Collections.emptyList() );
+        put( DesignPatternType.FACTORY_METHOD, Arrays.asList( "concreteCreator" ) );
+        //put( DesignPatternType.FACTORY_METHOD, Collections.emptyList() );
+
         //put( DesignPatternType.OBSERVER, Arrays.asList( "observer" ) );
-        put( DesignPatternType.OBSERVER, Collections.emptyList() );
-        //put( DesignPatternType.SINGLETON, Arrays.asList( "singleton" ) );
-        put( DesignPatternType.SINGLETON, Collections.emptyList() );
+        put( DesignPatternType.OBSERVER, Arrays.asList( "concreteObserver" ) );
+        //put( DesignPatternType.OBSERVER, Collections.emptyList() );
+
+        put( DesignPatternType.SINGLETON, Arrays.asList( "singleton" ) );
+        //put( DesignPatternType.SINGLETON, Collections.emptyList() );
     }};
 
     @Override

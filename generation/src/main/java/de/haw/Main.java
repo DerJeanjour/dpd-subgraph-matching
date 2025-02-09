@@ -31,9 +31,9 @@ public class Main {
 
         MemoryUtils.logMemoryStats();
 
-        //test();
+        test();
         //aggregateStats();
-        convertDatasets();
+        //convertDatasets();
     }
 
     private static void convertDatasets() {
@@ -45,7 +45,8 @@ public class Main {
 
     private static void aggregateStats() {
         //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
-        DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
+        //DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
+        DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.P_MART ) );
     }
 
     private static List<TranslationRequest> getPmartRequests() {
@@ -86,42 +87,50 @@ public class Main {
 
     private static void test() {
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        final Dataset dataset = DatasetFactory.PMD;
+        final Dataset dataset = DatasetFactory.QUICK_UML;
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
-        ctx.set( PipeContext.CPG_DEPTH_KEY, 8 );
+        ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
         ctx.set( PipeContext.CPG_REPOSITORY_PURGE_KEY, true );
 
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
 
-                /* load data */.add( AttachPatternsToContext.instance() )
+                // load data
+                .add( AttachPatternsToContext.instance() )
                 .add( LoadDatasetFileModule.instance() )
 
-                /* generate cpg */.add( GenerateCpgModule.instance() )
+                // generate cpg
+                .add( GenerateCpgModule.instance() )
                 //.add( PersistTranslationModule.instance() )
                 .add( TranslationToGraphModule.instance() )
                 //.add( TranslationToGraphAlternative.instance() )
 
-                /* prepare cpg */.add( RemoveBlacklistElementsModule.instance() )
+                // prepare cpg
+                .add( RemoveBlacklistElementsModule.instance() )
                 .add( FilterInternalScopeModule.instance() )
                 .add( PropagateRecordScopeModule.instance() )
                 //.add( ComputePagerankModule.instance() )
 
-                /* simplify cpg */.add( SimplifyCpgEdgesModule.instance() )
-                .add( ComputeSSSPsModule.instance() )
+                // simplify cpg
+                .add( SimplifyCpgEdgesModule.instance() )
+                //.add( ComputeSSSPsModule.instance() )
+                .add( ComputeRecordPathsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
 
-                /* patterns */.add( MarkPatternsModule.instance() )
+                // patterns
+                .add( MarkPatternsModule.instance() )
                 //.add( IsolateMarkedPatternsModule.instance() )
 
-                /* visualize */.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
+                // visualize
+                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
                 /*
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( CpgNodeTypeVisualizeModule.instance() )
                 .add( DisplayGraphModule.instance() )
                  */
 
-                /* persist */.add( PersistCpgModule.instance() )
+                // persist
+                .add( PersistCpgModule.instance() )
                 .build();
 
         final Graph cpg = pipe.process( dataset, ctx );

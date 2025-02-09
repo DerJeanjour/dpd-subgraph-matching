@@ -52,6 +52,12 @@ public class GraphService {
         return node;
     }
 
+    public Graph copyGraph( final Graph source ) {
+        final Graph copy = this.getEmptyGraph( source );
+        source.edges().forEach( edge -> this.copyEdgeToGraph( copy, edge ) );
+        return copy;
+    }
+
     public Node addNode( final Graph targetGraph, String nodeId ) {
         Node node = targetGraph.getNode( nodeId );
         if ( node == null ) {
@@ -69,7 +75,7 @@ public class GraphService {
 
         Edge edge = targetGraph.getEdge( edgeId );
         if ( edge == null ) {
-            edge = targetGraph.addEdge( edgeId, sourceNode, targetNode, true );
+            edge = targetGraph.addEdge( edgeId, sourceNode.getId(), targetNode.getId(), true );
         }
         if ( edge == null ) {
             edge = targetGraph.getEdge( edgeId );
@@ -104,8 +110,7 @@ public class GraphService {
 
     @SuppressWarnings( "unchecked" )
     public void addLabel( final Node node, final String label ) {
-        final Set<String> labels = this.getAttr( node, CpgConst.NODE_ATTR_LABELS, Set.class )
-                .orElse( new HashSet<>() );
+        final Set<String> labels = this.getAttr( node, CpgConst.NODE_ATTR_LABELS, Set.class ).orElse( new HashSet<>() );
         labels.add( label );
         node.setAttribute( CpgConst.NODE_ATTR_LABELS, labels );
     }

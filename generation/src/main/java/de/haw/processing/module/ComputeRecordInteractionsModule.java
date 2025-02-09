@@ -53,7 +53,8 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
             // mark existing path edges with path flag
             recordPath.getPath()
                     .getEdgePath()
-                    .forEach( pathEdge -> pathEdge.setAttribute( CpgConst.EDGE_ATTR_IS_PATH, true ) );
+                    .forEach( pathEdge -> graph.getEdge( pathEdge.getId() )
+                            .setAttribute( CpgConst.EDGE_ATTR_IS_PATH, true ) );
         } );
 
         return graph;
@@ -103,7 +104,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
     public Node getInteractionOrCreate(
             final Graph graph, final RecordInteraction interaction ) {
 
-        final Optional<Edge> interactionEdge = interaction.getSource()
+        final Optional<Edge> interactionEdge = graph.getNode( interaction.getSource().getId() )
                 .leavingEdges()
                 .filter( edge -> CpgEdgeType.INTERACTS.equals( this.GS.getType( edge ) ) )
                 .filter( edge -> interaction.getType()
@@ -117,7 +118,8 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         }
 
         interactionNode = this.GS.addNode( graph, String.valueOf( this.GS.genId() ) );
-        interactionNode.setAttribute( CpgConst.NODE_ATTR_DATASET, this.GS.getAttr( graph, CpgConst.GRAPH_ATTR_DATASET ) );
+        interactionNode.setAttribute(
+                CpgConst.NODE_ATTR_DATASET, this.GS.getAttr( graph, CpgConst.GRAPH_ATTR_DATASET ) );
         this.GS.addLabel( interactionNode, interaction.getType().name() );
         this.addEdgeForInteraction( graph, interaction.getSource(), interactionNode, interaction, false );
         return interactionNode;
@@ -126,6 +128,10 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
     private void addEdgeForInteraction(
             final Graph graph, final Node source, final Node target, final RecordInteraction interaction,
             final boolean applyPathAttrs ) {
+
+        if ( source.leavingEdges().anyMatch( edge -> edge.getTargetNode().getId().equals( target.getId() ) ) ) {
+            return;
+        }
 
         final long edgeId = this.GS.genId();
         final Edge edge = this.GS.addEdge( graph, String.valueOf( edgeId ), source, target );
