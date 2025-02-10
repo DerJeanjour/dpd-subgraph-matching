@@ -108,6 +108,8 @@ def parse_args( use_default=False ):
     parser.add_argument( "--max_subgraph", type=int, default=-1 )
     parser.add_argument( "--import_format", help="Graph file format",
                          type=str, default=".gml" )
+    parser.add_argument( "--import_prefix", help="Dataset prefix for import",
+                         type=str, default=None )
     parser.add_argument( "--import_subgraph_radius", help="Radius of k neighbourhood for subgraph.",
                          type=int, default=3 )
     parser.add_argument( "--import_subgraph_max", help="Max number of nodes per subgraph.",

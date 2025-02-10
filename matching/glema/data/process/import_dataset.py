@@ -23,6 +23,8 @@ def import_datasets( args ):
     for dataset_filename in list_datasets:
         if not dataset_filename.endswith( args.import_format ):
             continue
+        if args.import_prefix is not None and not dataset_filename.startswith( args.import_prefix ):
+            continue
         dataset_name = dataset_filename.split( "." )[ 0 ]
         graph_idx = read_dataset_to( args, dataset_name, G, node_id_mapping, anchor_mapping, graph_idx )
 
@@ -211,6 +213,7 @@ if __name__ == "__main__":
     # args.import_subgraph_max = 40
     # args.import_subgraph_min = 2
     # args.dataset = "CPG"
+    # args.import_prefix = "p_mart"
     # print( args )
 
     import_datasets( args )
