@@ -145,6 +145,7 @@ public class GraphMapper {
             case TYPE -> cpgSourceNode.getType().add( cpgEdge );
             case TYPE_OBSERVERS -> cpgSourceNode.getTypeObservers().add( cpgEdge );
             case USAGE -> cpgSourceNode.getUsage().add( cpgEdge );
+            case INITIALIZERS -> cpgSourceNode.getInitializers().add( cpgEdge );
         }
 
         return cpgEdge;

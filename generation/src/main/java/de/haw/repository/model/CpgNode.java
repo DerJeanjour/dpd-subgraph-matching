@@ -242,4 +242,7 @@ public class CpgNode {
     @Relationship( value = "USAGE", direction = Relationship.Direction.OUTGOING )
     private List<CpgEdge<CpgNode>> usage = new ArrayList<>();
 
+    @Relationship( value = "INITIALIZERS", direction = Relationship.Direction.OUTGOING )
+    private List<CpgEdge<CpgNode>> initializers = new ArrayList<>();
+
 }

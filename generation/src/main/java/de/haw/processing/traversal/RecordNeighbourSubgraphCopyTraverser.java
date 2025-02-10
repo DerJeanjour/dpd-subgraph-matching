@@ -16,10 +16,16 @@ public class RecordNeighbourSubgraphCopyTraverser extends GraphProcessTraverser<
 
     private final Graph graph;
 
+    private final int maxDepth;
+
     private final GraphService GS = GraphService.instance();
 
     @Override
     protected OutputData<Void> process( final Node node, final Void data, final TraversalContext ctx ) {
+
+        if( ctx.getDepth() > this.maxDepth ) {
+            return OutputData.of( null, false );
+        }
 
         if ( ctx.getParent() == null ) {
             this.GS.copyNodeToGraph( this.graph, node );

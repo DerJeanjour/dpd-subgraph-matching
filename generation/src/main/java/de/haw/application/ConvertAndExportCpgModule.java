@@ -41,8 +41,9 @@ public class ConvertAndExportCpgModule<Target> extends PipeModule<Dataset, Graph
                 .add( PropagateRecordScopeModule.instance() )
 
                 // simplify cpg
-                .add( SimplifyCpgEdgesModule.instance() )
-                .add( ComputeSSSPsModule.instance() )
+                //.add( SimplifyCpgEdgesModule.instance() )
+                //.add( ComputeSSSPsModule.instance() )
+                .add( ComputeRecordPathsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
                 .add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
 

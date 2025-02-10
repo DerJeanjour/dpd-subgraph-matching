@@ -22,7 +22,7 @@ public class ComputeRecordPathsModule<Target> extends PipeModule<Graph, Graph, T
 
     private static final int MAX_PATHS_VARIATIONS = 5;
 
-    private static final double MAX_PATH_DISTANCE = 10d;
+    private static final int MAX_PATH_DISTANCE = 10;
 
     private static final String SSSP_ATTR_NAME = "sssp";
 
@@ -76,7 +76,7 @@ public class ComputeRecordPathsModule<Target> extends PipeModule<Graph, Graph, T
 
     private Graph getRecordNeighbourSubgraph( final Node source ) {
         final Graph subgraph = this.GS.getEmptyGraph( source.getGraph() );
-        RecordNeighbourSubgraphCopyTraverser.of( subgraph ).traverse( source );
+        RecordNeighbourSubgraphCopyTraverser.of( subgraph, MAX_PATH_DISTANCE ).traverse( source );
         return subgraph;
     }
 

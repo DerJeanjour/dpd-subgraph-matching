@@ -45,7 +45,7 @@ public class ConvertAndExportCpgDatasets<Target> extends PipeModule<List<Transla
                 ConvertAndExportCpgModule.instance().process( dataset, ctx );
                 fileLogger.clearLastLine();
             } catch ( Exception e ) {
-                log.error( "Couldn't convert dataset ..." );
+                log.error( "Couldn't convert dataset {} ...", e.getMessage(), e );
                 fileLogger.write( "Failed: " + dataset.getProjectName() + " (" + e.getMessage() + ")" );
             }
 

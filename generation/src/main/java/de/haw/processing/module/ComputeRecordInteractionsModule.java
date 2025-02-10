@@ -4,10 +4,8 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.misc.utils.PathUtils;
 import de.haw.processing.GraphService;
-import de.haw.processing.model.CpgNodePaths;
-import de.haw.processing.model.CpgPath;
-import de.haw.processing.model.RecordInteraction;
-import de.haw.processing.model.RecordInteractionType;
+import de.haw.processing.model.*;
+import de.haw.processing.visualize.GraphUi;
 import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +26,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
 
     private final GraphService GS = GraphService.instance();
 
+
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
@@ -37,6 +36,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         }
 
         final CpgNodePaths recordPaths = getPaths( ctx );
+        final RecordInteractionPathCounts pathCounts = RecordInteractionPathCounts.instance();
 
         recordPaths.getAll().forEach( recordPath -> {
 
@@ -45,6 +45,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
             }
 
             final RecordInteraction interaction = this.getPathInteraction( recordPath );
+            pathCounts.add( interaction );
 
             // add interaction node and edges
             final Node interactionNode = this.getInteractionOrCreate( graph, interaction );
@@ -57,6 +58,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
                             .setAttribute( CpgConst.EDGE_ATTR_IS_PATH, true ) );
         } );
 
+        //GraphUi.display( pathCounts.toGraph(), false );
         return graph;
     }
 

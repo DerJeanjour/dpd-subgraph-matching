@@ -79,7 +79,8 @@ public enum CpgEdgeType {
     TRY_BLOCK,
     TYPE,
     TYPE_OBSERVERS,
-    USAGE;
+    USAGE,
+    INITIALIZERS;
 
     public static final List<CpgEdgeType> ALL = Arrays.asList( values() );
 

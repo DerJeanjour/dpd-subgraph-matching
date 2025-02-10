@@ -31,16 +31,15 @@ public class Main {
 
         MemoryUtils.logMemoryStats();
 
-        test();
+        //test();
         //aggregateStats();
-        //convertDatasets();
+        convertDatasets( getPmartRequests(), false );
     }
 
-    private static void convertDatasets() {
+    private static void convertDatasets( final List<TranslationRequest> translationRequests, final boolean continueGen ) {
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 7 );
-        final List<TranslationRequest> translationRequests = getDpdfRequests();
-        ConvertAndExportCpgDatasets.of( true ).process( translationRequests, ctx );
+        ConvertAndExportCpgDatasets.of( continueGen ).process( translationRequests, ctx );
     }
 
     private static void aggregateStats() {
@@ -50,8 +49,8 @@ public class Main {
     }
 
     private static List<TranslationRequest> getPmartRequests() {
-        //final List<Dataset> datasets = DatasetFactory.getAll( DatasetType.P_MART );
-        return Arrays.asList( TranslationRequest.of( DatasetFactory.PMD, 8 ),
+        return Arrays.asList(
+                TranslationRequest.of( DatasetFactory.PMD, 8 ),
                 TranslationRequest.of( DatasetFactory.NUTCH, 8 ),
                 TranslationRequest.of( DatasetFactory.J_HOT_DRAW, 10 ),
                 TranslationRequest.of( DatasetFactory.J_UNIT, 10 ),
@@ -112,7 +111,7 @@ public class Main {
                 //.add( ComputePagerankModule.instance() )
 
                 // simplify cpg
-                .add( SimplifyCpgEdgesModule.instance() )
+                //.add( SimplifyCpgEdgesModule.instance() )
                 //.add( ComputeSSSPsModule.instance() )
                 .add( ComputeRecordPathsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
@@ -130,7 +129,7 @@ public class Main {
                  */
 
                 // persist
-                .add( PersistCpgModule.instance() )
+                //.add( PersistCpgModule.instance() )
                 .build();
 
         final Graph cpg = pipe.process( dataset, ctx );
