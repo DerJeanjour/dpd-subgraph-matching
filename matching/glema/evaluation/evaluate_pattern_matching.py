@@ -151,6 +151,7 @@ def sample_processor_default( source: nx.Graph, query: nx.Graph, meta: dict ) ->
     _meta[ "pred_w" ] = _meta.get( "pred_w", 1.0 )
     # _meta[ "pred_w" ] = float( cpg_const.NO_DESIGN_PATTERN not in [ meta[ "source_type" ], meta[ "pattern_type" ] ] )
     # _meta[ "pred_w" ] = float( meta[ "source_type" ] == meta[ "pattern_type" ] )
+    """
     if cpg_const.NO_DESIGN_PATTERN in [ meta[ "source_type" ], meta[ "pattern_type" ] ]:
         _meta[ "pred_w" ] *= 0.1
     elif meta[ "source_type" ] != meta[ "pattern_type" ]:
@@ -158,6 +159,7 @@ def sample_processor_default( source: nx.Graph, query: nx.Graph, meta: dict ) ->
     elif meta[ "source_type" ] == meta[ "pattern_type" ]:
         _meta[ "pred_w" ] = min( _meta[ "pred_w" ] * 3.0, 1.0 )
         _meta[ "pred_r" ] = 0.9
+    """
     return [ source ], [ query ], [ _meta ]
 
 
