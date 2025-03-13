@@ -24,6 +24,8 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
 
     private final GraphService GS = GraphService.instance();
 
+    private final boolean ONLY_MAJOR_PATTERN_ROLES = true;
+
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
 
@@ -74,6 +76,9 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
                 patterns.add( dp );
             }
         } ) );
+        if( ONLY_MAJOR_PATTERN_ROLES ) {
+            return patterns.stream().filter( DesignPattern::isMajorRole ).toList();
+        }
         return patterns;
     }
 

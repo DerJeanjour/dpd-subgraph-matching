@@ -44,7 +44,7 @@ public class PatternReaderCsv implements PatternReader {
             if ( type == null ) {
                 return;
             }
-            datasetPatterns.add( DesignPattern.of( type, entry.getClassName() ) );
+            datasetPatterns.add( DesignPattern.of( type, entry.getClassName(), "instance", true ) );
         } );
 
 
@@ -59,12 +59,12 @@ public class PatternReaderCsv implements PatternReader {
             case "Singleton" -> DesignPatternType.SINGLETON;
             case "Adapter" -> DesignPatternType.ADAPTER;
             case "FactoryMethod" -> DesignPatternType.FACTORY_METHOD;
-            //case "Visitor" -> DesignPatternType.VISITOR;
-            //case "Decorator" -> DesignPatternType.DECORATOR;
-            //case "Prototype" -> DesignPatternType.PROTOTYPE;
+            case "Visitor" -> DesignPatternType.VISITOR;
+            case "Decorator" -> DesignPatternType.DECORATOR;
+            case "Prototype" -> DesignPatternType.PROTOTYPE;
             case "Facade" -> DesignPatternType.FACADE;
-            //case "Memento" -> DesignPatternType.MEMENTO;
-            //case "Proxy" -> DesignPatternType.PROXY;
+            case "Memento" -> DesignPatternType.MEMENTO;
+            case "Proxy" -> DesignPatternType.PROXY;
             default -> null;
         };
     }

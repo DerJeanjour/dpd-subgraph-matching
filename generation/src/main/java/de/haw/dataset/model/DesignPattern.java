@@ -11,4 +11,8 @@ public class DesignPattern {
 
     private final String className;
 
+    private final String roleName;
+
+    private final boolean majorRole;
+
 }

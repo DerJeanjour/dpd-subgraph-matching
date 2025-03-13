@@ -32,7 +32,6 @@ public class Main {
         MemoryUtils.logMemoryStats();
 
         //test();
-        //aggregateStats();
         convertDatasets( getPmartRequests(), false );
     }
 
@@ -40,12 +39,6 @@ public class Main {
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 7 );
         ConvertAndExportCpgDatasets.of( continueGen ).process( translationRequests, ctx );
-    }
-
-    private static void aggregateStats() {
-        //DesignPatternStatAggregator.aggregateStats( Arrays.asList( DatasetFactory.SINGLETON_EXAMPLE, DatasetFactory.ABSTRACT_FACTORY_EXAMPLE ) );
-        //DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.DPDf ) );
-        DesignPatternStatAggregator.aggregateStats( DatasetFactory.getAll( DatasetType.P_MART ) );
     }
 
     private static List<TranslationRequest> getPmartRequests() {

@@ -19,37 +19,39 @@ import java.util.*;
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
 public class PatternReaderXml implements PatternReader {
-
+    
     private final static Map<DesignPatternType, List<String>> ROLES_TO_COUNT = new HashMap<>() {{
-        // add maybe concreteFactory, abstractProduct, products ???
-        //put( DesignPatternType.ABSTRACT_FACTORY, Arrays.asList( "abstractFactory") );
         put( DesignPatternType.ABSTRACT_FACTORY, Arrays.asList( "concreteFactory") );
-        //put( DesignPatternType.ABSTRACT_FACTORY, Collections.emptyList() );
-
-        // add maybe adaptee???
         put( DesignPatternType.ADAPTER, Arrays.asList( "adapter" ) );
-        //put( DesignPatternType.ADAPTER, Collections.emptyList() );
-
-        // add maybe concreteBuilder???
-        //put( DesignPatternType.BUILDER, Arrays.asList( "builder" ) );
         put( DesignPatternType.BUILDER, Arrays.asList( "concreteBuilder" ) );
-        //put( DesignPatternType.BUILDER, Collections.emptyList() );
-
         put( DesignPatternType.FACADE, Arrays.asList( "facade" ) );
-        //put( DesignPatternType.FACADE, Collections.emptyList() );
-
-        // add maybe concreteCreator???
-        //put( DesignPatternType.FACTORY_METHOD, Arrays.asList( "creator" ) );
         put( DesignPatternType.FACTORY_METHOD, Arrays.asList( "concreteCreator" ) );
-        //put( DesignPatternType.FACTORY_METHOD, Collections.emptyList() );
-
-        //put( DesignPatternType.OBSERVER, Arrays.asList( "observer" ) );
         put( DesignPatternType.OBSERVER, Arrays.asList( "concreteObserver" ) );
-        //put( DesignPatternType.OBSERVER, Collections.emptyList() );
-
         put( DesignPatternType.SINGLETON, Arrays.asList( "singleton" ) );
-        //put( DesignPatternType.SINGLETON, Collections.emptyList() );
+        put( DesignPatternType.DECORATOR, Arrays.asList( "concreteDecorator" ) );
+        put( DesignPatternType.MEMENTO, Arrays.asList( "memento" ) );
+        put( DesignPatternType.PROTOTYPE, Arrays.asList( "concretePrototype" ) );
+        put( DesignPatternType.PROXY, Arrays.asList( "proxy" ) );
+        put( DesignPatternType.VISITOR, Arrays.asList( "concreteVisitor" ) );
     }};
+
+    /*
+    private final static Map<DesignPatternType, List<String>> ROLES_TO_COUNT = new HashMap<>() {{
+        put( DesignPatternType.ABSTRACT_FACTORY, Collections.emptyList() );
+        put( DesignPatternType.ADAPTER, Collections.emptyList() );
+        put( DesignPatternType.BUILDER, Collections.emptyList() );
+        put( DesignPatternType.FACADE, Collections.emptyList() );
+        put( DesignPatternType.FACTORY_METHOD, Collections.emptyList() );
+        put( DesignPatternType.OBSERVER, Collections.emptyList() );
+        put( DesignPatternType.SINGLETON, Collections.emptyList() );
+        put( DesignPatternType.DECORATOR, Collections.emptyList() );
+        put( DesignPatternType.MEMENTO, Collections.emptyList() );
+        put( DesignPatternType.PROTOTYPE, Collections.emptyList() );
+        put( DesignPatternType.PROXY, Collections.emptyList() );
+        put( DesignPatternType.VISITOR, Collections.emptyList() );
+    }};
+
+     */
 
     @Override
     public List<DatasetDesignPatterns> read( final List<Dataset> datasets, final File file ) {
@@ -106,10 +108,9 @@ public class PatternReaderXml implements PatternReader {
                 continue;
             }
 
-            final boolean allowAll = ROLES_TO_COUNT.get( type ).isEmpty();
-            if ( allowAll || ROLES_TO_COUNT.get( type ).contains( roleTag ) ) {
-                patterns.add( DesignPattern.of( type, className ) );
-            }
+            final boolean isMajor = ROLES_TO_COUNT.get( type ).isEmpty() || ROLES_TO_COUNT.get( type )
+                    .contains( roleTag );
+            patterns.add( DesignPattern.of( type, className, roleTag, isMajor ) );
         }
         return patterns;
     }

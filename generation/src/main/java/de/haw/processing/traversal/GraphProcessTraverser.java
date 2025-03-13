@@ -57,12 +57,6 @@ public abstract class GraphProcessTraverser<T> {
 
         final Deque<ProcessData<T>> queue = new ArrayDeque<>();
         queue.push( ProcessData.of( startNode, null, null, null, 0 ) );
-        /*
-        this.next( startNode )
-                .forEach( next -> queue.push(
-                        ProcessData.of( startNode, next.getOpposite( startNode ), next, null, 0 ) ) );
-
-         */
 
         while ( !queue.isEmpty() ) {
 

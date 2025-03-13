@@ -8,13 +8,13 @@ import java.io.File;
 
 public class DesignPatternLoader {
 
-    private static final String BASE_PATH_JAVA = "datasets/java/";
+    public static final String BASE_PATH_JAVA = "datasets/java/";
 
-    private static final String BASE_PATH_P_MART = BASE_PATH_JAVA + "p-mart/";
+    public static final String BASE_PATH_P_MART = BASE_PATH_JAVA + "p-mart/";
 
-    private static final String BASE_PATH_PATTERN_EXAMPLE = BASE_PATH_JAVA + "test/patterns/";
+    public static final String BASE_PATH_PATTERN_EXAMPLE = BASE_PATH_JAVA + "test/patterns/";
 
-    private static final String BASE_PATH_DPDf_EXAMPLE = BASE_PATH_JAVA + "dpdf/";
+    public static final String BASE_PATH_DPDf_EXAMPLE = BASE_PATH_JAVA + "dpdf/";
 
     public static File load( final DatasetType datasetType ) {
         return switch ( datasetType ) {
