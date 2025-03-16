@@ -80,7 +80,9 @@ public enum CpgEdgeType {
     TYPE,
     TYPE_OBSERVERS,
     USAGE,
-    INITIALIZERS;
+    INITIALIZERS,
+    ENTRIES,
+    STATIC_IMPORTS;
 
     public static final List<CpgEdgeType> ALL = Arrays.asList( values() );
 

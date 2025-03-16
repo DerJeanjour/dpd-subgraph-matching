@@ -21,7 +21,7 @@ public class RemoveBlacklistElementsModule<Target> extends PipeModule<Graph, Gra
 
     private final static List<String> NODE_LABEL_BLACKLIST = Arrays.asList( "JavaLanguage" );
 
-    private final static List<CpgEdgeType> EDGE_TYPE_BLACKLIST = Arrays.asList( CpgEdgeType.AST_NODE );
+    private final static List<CpgEdgeType> EDGE_TYPE_BLACKLIST = Arrays.asList( CpgEdgeType.AST_NODE, CpgEdgeType.EOG );
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {

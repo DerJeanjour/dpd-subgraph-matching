@@ -245,4 +245,10 @@ public class CpgNode {
     @Relationship( value = "INITIALIZERS", direction = Relationship.Direction.OUTGOING )
     private List<CpgEdge<CpgNode>> initializers = new ArrayList<>();
 
+    @Relationship( value = "ENTRIES", direction = Relationship.Direction.OUTGOING )
+    private List<CpgEdge<CpgNode>> entries = new ArrayList<>();
+
+    @Relationship( value = "STATIC_IMPORTS", direction = Relationship.Direction.OUTGOING )
+    private List<CpgEdge<CpgNode>> staticImports = new ArrayList<>();
+
 }

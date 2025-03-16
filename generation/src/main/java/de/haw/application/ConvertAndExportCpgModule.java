@@ -23,7 +23,10 @@ public class ConvertAndExportCpgModule<Target> extends PipeModule<Dataset, Graph
     @Override
     protected Graph processImpl( final Dataset dataset, final PipeContext ctx ) {
 
+        ctx.set( PipeContext.PROCESS_NAME, dataset.getName() );
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
+        ctx.set( PipeContext.PROCESS_COUNT, 0 );
+        ctx.set( PipeContext.TOTAL_PROCESSING_TIME, 0d );
 
         final PipeModule<Dataset, ?, Graph> pipe = PipeBuilder.<Dataset, Graph>builder()
 

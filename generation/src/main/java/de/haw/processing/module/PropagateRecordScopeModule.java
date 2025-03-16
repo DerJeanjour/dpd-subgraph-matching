@@ -31,10 +31,16 @@ public class PropagateRecordScopeModule<Target> extends PipeModule<Graph, Graph,
                 return;
             }
 
+            final boolean alreadyPropagated = this.isAlreadyPropagated( node );
             final boolean isRecordScope = this.GS.hasLabel( node, CpgConst.NODE_LABEL_SCOPE_RECORD );
-            final boolean alreadyPropagated = this.GS.hasAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED_RECORD );
             if ( isRecordScope && !alreadyPropagated ) {
                 this.handleRecordScope( node );
+                return;
+            }
+
+            final boolean isScope = this.GS.hasLabel( node, CpgConst.NODE_LABEL_SCOPE );
+            if ( isScope && !alreadyPropagated ) {
+                this.handleIsolatedScopes( node );
             }
 
         } );
@@ -49,6 +55,30 @@ public class PropagateRecordScopeModule<Target> extends PipeModule<Graph, Graph,
                 .filter( edge -> this.GS.isType( edge, CpgEdgeType.RECORD_DECLARATION ) )
                 .forEach( edge -> edge.getSourceNode()
                         .setAttribute( CpgConst.NODE_ATTR_NAME_SCOPED_RECORD, recordScope ) );
+    }
+
+    private void handleIsolatedScopes( final Node node ) {
+        final String recordScope = this.GS.getAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED );
+        if ( StringUtils.isBlank( recordScope ) ) {
+            return;
+        }
+        if ( recordScope.toLowerCase().equals( recordScope ) ) {
+            return;
+        }
+        if ( recordScope.equals( this.GS.getAttr( node, CpgConst.NODE_ATTR_NAME_FULL ) ) ) {
+            return;
+        }
+        node.setAttribute( CpgConst.NODE_ATTR_NAME_SCOPED_RECORD, recordScope );
+        node.enteringEdges()
+                .filter( edge -> this.GS.isType( edge, CpgEdgeType.SCOPE ) )
+                .map( Edge::getSourceNode )
+                .filter( source -> !isAlreadyPropagated( source ) )
+                .forEach( source -> source.setAttribute( CpgConst.NODE_ATTR_NAME_SCOPED_RECORD, recordScope ) );
+
+    }
+
+    private boolean isAlreadyPropagated( final Node node ) {
+        return this.GS.hasLabel( node, CpgConst.NODE_ATTR_NAME_SCOPED_RECORD );
     }
 
     private void handleRecordScope( final Node node ) {

@@ -9,6 +9,10 @@ import java.util.Optional;
 @NoArgsConstructor( staticName = "empty" )
 public class PipeContext {
 
+    public static String PROCESS_NAME = "process_name";
+
+    public static String PIPE_BENCHMARKS = "pipe_benchmarks";
+
     public static String CPG_DATASET_KEY = "dataset";
 
     public static String CPG_DEPTH_KEY = "depth";
@@ -34,6 +38,8 @@ public class PipeContext {
     public static String RECORD_PATHS = "ssspRecords";
 
     public static String TOTAL_PROCESSING_TIME = "totalTime";
+
+    public static String PROCESS_COUNT = "processCount";
 
     private final Map<String, Object> ctx = new HashMap<>();
 

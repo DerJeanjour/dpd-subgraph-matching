@@ -313,39 +313,48 @@
       "id": "bd51e598-d1aa-46cd-a739-3e5846f20d59",
       "content": "//Show Record Interaction Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
       "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "8e3c026c-dcbd-4fa7-928b-13bdf03b5915",
+      "content": "// Show dataset\nMATCH (n)-[r]->(m)\nWHERE r.`edge.dataset` = 'x'\nRETURN n, m, r",
+      "folder": "3e93aa01-885e-4173-92a6-7a2e2ed317b8"
+    },
+    {
+      "id": "c8cd4bb2-40ad-4033-9f6c-83a23969adea",
+      "content": "// Shortest path between nodes\nMATCH (start), (end)\nWHERE id(start) = 475 AND id(end) = 8545\nMATCH path = shortestPath((start)-[*]->(end))\nRETURN path"
     }
   ],
   "neo4j.history": [
-    "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
-    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
+    "MATCH (n) WHERE (n.`node.dataset`) IS NOT NULL \nRETURN DISTINCT \"node\" as entity, n.`node.dataset` AS `node.dataset` LIMIT 25 \nUNION ALL \nMATCH ()-[r]-() WHERE (r.`node.dataset`) IS NOT NULL \nRETURN DISTINCT \"relationship\" AS entity, r.`node.dataset` AS `node.dataset` LIMIT 25",
     "",
+    "MATCH (n) WHERE (n.`node.dataset`) IS NOT NULL \nRETURN DISTINCT \"node\" as entity, n.`node.dataset` AS `node.dataset` LIMIT 25 \nUNION ALL \nMATCH ()-[r]-() WHERE (r.`node.dataset`) IS NOT NULL \nRETURN DISTINCT \"relationship\" AS entity, r.`node.dataset` AS `node.dataset` LIMIT 25",
     "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
-    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
-    "MATCH (n:KNOWS_RECORD) RETURN n LIMIT 25",
-    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "MATCH (n)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN n",
+    "MATCH (n)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN labels(n) AS nodeLabels",
     "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
-    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
-    "MATCH (n:KNOWS_RECORD) RETURN n LIMIT 25",
-    "MATCH (n:RETURNS_RECORD) RETURN n LIMIT 25",
+    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
     "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show Record Interaction Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:INTERACTS]->() RETURN p",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:INTERACTS]->() RETURN p",
-    "MATCH (n:CREATING) RETURN n LIMIT 25",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "//Show All\nMATCH (n)\nOPTIONAL MATCH (n)-[r]->(m)\nRETURN *",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *",
-    "// Show Record Dependencies\nMATCH p=()-[r:RECORD_KNOWS|RECORD_CREATES|RECORD_EXTENDS|RECORD_RETURNS]->() RETURN p",
-    "//Show Record Dependency Paths\nMATCH p1=(n)-[r]-(m) WHERE (r.`edge.isPath`) IS NOT NULL\nRETURN *"
+    "MATCH (n)-[r]-(m)\nWHERE (n.`node.scopedRecordName`) IS NOT NULL AND (m.`node.scopedRecordName)` IS NOT NULL AND\nRETURN n, m, r",
+    "MATCH (n)-[r]-(m)\nWHERE n.`node.scopedRecordName` IS NOT NULL AND m.`node.scopedRecordName` IS NOT NULL AND\nRETURN n, m, r",
+    "MATCH (n)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN n",
+    "MATCH (n)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN labels(n) AS nodeLabels",
+    "MATCH (n)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN n.`node.scopedName`",
+    "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
+    "MATCH (start), (end)\nWHERE id(start) = 598 AND id(end) = 818\nMATCH path = shortestPath((start)-[*]->(end))\nRETURN path",
+    "MATCH (n:Scope) WHERE (n.`node.scopedName`) IS NOT NULL \nRETURN DISTINCT \"node\" as entity, n.`node.scopedName` AS `node.scopedName` LIMIT 25 \nUNION ALL \nMATCH ()-[r]-() WHERE (r.`node.scopedName`) IS NOT NULL \nRETURN DISTINCT \"relationship\" AS entity, r.`node.scopedName` AS `node.scopedName` LIMIT 25",
+    "MATCH (n:Scope)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN n.`node.scopedName`",
+    "MATCH (n:Scope) WHERE (n.`node.scopedName`) IS NOT NULL \nRETURN DISTINCT \"node\" as entity, n.`node.scopedName` AS `node.scopedName` LIMIT 25 \nUNION ALL \nMATCH ()-[r]-() WHERE (r.`node.scopedName`) IS NOT NULL \nRETURN DISTINCT \"relationship\" AS entity, r.`node.scopedName` AS `node.scopedName` LIMIT 25",
+    "MATCH (n:Scope) RETURN n LIMIT 25",
+    "// Show Scope Structure\nMATCH (n:Scope)-[r:PARENT]-(m) RETURN *",
+    "",
+    "// Shortest path between nodes\nMATCH (start), (end)\nWHERE id(start) = 475 AND id(end) = 8545\nMATCH path = shortestPath((start)-[*]->(end))\nRETURN path",
+    "//Show ssp between records\nMATCH (n:RecordDeclaration)\nWITH COLLECT(n) AS nodes\nUNWIND nodes AS recordA\nUNWIND nodes AS recordB\nWITH recordA, recordB WHERE id(recordA) < id(recordB)\nMATCH p = shortestPath((recordA)-[*]->(recordB))\nWHERE ALL(r IN relationships(p) WHERE NOT type(r) = 'IMPORTS')\nRETURN DISTINCT p",
+    "// Show Record Interactions\nMATCH p=()-[r:INTERACTS]->() RETURN p",
+    "MATCH (n:Scope)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN n.`node.scopedName`",
+    "MATCH (n:Scope)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN n.`node.scopedRecordName`",
+    "MATCH (n:Scope)\nWHERE n.`node.scopedRecordName` IS NULL\nRETURN n",
+    "MATCH (n:Scope)\nWHERE n.`node.scopedName` IS NULL\nRETURN n"
   ],
   "neo4j.settings": {
     "maxHistory": 30,
@@ -437,7 +446,7 @@
     },
     "activeConnection": "$$discovery",
     "connectionState": 1,
-    "lastUpdate": 1734093867460,
+    "lastUpdate": 1742124923281,
     "useDb": "neo4j",
     "lastUseDb": "neo4j"
   },
@@ -644,9 +653,9 @@
     },
     "node.ObjectType": {
       "defaultCaption": "<id>",
-      "color": "#F79767",
-      "border-color": "#f36924",
-      "text-color-internal": "#FFFFFF"
+      "color": "#D9C8AE",
+      "border-color": "#c0a378",
+      "text-color-internal": "#2A2C34"
     },
     "node.Type": {
       "defaultCaption": "<id>"
@@ -1043,10 +1052,18 @@
       "border-color": "#b261a5",
       "text-color-internal": "#FFFFFF",
       "caption": "{node.interactions}"
+    },
+    "node.CALLS_RECORD": {
+      "defaultCaption": "<id>",
+      "diameter": "50px",
+      "caption": "{node.interactions}",
+      "color": "#4C8EDA",
+      "border-color": "#2870c2",
+      "text-color-internal": "#FFFFFF"
     }
   },
   "neo4j.udc": {
-    "lastSnapshot": 1734085536,
+    "lastSnapshot": 1742124923,
     "uuid": "4be9ad52-1e14-45c5-b186-81337876f848",
     "consentBannerShownCount": 6,
     "allowUserStatsInDesktop": false,

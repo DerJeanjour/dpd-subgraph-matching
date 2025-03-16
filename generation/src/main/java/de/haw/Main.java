@@ -15,7 +15,6 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.misc.utils.MemoryUtils;
 import de.haw.processing.module.*;
-import de.haw.repository.model.CpgEdgeType;
 import de.haw.repository.module.PersistCpgModule;
 import de.haw.translation.module.GenerateCpgModule;
 import de.haw.translation.module.TranslationToGraphModule;
@@ -32,23 +31,30 @@ public class Main {
         MemoryUtils.logMemoryStats();
 
         //test();
-        convertDatasets( getPmartRequests(), false );
+        convertDatasets( getDpdfRequests(), true, true );
     }
 
-    private static void convertDatasets( final List<TranslationRequest> translationRequests, final boolean continueGen ) {
+    private static void convertDatasets( final List<TranslationRequest> translationRequests ) {
+        convertDatasets( translationRequests, false, true );
+    }
+
+    private static void convertDatasets(
+            final List<TranslationRequest> translationRequests, final boolean continueGen, final boolean clearRepo ) {
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 7 );
-        ConvertAndExportCpgDatasets.of( continueGen ).process( translationRequests, ctx );
+        ConvertAndExportCpgDatasets.of( continueGen, clearRepo ).process( translationRequests, ctx );
     }
 
     private static List<TranslationRequest> getPmartRequests() {
+        // @formatter:off
         return Arrays.asList(
-                TranslationRequest.of( DatasetFactory.PMD, 8 ),
-                TranslationRequest.of( DatasetFactory.NUTCH, 8 ),
                 TranslationRequest.of( DatasetFactory.J_HOT_DRAW, 10 ),
                 TranslationRequest.of( DatasetFactory.J_UNIT, 10 ),
                 TranslationRequest.of( DatasetFactory.QUICK_UML, 10 ),
-                TranslationRequest.of( DatasetFactory.MAPPER_XML, 10 ) );
+                TranslationRequest.of( DatasetFactory.MAPPER_XML, 10 ),
+                TranslationRequest.of( DatasetFactory.PMD, 8 ),
+                TranslationRequest.of( DatasetFactory.NUTCH, 8 ) );
+        // @formatter:on
     }
 
     private static List<TranslationRequest> getDpdfRequests() {
@@ -79,7 +85,7 @@ public class Main {
 
     private static void test() {
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        final Dataset dataset = DatasetFactory.QUICK_UML;
+        final Dataset dataset = DatasetFactory.OBSERVER_EXAMPLE;
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
@@ -108,13 +114,11 @@ public class Main {
                 //.add( ComputeSSSPsModule.instance() )
                 .add( ComputeRecordPathsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
-
-                // patterns
                 .add( MarkPatternsModule.instance() )
                 //.add( IsolateMarkedPatternsModule.instance() )
+                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
 
                 // visualize
-                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
                 /*
                 .add( CpgEdgeTypeVisualizeModule.instance() )
                 .add( CpgNodeTypeVisualizeModule.instance() )
@@ -122,7 +126,7 @@ public class Main {
                  */
 
                 // persist
-                //.add( PersistCpgModule.instance() )
+                .add( PersistCpgModule.instance() )
                 .build();
 
         final Graph cpg = pipe.process( dataset, ctx );

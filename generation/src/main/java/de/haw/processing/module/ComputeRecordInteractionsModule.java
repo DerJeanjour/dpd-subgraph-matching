@@ -2,10 +2,10 @@ package de.haw.processing.module;
 
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
+import de.haw.misc.utils.CollectionUtils;
 import de.haw.misc.utils.PathUtils;
 import de.haw.processing.GraphService;
 import de.haw.processing.model.*;
-import de.haw.processing.visualize.GraphUi;
 import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +15,7 @@ import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @RequiredArgsConstructor( staticName = "instance" )
@@ -37,25 +34,36 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
 
         final CpgNodePaths recordPaths = getPaths( ctx );
         final RecordInteractionPathCounts pathCounts = RecordInteractionPathCounts.instance();
-
-        recordPaths.getAll().forEach( recordPath -> {
-
-            if ( !this.isValidPath( recordPath ) ) {
+        final Map<String, List<RecordInteraction>> recordInteractionsBySource = new HashMap<>();
+        recordPaths.getAll().forEach( path -> {
+            if ( !this.isValidPath( path ) ) {
                 return;
             }
+            final RecordInteraction interaction = this.getPathInteraction( path );
+            final String sourceId = path.getSource().getId();
+            if ( !recordInteractionsBySource.containsKey( sourceId ) ) {
+                recordInteractionsBySource.put( sourceId, new ArrayList<>() );
+            }
+            recordInteractionsBySource.get( sourceId ).add( interaction );
+        } );
 
-            final RecordInteraction interaction = this.getPathInteraction( recordPath );
-            pathCounts.add( interaction );
+        recordInteractionsBySource.keySet().forEach( sourceId -> {
+            final List<RecordInteraction> interactions = recordInteractionsBySource.get( sourceId );
+            final List<RecordInteraction> recordInteractions = this.reduceSourceInteractions( interactions );
+            recordInteractions.forEach( interaction -> {
+                pathCounts.add( interaction );
+                // add interaction node and edges
+                final Node interactionNode = this.getInteractionOrCreate( graph, interaction );
+                this.addEdgeForInteraction( graph, interactionNode, interaction.getTarget(), interaction, true );
+                // mark existing path edges with path flag
+                interaction.getPath()
+                        .getPath()
+                        .getEdgePath()
+                        .forEach( pathEdge -> graph.getEdge( pathEdge.getId() )
+                                .setAttribute( CpgConst.EDGE_ATTR_IS_PATH, true ) );
 
-            // add interaction node and edges
-            final Node interactionNode = this.getInteractionOrCreate( graph, interaction );
-            this.addEdgeForInteraction( graph, interactionNode, interaction.getTarget(), interaction, true );
+            } );
 
-            // mark existing path edges with path flag
-            recordPath.getPath()
-                    .getEdgePath()
-                    .forEach( pathEdge -> graph.getEdge( pathEdge.getId() )
-                            .setAttribute( CpgConst.EDGE_ATTR_IS_PATH, true ) );
         } );
 
         //GraphUi.display( pathCounts.toGraph(), false );
@@ -80,7 +88,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
             iter++;
 
             final String recordScope = this.GS.getAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED_RECORD );
-            if ( StringUtils.isNotBlank( recordScope ) ) {
+            if( StringUtils.isNotBlank( recordScope ) ) {
                 traversedRecordScopes.add( recordScope );
             }
 
@@ -145,7 +153,6 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
             final String pathStr = PathUtils.pathToString( interaction.getPath().getPath(), true );
             edge.setAttribute( CpgConst.EDGE_ATTR_PATH, pathStr );
             edge.setAttribute( CpgConst.EDGE_ATTR_DISTANCE, interaction.getPath().getDistance() );
-
             source.setAttribute( CpgConst.NODE_ATTR_INTERACTION_COUNT, source.getOutDegree() );
         }
 
@@ -158,16 +165,48 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         final Node pathSource = PathUtils.getFirstNode( recordPath.getPath() );
         final Node pathTarget = PathUtils.getLastNode( recordPath.getPath() );
 
-        if ( pathTypes.contains( CpgEdgeType.INSTANTIATES ) ) {
-            return RecordInteraction.of( RecordInteractionType.CREATES_RECORD, pathSource, pathTarget, recordPath );
+        RecordInteractionDescriptor matchedDescriptor = RecordInteractionDescriptor.KNOWS_INTERACTION;
+        for ( final RecordInteractionDescriptor descriptor : RecordInteractionDescriptor.ALL ) {
+            if ( descriptor.hasEdgePivot( pathTypes ) && descriptor.getOrder() < matchedDescriptor.getOrder() ) {
+                matchedDescriptor = descriptor;
+            }
         }
-        if ( pathTypes.contains( CpgEdgeType.SUPER_TYPE_DECLARATIONS ) ) {
-            return RecordInteraction.of( RecordInteractionType.EXTENDED_BY_RECORD, pathTarget, pathSource, recordPath );
+        final Node source = matchedDescriptor.isReversedInteraction() ? pathTarget : pathSource;
+        final Node target = matchedDescriptor.isReversedInteraction() ? pathSource : pathTarget;
+        return RecordInteraction.of( matchedDescriptor.getType(), source, target, recordPath );
+    }
+
+    private List<RecordInteraction> reduceSourceInteractions( final List<RecordInteraction> interactions ) {
+        final Map<String, List<RecordInteraction>> interactionsByTarget = new HashMap<>();
+        final Map<String, List<RecordInteractionType>> allowedTypesByTarget = new HashMap<>();
+        for ( final RecordInteraction interaction : interactions ) {
+
+            final RecordInteractionDescriptor descriptor = RecordInteractionDescriptor.get( interaction.getType() );
+
+            final String targetId = descriptor.isReversedInteraction() ? interaction.getSource()
+                    .getId() : interaction.getTarget().getId();
+            if ( !interactionsByTarget.containsKey( targetId ) ) {
+                interactionsByTarget.put( targetId, new ArrayList<>() );
+                allowedTypesByTarget.put( targetId, RecordInteractionType.all() );
+            }
+            interactionsByTarget.get( targetId ).add( interaction );
+
+
+            final List<RecordInteractionType> typeIntersection = CollectionUtils.intersection(
+                    allowedTypesByTarget.get( targetId ), descriptor.getAllowedSiblings() );
+            allowedTypesByTarget.put( targetId, typeIntersection );
         }
-        if ( pathTypes.contains( CpgEdgeType.RETURN_TYPES ) ) {
-            return RecordInteraction.of( RecordInteractionType.RETURNS_RECORD, pathSource, pathTarget, recordPath );
-        }
-        return RecordInteraction.of( RecordInteractionType.KNOWS_RECORD, pathSource, pathTarget, recordPath );
+
+        final List<RecordInteraction> reduced = new ArrayList<>();
+        interactionsByTarget.keySet().forEach( targetId -> {
+            for ( final RecordInteraction targetInteraction : interactionsByTarget.get( targetId ) ) {
+                final List<RecordInteractionType> allowedTypes = allowedTypesByTarget.get( targetId );
+                if ( allowedTypes.contains( targetInteraction.getType() ) ) {
+                    reduced.add( targetInteraction );
+                }
+            }
+        } );
+        return reduced;
     }
 
 }
