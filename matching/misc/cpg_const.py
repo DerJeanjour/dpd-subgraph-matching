@@ -8,6 +8,7 @@ NO_DESIGN_PATTERN = "N/A"
 class NodeAttr( Enum ):
     LABELS = NODE_PREFIX + "labels"
     SCOPED_RECORD_NAME = NODE_PREFIX + "scopedRecordName"
+    DATASET = NODE_PREFIX + "dataset"
     FULL_NAME = NODE_PREFIX + "fullName"
     LOCAL_NAME = NODE_PREFIX + "localName"
 
@@ -26,10 +27,10 @@ class NodeLabel( Enum ):
     CREATES_RECORD = "CREATES_RECORD"
     EXTENDED_BY_RECORD = "EXTENDED_BY_RECORD"
     RETURNS_RECORD = "RETURNS_RECORD"
+    CALLS_RECORD = "CALLS_RECORD"
 
 
 class DesignPatternType( Enum ):
-    # PRIMARY
     ABSTRACT_FACTORY = "ABSTRACT_FACTORY"
     ADAPTER = "ADAPTER"
     BUILDER = "BUILDER"
@@ -37,15 +38,13 @@ class DesignPatternType( Enum ):
     FACTORY_METHOD = "FACTORY_METHOD"
     OBSERVER = "OBSERVER"
     SINGLETON = "SINGLETON"
-
-    """
-    # SECONDARY
     DECORATOR = "DECORATOR"
     MEMENTO = "MEMENTO"
     PROTOTYPE = "PROTOTYPE"
     PROXY = "PROXY"
     VISITOR = "VISITOR"
 
+    """
     # ADDITIONAL
     COMMAND = "COMMAND"
     COMPOSITE = "COMPOSITE"

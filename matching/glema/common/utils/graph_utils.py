@@ -120,6 +120,21 @@ def normalize_graph( G, max_distance=4, force_directed=False ):
     return G_norm, furthest_distance
 
 
+def norm_graphs_are_equal( G1, G2 ):
+    G1_paths = [ p[ 1 ] for p in get_all_norm_paths( G1 ) ]
+    G2_paths = [ p[ 1 ] for p in get_all_norm_paths( G2 ) ]
+    return set( G1_paths ) == set( G2_paths )
+
+
+def get_norm_graph_intersection( G1, G2 ):
+    combined, node_matching, _ = combine_normalized( G1, G2 )
+    n_keep = [ ]
+    for idx, nid in enumerate( combined.nodes() ):
+        if node_matching[ idx ] > 0:
+            n_keep.append( nid )
+    return combined.subgraph( n_keep )
+
+
 def connect_graphs_at_anchor( graphs, keep_radius=-1 ):
     if len( graphs ) == 0:
         return nx.Graph()
@@ -515,7 +530,7 @@ def combine_normalized( source: nx.Graph, query: nx.Graph, matching_colors: dict
     source_paths = get_all_norm_paths( source )
     query_paths = get_all_norm_paths( query )
     source_labels = { labels: ids for ids, labels in source_paths }
-    #source_node_offset = len( source.nodes )
+    # source_node_offset = len( source.nodes )
     source_node_offset = max( source.nodes() )
     mapping = { }
     for query_ids, query_label in query_paths:

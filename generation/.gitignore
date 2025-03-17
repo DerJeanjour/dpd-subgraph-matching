@@ -1,7 +1,7 @@
 .gradle
 **/build/
 !src/**/build/
-gen_data*.txt
+gen_data_temp.txt
 
 # Ignore Gradle GUI config
 gradle-app.setting

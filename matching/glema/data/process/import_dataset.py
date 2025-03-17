@@ -20,7 +20,7 @@ def import_datasets( args ):
     anchor_mapping: dict[ int, int ] = { }
 
     graph_idx = 1  # graph index starts from 1
-    for dataset_filename in list_datasets:
+    for dataset_filename in sorted( list_datasets ):
         if not dataset_filename.endswith( args.import_format ):
             continue
         if args.import_prefix is not None and not dataset_filename.startswith( args.import_prefix ):
@@ -120,12 +120,15 @@ def add_graph_to( G_source: nx.DiGraph, G_target: nx.DiGraph,
         pattern_types = get_design_pattern_types( node_data )
         record_scope_attr = cpg_const.NodeAttr.SCOPED_RECORD_NAME.value
         record_scope = node_data[ record_scope_attr ] if record_scope_attr in node_data else "None"
+        record_dataset_attr = cpg_const.NodeAttr.DATASET.value
+        record_dataset = node_data[ record_dataset_attr ] if record_dataset_attr in node_data else "None"
 
         G_target.add_node( node_id_mapping[ node_id_key ],
                            label=record_label_idx,
                            graph_idx=graph_idx,
                            pattern_types=pattern_types,
-                           record_scope=record_scope )
+                           record_scope=record_scope,
+                           record_dataset=record_dataset )
 
     # process edges
     for edge in list( G_source.edges( data=True ) ):
@@ -169,6 +172,11 @@ def write_files( args, G: nx.DiGraph, node_id_mapping: dict[ str, int ], anchor_
     with open( record_scope_file, "w", encoding="utf-8" ) as file:
         for _, node_data in list( G.nodes( data=True ) ):
             file.write( f"{node_data[ 'record_scope' ]}\n" )
+
+    record_dataset_file = os.path.join( output_dir, f"{args.dataset}.record_datasets" )
+    with open( record_dataset_file, "w", encoding="utf-8" ) as file:
+        for _, node_data in list( G.nodes( data=True ) ):
+            file.write( f"{node_data[ 'record_dataset' ]}\n" )
 
     # pattern_types
     pattern_type_file = os.path.join( output_dir, f"{args.dataset}.pattern_types" )

@@ -26,7 +26,7 @@ class BaseDataset( Dataset ):
         self.keys = keys
         self.full_keys = keys
         self.k_keys = k_keys
-        self.k = k_start if k_keys is not None else -1
+        self.k = self.get_adjusted_start_k( k_start, k_keys )
         self.balanced = balanced
         self.len = len( self.full_keys ) if max_size < 0 else min( max_size, len( self.full_keys ) )
         self.set_keys_by_k()
@@ -37,6 +37,16 @@ class BaseDataset( Dataset ):
 
     def __len__( self ):
         return self.len
+
+    def get_adjusted_start_k( self, k_start, k_keys ):
+        if k_keys is not None:
+            k = k_start
+            while k <= len( k_keys ):
+                if len( k_keys[ k ] ) == 0:
+                    k += 1
+                else:
+                    return k
+        return -1
 
     def balance_keys( self, keys, shuffle=True ):
         """

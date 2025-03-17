@@ -294,10 +294,14 @@ def train( args ):
                 # Early stopping
                 break
 
-        if uses_curriculum_training:
+        if is_pretrain:
             if (epoch + 1) % args.curriculum_training_steps == 0:
                 # increase complexity limit every x epochs
                 train_dataset.increase_complexity()
+                # if max complexity is reached, reset early stop values
+                if train_dataset.get_complexity_limit() < 0:
+                    early_stop_count = 0
+                    best_roc = 0
 
     log_file.close()
     return version
@@ -312,15 +316,16 @@ def write_evaluation( args, version ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG_augm_large"
-    args.directed = True
+    args.dataset = "dpdf"
+    args.directed = False
     args.anchored = True
     args.tactic = "jump"
     args.batch_size = 128
-    args.max_test_data = 100_000
+    args.max_test_data = 50_000
     args.max_train_data = args.max_test_data * 10
     args.curriculum_training_steps = 1  # graph complexity increase every x epochs
-    args.embedding_dim = 5  # possible labels
+    args.nhead = 1
+    args.embedding_dim = 6  # possible labels
     if args.anchored:
         args.embedding_dim += 1  # labels + 1 anchor embedding
     args.seed = 23

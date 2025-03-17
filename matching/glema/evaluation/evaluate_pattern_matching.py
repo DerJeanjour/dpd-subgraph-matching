@@ -1,3 +1,4 @@
+import itertools
 import os
 from collections.abc import Callable
 
@@ -24,6 +25,50 @@ import matching.glema.common.utils.model_utils as model_utils
 import matching.misc.cpg_const as cpg_const
 from matching.glema.common.dataset import DesignPatternDataset
 from matching.glema.common.model import InferenceGNN
+
+
+def get_common_patterns( patterns_by_type: dict[ str, list[ nx.Graph ] ],
+                         min_nodes: int = 8, max_node_distance=6,
+                         max_graphs: int = 5, max_iter: int = 10 ) -> dict[
+    str, list[ nx.Graph ] ]:
+    # normalize patterns
+    patterns_normalized_by_type = { }
+    print( "Normalize patterns ..." )
+    for pattern_type in tqdm( patterns_by_type.keys() ):
+        patterns = patterns_by_type[ pattern_type ]
+        patterns_normalized_by_type[ pattern_type ] = [
+            graph_utils.normalize_graph( p, max_distance=max_node_distance )[ 0 ]
+            for p in patterns ]
+
+    # compute common graphs
+    common_patterns_by_type = { }
+    for pattern_type in patterns_normalized_by_type.keys():
+        print( f"Compute common patterns for {pattern_type} ..." )
+        norm_patterns = patterns_normalized_by_type[ pattern_type ]
+        common_patterns_by_type[ pattern_type ] = get_common_patterns_for_type( norm_patterns, min_nodes,
+                                                                                max_graphs, max_iter )
+    return common_patterns_by_type
+
+
+def get_common_patterns_for_type( patterns_normalized_of_type: list[ nx.Graph ],
+                                  min_nodes: int = 8, max_graphs: int = 5, max_iter: int = 10 ) -> list[ nx.Graph ]:
+    common_patterns = patterns_normalized_of_type
+    i = 0
+    # iteratively compute pairwise common graphs
+    while len( common_patterns ) > max_graphs and i < max_iter:
+        pairs = list( itertools.combinations( common_patterns, 2 ) )
+        common_patterns = [ ]
+        for (G1, G2) in pairs:
+            common_pattern = graph_utils.get_norm_graph_intersection( G1, G2 )
+            # filter duplicates
+            if any( graph_utils.norm_graphs_are_equal( common_pattern, G ) for G in common_patterns ):
+                continue
+            common_patterns.append( common_pattern )
+        # filter by node size
+        common_patterns = [ G for G in common_patterns if G.number_of_nodes() >= min_nodes ]
+        print( f"Size after iter {i}: {len( common_patterns )}" )
+        i += 1
+    return common_patterns
 
 
 def normalize_pattern_to_connected( patterns_all: dict[ str, list[ nx.Graph ] ],
@@ -124,11 +169,13 @@ def sample_processor_k_normalized( source: nx.Graph, query: nx.Graph, meta: dict
         queries.append( query )
         sources.append( source )
         # pred_w = query_d / source_d
+        # TODO weight the relation to the original size of the query instead to the source
         pred_w = query.number_of_nodes() / source.number_of_nodes()
         _meta = meta.copy()
         _meta[ "pred_w" ] = pred_w
         metas.append( _meta )
     return sources, queries, metas
+
 
 def sample_processor_subgraph_normalized( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
     combined, node_matches, _ = graph_utils.combine_normalized( source, query )
@@ -145,6 +192,7 @@ def sample_processor_subgraph_normalized( source: nx.Graph, query: nx.Graph, met
         _meta[ "pred_w" ] = _meta[ "pred_w" ] * (3 / 4) + (1 / 4)
 
     return sample_processor_default( source, query, _meta )
+
 
 def sample_processor_default( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
     _meta = meta.copy()
@@ -219,7 +267,7 @@ def compute_source_preds( groups_by_source: dict[ int, dict[ str, list[ float ] 
         for dp, idxs in source_preds_idxs.items():
             pattern_preds = [ preds[ idx ] for idx in idxs ]
             pattern_metas = [ metas[ idx ] for idx in idxs ]
-            pattern_preds_weighted = []
+            pattern_preds_weighted = [ ]
             for p, m in zip( pattern_preds, pattern_metas ):
                 p = m.get( "pred_r", p )
                 p *= m.get( "pred_w", 1.0 )

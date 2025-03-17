@@ -102,6 +102,8 @@ def parse_args( use_default=False ):
                          type=str, default="datasets/" )
 
     # generating
+    parser.add_argument( "--inference", action="store_true", default=True,
+                         help="Preprocess dataset for inference. If false, train and test data will be generated." )
     parser.add_argument( "--num_subgraphs", default=2000, type=int, help="Number of subgraphs" )
     parser.add_argument( "--real", action="store_true" )
     parser.add_argument( "--testonly", action="store_true" )
