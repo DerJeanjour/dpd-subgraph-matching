@@ -370,6 +370,16 @@ def get_record_scopes( args ) -> dict[ str, str ]:
     return record_scopes
 
 
+def get_record_datasets( args ) -> dict[ str, str ]:
+    record_datasets = { }
+    record_dataset_filepath = os.path.join( args.raw_dataset_dir, args.dataset, args.dataset + ".record_datasets" )
+    record_dataset_filepath = io_utils.get_abs_file_path( record_dataset_filepath )
+    record_dataset_file = open( record_dataset_filepath, "r" )
+    for idx, record_dataset in enumerate( record_dataset_file.read().strip().split( "\n" ) ):
+        record_datasets[ str( idx + 1 ) ] = record_dataset
+    return record_datasets
+
+
 def get_design_patterns( args ) -> dict[ str, str ]:
     design_patterns = { }
     pattern_type_filepath = os.path.join( args.raw_dataset_dir, args.dataset, args.dataset + ".pattern_types" )
@@ -454,7 +464,7 @@ def get_pattern_graphs( args, graphs, include_w_o_pattern=False ):
     pattern_graphs_idxs = get_pattern_graphs_idxs( args, graphs )
     pattern_graphs = filter_pattern_graphs_with_idx( graphs, pattern_graphs_idxs )
     if include_w_o_pattern:
-        pattern_graphs[ "N/D" ] = filter_no_pattern_graphs_with_idx( graphs, pattern_graphs_idxs )
+        pattern_graphs[ cpg_const.NO_DESIGN_PATTERN ] = filter_no_pattern_graphs_with_idx( graphs, pattern_graphs_idxs )
     return pattern_graphs
 
 

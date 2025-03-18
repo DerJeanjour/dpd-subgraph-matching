@@ -146,8 +146,8 @@ def main( args, version ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG_augm_large"
-    args.directed = True
+    args.dataset = "dpdf"
+    args.directed = False
     args.anchored = True
     version = model_utils.get_latest_model_version( args )
     model_name = model_utils.get_model_name( args, version )

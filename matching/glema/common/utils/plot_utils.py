@@ -43,3 +43,13 @@ def save_graph_debug( G, file_name ):
         print( f"An error occurred while rendering the graph: {e}" )
     finally:
         plt.close()  # Ensure the plot is closed to free memory
+
+
+class ColorScheme:
+    PRIMARY: str = "#FF9F1C"
+    PRIMARY_LIGHT: str = "#FFBF69"
+    PRIMARY_DARK: str = "#3E2707"
+    SECONDARY: str = "#2EC4B6"
+    SECONDARY_LIGHT: str = "#CBF3F0"
+    SECONDARY_DARK: str = "#0C3531"
+    HIGHLIGHT: str = "#69A9FF"

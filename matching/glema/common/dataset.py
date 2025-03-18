@@ -135,7 +135,7 @@ class BaseDataset( Dataset ):
 
 class DesignPatternDataset( Dataset ):
 
-    def __init__( self, args, query_pattern=False,
+    def __init__( self, args, query_pattern=False, pattern_types: list[ str ] = None,
                   max_sources=-1, max_pattern_examples=10, subgraph_relation=1 ):
         misc_utils.set_seed( args.seed )
 
@@ -143,6 +143,7 @@ class DesignPatternDataset( Dataset ):
         self.anchored = args.anchored
         self.normalized = args.normalized
         self.query_pattern = query_pattern
+        self.pattern_types = pattern_types
         self.subgraph_relation = subgraph_relation
 
         self.sources = self.load_sources( args, args.dataset, max_sources=max_sources, shuffle=True )
@@ -150,7 +151,10 @@ class DesignPatternDataset( Dataset ):
         self.patterns = self.load_patterns( args, args.pattern_dataset, max_pattern_examples )
         self.source_record_scopes = self.load_record_scopes( args, args.dataset )
         self.source_graph_record_scopes = self.compute_source_graph_record_scopes()
+        self.source_record_datasets = self.load_record_datasets( args, args.dataset )
+        self.source_graph_record_datasets = self.compute_source_graph_record_datasets()
         self.pattern_record_scopes = self.load_record_scopes( args, args.pattern_dataset )
+        self.pattern_record_datasets = self.load_record_datasets( args, args.pattern_dataset )
         self.samples = [ ]
         self.len = 0
 
@@ -182,18 +186,28 @@ class DesignPatternDataset( Dataset ):
     def get_pattern_record_scopes( self ) -> dict[ str, str ]:
         return self.__transform_record_scopes( self.pattern_record_scopes )
 
+    def __transform_record_datasets( self, record_datasets: dict[ int, str ] ) -> dict[ str, str ]:
+        return { str( nid ): name for nid, name in record_datasets.items() }
+
+    def get_source_record_datasets( self ) -> dict[ str, str ]:
+        return self.__transform_record_datasets( self.source_record_datasets )
+
+    def get_pattern_record_datasets( self ) -> dict[ str, str ]:
+        return self.__transform_record_datasets( self.pattern_record_datasets )
+
     def construct_samples( self ):
         samples = [ ]
         for gidx, source in self.sources.items():
             source_type = self.source_patterns[ gidx ]
             record_scope = self.source_graph_record_scopes[ gidx ]
+            record_dataset = self.source_graph_record_datasets[ gidx ]
             if record_scope == "None":
                 print( f"Undefined scope for gidx {gidx}" )
             for pattern_type, patterns in self.patterns.items():
                 for pattern in patterns:
                     samples.append( (source, source_type,
                                      pattern, pattern_type,
-                                     gidx, record_scope) )
+                                     gidx, record_scope, record_dataset) )
         return samples
 
     def load_sources( self, args, dataset, max_sources=-1, shuffle=False ):
@@ -218,10 +232,23 @@ class DesignPatternDataset( Dataset ):
             source_graph_record_scopes[ gidx ] = record_scope
         return source_graph_record_scopes
 
+    def compute_source_graph_record_datasets( self ):
+        source_graph_record_datasets = { }
+        for gidx, source in self.sources.items():
+            anchor = graph_utils.get_anchor( source )
+            record_dataset = self.source_record_datasets[ anchor ]
+            source_graph_record_datasets[ gidx ] = record_dataset
+        return source_graph_record_datasets
+
     def load_record_scopes( self, args, dataset ):
         args = copy.deepcopy( args )
         args.dataset = dataset
         return { int( nid ): name for nid, name in graph_utils.get_record_scopes( args ).items() }
+
+    def load_record_datasets( self, args, dataset ):
+        args = copy.deepcopy( args )
+        args.dataset = dataset
+        return { int( nid ): name for nid, name in graph_utils.get_record_datasets( args ).items() }
 
     def load_patterns( self, args, dataset, max_pattern_examples, sources=None ):
         args = copy.deepcopy( args )
@@ -231,6 +258,8 @@ class DesignPatternDataset( Dataset ):
         patterns = graph_utils.get_pattern_graphs( args, sources )
         if max_pattern_examples > 0:
             patterns = { dp: examples[ :max_pattern_examples ] for dp, examples in patterns.items() }
+        if self.pattern_types is not None:
+            patterns = { dp: examples for dp, examples in patterns.items() if dp in self.pattern_types }
         return patterns
 
     def load_source_patterns( self, args, dataset, sources ):
@@ -241,6 +270,8 @@ class DesignPatternDataset( Dataset ):
         for idx in sources.keys():
             pattern = cpg_const.NO_DESIGN_PATTERN
             for pattern_type, idxs in pattern_graph_idx.items():
+                if self.pattern_types is not None and pattern_type.value not in self.pattern_types:
+                    continue
                 if idx in idxs:
                     pattern = pattern_type.value
             source_patterns[ idx ] = pattern
@@ -252,7 +283,7 @@ class DesignPatternDataset( Dataset ):
     def get_data( self, idx ):
         (source, source_type,
          pattern, pattern_type,
-         gidx, record_scope) = self.samples[ idx ]
+         gidx, record_scope, record_dataset) = self.samples[ idx ]
 
         target_source = source if self.query_pattern else pattern
         target_query = pattern if self.query_pattern else source
@@ -265,7 +296,8 @@ class DesignPatternDataset( Dataset ):
             "source_type": source_type,
             "pattern_type": pattern_type,
             "gidx": gidx,
-            "record_scope": record_scope
+            "record_scope": record_scope,
+            "record_dataset": record_dataset
         }
         return target_source, target_query, meta
 

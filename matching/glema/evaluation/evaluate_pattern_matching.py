@@ -5,6 +5,7 @@ from collections.abc import Callable
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -236,6 +237,21 @@ def inference( model: InferenceGNN, dataset: DesignPatternDataset, args, collect
     return preds, metas, all_source, all_queries
 
 
+def print_pattern_counts( dataset: DesignPatternDataset ):
+    # source patterns
+    source_pattern_counts = { }
+    for gidx, pattern in dataset.get_source_patterns().items():
+        if gidx not in dataset.get_sources():
+            continue
+        if pattern not in source_pattern_counts:
+            source_pattern_counts[ pattern ] = 0
+        source_pattern_counts[ pattern ] += 1
+    print( "source_pattern_counts:", misc_utils.sort_dict_by_key( source_pattern_counts ) )
+    # query patterns
+    pattern_example_counts = { dp: len( l ) for dp, l in dataset.get_patterns().items() }
+    print( "pattern_example_counts:", misc_utils.sort_dict_by_key( pattern_example_counts ) )
+
+
 def group_by_source( metas ) -> dict[ int, dict[ str, list[ int ] ] ]:
     groups_by_source: dict[ int, dict[ str, list[ int ] ] ] = { }
     for idx, meta in enumerate( metas ):
@@ -281,9 +297,9 @@ def compute_source_types( metas: list[ dict ] ) -> dict[ int, str ]:
     return { m[ "gidx" ]: m[ "source_type" ] for m in metas }
 
 
-def compute_labels( source_types: dict[ int, str ],
-                    source_preds: dict[ int, dict[ str, float ] ],
-                    conf=0.5, top_k=1 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
+def compute_labels_legacy( source_types: dict[ int, str ],
+                           source_preds: dict[ int, dict[ str, float ] ],
+                           conf=0.5, top_k=1 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
     true_labels = [ ]
     pred_labels = [ ]
     pred_scores = [ ]
@@ -299,6 +315,33 @@ def compute_labels( source_types: dict[ int, str ],
             true_labels.append( source_type )
             pred_labels.append( source_pred_types[ i ] )
             pred_scores.append( source_pred_scores[ i ] )
+    return true_labels, pred_labels, pred_scores
+
+
+def compute_labels( source_types: dict[ int, str ],
+                    source_preds: dict[ int, dict[ str, float ] ],
+                    conf=0.5 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
+    true_labels = [ ]
+    pred_labels = [ ]
+    pred_scores = [ ]
+    for gidx, source_type in source_types.items():
+        source_pattern_preds = source_preds[ gidx ]
+        source_pred_type = cpg_const.NO_DESIGN_PATTERN
+        source_pred_score = 0.0
+        for dp_type, dp_pred in source_pattern_preds.items():
+            if dp_pred > conf:
+                if dp_pred > source_pred_score:
+                    source_pred_score = dp_pred
+                    source_pred_type = dp_type
+                if source_type == dp_type:
+                    source_pred_type = dp_type
+                    source_pred_score = dp_pred
+                    break
+
+        true_labels.append( source_type )
+        pred_labels.append( source_pred_type )
+        pred_scores.append( source_pred_score )
+
     return true_labels, pred_labels, pred_scores
 
 
@@ -328,10 +371,32 @@ def compute_metrics( x_labels: list[ int ], y_labels: list[ int ] ) -> dict[ str
     metrics[ "avp" ] = average_precision_score( y_binarized, x_binarized, average="weighted" )
     return metrics
 
+def get_result_df( source_groups, metas, true_labels, pred_labels, pred_scores ) -> pd.DataFrame:
+    data = [ ]
+    for idx, (gidx, sample_groups) in enumerate( source_groups.items() ):
+        sample_id = -1
+        for sample_group in sample_groups.values():
+            if len( sample_group ) > 0:
+                sample_id = sample_group[ 0 ]
+                break
+        if sample_id < 0:
+            print( f"Could not find valid sample for gidx {gidx} ..." )
+            continue
+        meta = metas[ sample_id ]
+        dataset = meta[ "record_dataset" ]
+        record = meta[ "record_scope" ]
+        true_type = true_labels[ idx ]
+        pred_type = pred_labels[ idx ]
+        pred_score = pred_scores[ idx ]
+        data.append( [ gidx, dataset, record, true_type, pred_type, pred_score ] )
+    return pd.DataFrame( data, columns=[ "gidx", "dataset", "record", "true_type", "pred_type", "pred_score" ] )
 
 def compute_cm( true_labels: list[ str ], pred_labels: list[ str ], pred_scores: list[ float ],
-                save_path=None ):
-    labels = [ *[ dp.value for dp in cpg_const.DesignPatternType ], cpg_const.NO_DESIGN_PATTERN ]
+                save_path=None, labels=None, include_na=True ):
+    if labels is None:
+        labels = [ dp.value for dp in cpg_const.DesignPatternType ]
+    if include_na:
+        labels = [ *labels, cpg_const.NO_DESIGN_PATTERN ]
     cm = confusion_matrix( true_labels, pred_labels, labels=labels )
 
     confidence_matrix = np.zeros_like( cm, dtype=float )
@@ -366,45 +431,57 @@ def compute_cm( true_labels: list[ str ], pred_labels: list[ str ], pred_scores:
         plt.savefig( save_path, bbox_inches='tight' )
 
 
-def main( args, version ):
+def main( args, version, source_dataset ):
     # setup
     model_name = model_utils.get_model_name( args, version )
     result_dir = os.path.join( args.result_dir, model_name )
     result_dir = io_utils.ensure_dir( result_dir )
+    """
+    pattern_types = [
+        cpg_const.DesignPatternType.BUILDER.value,
+        cpg_const.DesignPatternType.DECORATOR.value ]
+    """
+    pattern_types = None
 
     # initialize
     model = InferenceGNN( args )
-    dataset = DesignPatternDataset( args, max_pattern_examples=30, query_pattern=False )
+    args.dataset = source_dataset
+    dataset = DesignPatternDataset( args,
+                                    max_pattern_examples=30,
+                                    query_pattern=False,
+                                    pattern_types=pattern_types )
+
     sources = dataset.get_sources()
     # sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=20 )
-    sources = normalize_sources( sources, max_distance=8 )
+    sources = normalize_sources( sources, max_distance=6 )
+
     patterns = dataset.get_patterns()
-    # patterns = normalize_patterns( patterns, max_distance=8 )
-    patterns = normalize_patterns_by_presence( patterns,
-                                               num_graphs=4, max_distance=6,
-                                               n_start=20, n_decay=4 )
+    patterns = get_common_patterns( patterns, max_node_distance=5 )
+
     dataset.set_sources( sources )
     dataset.set_patterns( patterns )
     dataset.compute_samples()
 
     # inference
     preds, metas, _, _ = inference( model, dataset, args,
-                                    sample_processor=sample_processor_subgraph_normalized,
-                                    # sample_processor=sample_processor_k_normalized,
-                                    # min_d_offset=1, max_d_offset=5,
-                                    collect_graphs=False )
+                                    # sample_processor=sample_processor_subgraph_normalized,
+                                    sample_processor=sample_processor_k_normalized,
+                                    min_d_offset=1, max_d_offset=5 )
 
     # aggregate
     groups_by_source = group_by_source( metas )
     source_preds = compute_source_preds( groups_by_source, preds, metas,
                                          pred_aggregator=aggregate_preds_by_quantile,
-                                         q=0.9 )
+                                         q=0.99 )
     source_types = compute_source_types( metas )
-    true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds,
-                                                            conf=0.5, top_k=1 )
+    true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=0.2 )
+
+    # save results
+    result_df = get_result_df( groups_by_source, metas, true_labels, pred_labels, pred_scores )
+    result_df.to_csv( os.path.join( result_dir, "result_pattern_matching_sources.csv" ), index=False )
 
     # evaluate
-    compute_cm( true_labels, pred_labels, pred_scores,
+    compute_cm( true_labels, pred_labels, pred_scores, labels=pattern_types, include_na=True,
                 save_path=os.path.join( result_dir, "result_pattern_matching_cm.png" ) )
     x_labels, y_labels = to_numeric_labels( true_labels, pred_labels )
     metrics = compute_metrics( x_labels, y_labels )
@@ -423,18 +500,19 @@ def main( args, version ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "CPG_augm_large"
+    args.dataset = "dpdf"
     args.directed = False
     args.anchored = True
     version = model_utils.get_latest_model_version( args )
     model_name = model_utils.get_model_name( args, version )
     args = arg_utils.load_args( args, model_name )
 
-    args.pattern_dataset = "CPG_all"
+    source_dataset = "pmart"
+    args.pattern_dataset = "dpdf"
     args.normalized = True
     args.test_data = True
     args.batch_size = 128
     args.num_workers = 1
     print( args )
 
-    main( args, version )
+    main( args, version, source_dataset )
