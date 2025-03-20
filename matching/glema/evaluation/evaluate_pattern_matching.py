@@ -7,7 +7,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
-    accuracy_score,
+    balanced_accuracy_score,
     average_precision_score,
     f1_score,
     precision_score,
@@ -359,7 +359,7 @@ def to_numeric_labels( true_labels: list[ str ], pred_labels: list[ str ] ) -> t
 
 def compute_metrics( x_labels: list[ int ], y_labels: list[ int ] ) -> dict[ str: float ]:
     metrics: dict[ str: float ] = { }
-    metrics[ "acc" ] = accuracy_score( y_labels, x_labels )
+    metrics[ "acc" ] = balanced_accuracy_score( y_labels, x_labels )
     metrics[ "pre" ] = precision_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
     metrics[ "rec" ] = recall_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
     metrics[ "f1s" ] = f1_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
@@ -370,6 +370,7 @@ def compute_metrics( x_labels: list[ int ], y_labels: list[ int ] ) -> dict[ str
     metrics[ "roc" ] = roc_auc_score( y_binarized, x_binarized, average="weighted", multi_class="ovr" )
     metrics[ "avp" ] = average_precision_score( y_binarized, x_binarized, average="weighted" )
     return metrics
+
 
 def get_result_df( source_groups, metas, true_labels, pred_labels, pred_scores ) -> pd.DataFrame:
     data = [ ]
@@ -390,6 +391,7 @@ def get_result_df( source_groups, metas, true_labels, pred_labels, pred_scores )
         pred_score = pred_scores[ idx ]
         data.append( [ gidx, dataset, record, true_type, pred_type, pred_score ] )
     return pd.DataFrame( data, columns=[ "gidx", "dataset", "record", "true_type", "pred_type", "pred_score" ] )
+
 
 def compute_cm( true_labels: list[ str ], pred_labels: list[ str ], pred_scores: list[ float ],
                 save_path=None, labels=None, include_na=True ):
@@ -452,7 +454,7 @@ def main( args, version, source_dataset ):
                                     pattern_types=pattern_types )
 
     sources = dataset.get_sources()
-    # sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=20 )
+    sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=10 )
     sources = normalize_sources( sources, max_distance=6 )
 
     patterns = dataset.get_patterns()
@@ -474,25 +476,33 @@ def main( args, version, source_dataset ):
                                          pred_aggregator=aggregate_preds_by_quantile,
                                          q=0.99 )
     source_types = compute_source_types( metas )
-    true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=0.2 )
-
-    # save results
-    result_df = get_result_df( groups_by_source, metas, true_labels, pred_labels, pred_scores )
-    result_df.to_csv( os.path.join( result_dir, "result_pattern_matching_sources.csv" ), index=False )
 
     # evaluate
-    compute_cm( true_labels, pred_labels, pred_scores, labels=pattern_types, include_na=True,
-                save_path=os.path.join( result_dir, "result_pattern_matching_cm.png" ) )
-    x_labels, y_labels = to_numeric_labels( true_labels, pred_labels )
-    metrics = compute_metrics( x_labels, y_labels )
-    print( f"Roc=[{metrics[ 'roc' ]:.3}] Acc=[{metrics[ 'acc' ]:.3}] "
-           f"Prec=[{metrics[ 'pre' ]:.3}] Rec=[{metrics[ 'rec' ]:.3}] F1=[{metrics[ 'f1s' ]:.3}] "
-           f"AvgPrec=[{metrics[ 'avp' ]:.3}]" )
+    target_conf = 0.2
+    conf_steps = [ i / 10 for i in range( 1, 10 ) ]
+    conf_metrics: list[ dict[ str, float ] ] = [ ]
+    for conf_step in conf_steps:
+        true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
+        if conf_step == target_conf:
+            # save results
+            result_df = get_result_df( groups_by_source, metas, true_labels, pred_labels, pred_scores )
+            result_df.to_csv( os.path.join( result_dir, "result_pattern_matching_sources.csv" ), index=False )
+            # evaluate
+            compute_cm( true_labels, pred_labels, pred_scores, labels=pattern_types, include_na=True,
+                        save_path=os.path.join( result_dir, "result_pattern_matching_cm.png" ) )
+        # compute metrics
+        x_labels, y_labels = to_numeric_labels( true_labels, pred_labels )
+        metrics = compute_metrics( x_labels, y_labels )
+        metrics[ "conf" ] = conf_step
+        conf_metrics.append( metrics )
+        print(
+            f"Conf=[{metrics[ 'conf' ]:.1}] Roc=[{metrics[ 'roc' ]:.3}] Acc=[{metrics[ 'acc' ]:.3}] PR=[{metrics[ 'avp' ]:.3}] "
+            f"Acc=[{metrics[ 'acc' ]:.3}] Prec=[{metrics[ 'pre' ]:.3}] Rec=[{metrics[ 'rec' ]:.3}] F1=[{metrics[ 'f1s' ]:.3}] " )
 
-    result_rows = [ [ metrics[ 'roc' ], metrics[ 'avp' ], metrics[ 'pre' ],
-                      metrics[ 'rec' ], metrics[ 'f1s' ], metrics[ 'acc' ] ] ]
+    result_rows = [ [ metrics[ 'conf' ], metrics[ 'roc' ], metrics[ 'avp' ], metrics[ 'pre' ],
+                      metrics[ 'rec' ], metrics[ 'f1s' ], metrics[ 'acc' ] ] for metrics in conf_metrics ]
     with open( os.path.join( result_dir, "result_pattern_matching.csv" ), "w", encoding="utf-8" ) as f:
-        f.write( "ROC AUC,PR AUC,Precision,Recall,F1-Score,Accuracy\n" )
+        f.write( "Confident,ROC AUC,PR AUC,Precision,Recall,F1-Score,Accuracy\n" )
         for row in result_rows:
             f.write( ",".join( [ str( x ) for x in row ] ) )
             f.write( "\n" )

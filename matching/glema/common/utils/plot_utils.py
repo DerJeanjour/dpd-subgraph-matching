@@ -47,9 +47,26 @@ def save_graph_debug( G, file_name ):
 
 class ColorScheme:
     PRIMARY: str = "#FF9F1C"
+    PRIMARY_COMP: str = "#1C7CFF"
     PRIMARY_LIGHT: str = "#FFBF69"
-    PRIMARY_DARK: str = "#3E2707"
+    PRIMARY_LIGHT_COMP: str = "#69A9FF"
+    PRIMARY_DARK: str = "#a76000"
     SECONDARY: str = "#2EC4B6"
+    SECONDARY_COMP: str = "#C42E3C"
     SECONDARY_LIGHT: str = "#CBF3F0"
-    SECONDARY_DARK: str = "#0C3531"
+    SECONDARY_LIGHT_COMP: str = "#F3CBCE"
+    SECONDARY_DARK: str = "#1B726A"
     HIGHLIGHT: str = "#69A9FF"
+
+    @staticmethod
+    def all_high_contrast() -> list[ str ]:
+        return [
+            ColorScheme.PRIMARY,
+            ColorScheme.SECONDARY,
+            ColorScheme.PRIMARY_COMP,
+            ColorScheme.SECONDARY_COMP,
+            ColorScheme.PRIMARY_LIGHT,
+            ColorScheme.SECONDARY_LIGHT,
+            ColorScheme.PRIMARY_LIGHT_COMP,
+            ColorScheme.SECONDARY_LIGHT_COMP,
+        ]
