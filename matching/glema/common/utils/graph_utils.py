@@ -560,32 +560,36 @@ def combine_normalized( source: nx.Graph, query: nx.Graph, matching_colors: dict
     return combine_graph( source, query, get_anchor( source ), matching_colors=matching_colors )
 
 
+def compute_interactions( model, source_graph, query_graph, threshold ):
+    """Compute high-confidence interaction scores between nodes of the query graph and source graph."""
+    interaction_matrix = model.predict_embedding( [ query_graph ], [ source_graph ] )[ 0 ].cpu().detach().numpy()
+    x_coord, y_coord = np.where( interaction_matrix > threshold )
+    n_query_nodes = query_graph.number_of_nodes()
+    interaction_dict = { }
+    for x, y in zip( x_coord, y_coord ):
+        if x < n_query_nodes <= y:
+            interaction_dict[ (x, y - n_query_nodes) ] = interaction_matrix[ x ][ y ]
+        elif x >= n_query_nodes > y and (y, x - n_query_nodes) not in interaction_dict:
+            interaction_dict[ (y, x - n_query_nodes) ] = interaction_matrix[ x ][ y ]
+
+    interaction_dict = { (int( query ), int( source )): p for (query, source), p in interaction_dict.items() }
+    return interaction_dict
+
+
+def map_query_interactions( interactions, query_graph ):
+    """Map query graph nodes to source graph nodes based on interaction probabilities."""
+    mapping = { }
+    for q_node in query_graph.nodes:
+        matches = [ (g_node, score) for (q, g_node), score in interactions.items() if q == q_node ]
+        if matches:
+            max_score = max( matches, key=lambda x: x[ 1 ] )[ 1 ]
+            mapping[ q_node ] = [ g for g, s in matches if s == max_score ]
+        else:
+            mapping[ q_node ] = [ ]
+    return mapping
+
+
 def plot_interactions( args, model, src_idx, query_idx, threshold=0.5 ):
-    def compute_interactions( model, source_graph, query_graph, threshold ):
-        """Compute high-confidence interaction scores between nodes of the query graph and source graph."""
-        interaction_matrix = model.predict_embedding( [ query_graph ], [ source_graph ] )[ 0 ].cpu().detach().numpy()
-        x_coord, y_coord = np.where( interaction_matrix > threshold )
-        n_query_nodes = query_graph.number_of_nodes()
-        interaction_dict = { }
-        for x, y in zip( x_coord, y_coord ):
-            if x < n_query_nodes <= y:
-                interaction_dict[ (x, y - n_query_nodes) ] = interaction_matrix[ x ][ y ]
-            elif x >= n_query_nodes > y and (y, x - n_query_nodes) not in interaction_dict:
-                interaction_dict[ (y, x - n_query_nodes) ] = interaction_matrix[ x ][ y ]
-        return interaction_dict
-
-    def map_nodes( interactions, query_graph ):
-        """Map query graph nodes to source graph nodes based on interaction probabilities."""
-        mapping = { }
-        for q_node in query_graph.nodes:
-            matches = [ (g_node, score) for (q, g_node), score in interactions.items() if q == q_node ]
-            if matches:
-                max_score = max( matches, key=lambda x: x[ 1 ] )[ 1 ]
-                mapping[ q_node ] = [ g for g, s in matches if s == max_score ]
-            else:
-                mapping[ q_node ] = [ ]
-        return mapping
-
     def get_node_labels_and_colors( graph, mappings, ground_truth ):
         """Get labels and colors for graph nodes based on predicted and ground-truth mappings."""
         labels = { node: "" for node in graph.nodes }
@@ -596,11 +600,14 @@ def plot_interactions( args, model, src_idx, query_idx, threshold=0.5 ):
         colors = { node: "gray" for node in graph.nodes }
         for node, label in labels.items():
             if not label:
+                # The node does not have any predicted label (its label is empty), yet it has a valid ground-truth mapping (i.e. ground_truth[node] != -1). This suggests that a prediction was expected (according to the ground truth) but the algorithm did not predict any mapping for that node.
                 colors[ node ] = "gold" if ground_truth[ node ] != -1 else "gray"
                 continue
             if any( ground_truth[ node ] == int( q ) for q in label.split( "," ) ):
+                # The node has one or more predicted mappings, and at least one of these predictions matches the ground-truth mapping. In other words, the prediction is correct.
                 colors[ node ] = "lime"
             elif colors[ node ] == "gray":
+                # The node has one or more predicted mappings, but none of them match the ground-truth value. This indicates an incorrect prediction.
                 colors[ node ] = "pink"
 
         for g_node, q_node in ground_truth.items():
@@ -642,7 +649,7 @@ def plot_interactions( args, model, src_idx, query_idx, threshold=0.5 ):
     ground_truth = load_query_id_mapping( args, src_idx, query_idx, flip=False )
 
     interactions = compute_interactions( model, src_graph, query_graph, threshold )
-    mappings = map_nodes( interactions, query_graph )
+    mappings = map_query_interactions( interactions, query_graph )
     labels, colors = get_node_labels_and_colors( src_graph, mappings, ground_truth )
     edges = get_edge_colors( src_graph, query_graph, labels, colors )
 

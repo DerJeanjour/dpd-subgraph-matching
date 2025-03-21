@@ -3,14 +3,20 @@ import numpy as np
 import torch
 from scipy.spatial import distance_matrix
 
+import matching.misc.cpg_const as cpg_const
+
 
 def onehot_encoding( label_idx, anchor_idx, embedding_dim, anchored=True ):
     onehot_vector = [ 0 ] * embedding_dim
     if anchored:
+        if label_idx >= embedding_dim:
+            label_idx = cpg_const.DEFAULT_INTERACTION_IDX + 1
         onehot_vector[ 0 ] = anchor_idx
-        #if anchor_idx < 1: # TODO for testing, remove me
+        # if anchor_idx < 1: # TODO for testing, remove me
         onehot_vector[ label_idx ] = 1  # label start from 1
     else:
+        if label_idx - 1 >= embedding_dim:
+            label_idx = cpg_const.DEFAULT_INTERACTION_IDX + 1
         onehot_vector[ label_idx - 1 ] = 1  # label start from 1
     return onehot_vector
 
