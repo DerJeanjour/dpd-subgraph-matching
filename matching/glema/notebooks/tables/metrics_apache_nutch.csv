@@ -1,12 +1,9 @@
 Pattern,Accuracy,Precision,Recall,F1-Score,ROC AUC,PR AUC
-All,0.333,0.889,0.667,0.627,0.75,0.662
-Builder,N/A,N/A,N/A,N/A,N/A,N/A
-Observer,N/A,N/A,N/A,N/A,N/A,N/A
-Adapter,N/A,N/A,N/A,N/A,N/A,N/A
-Singleton,0.5,0.917,0.917,0.877,0.5,0.083
-Factory Method,N/A,N/A,N/A,N/A,N/A,N/A
-Memento,0.875,0.926,0.917,0.913,0.875,0.889
-Proxy,N/A,N/A,N/A,N/A,N/A,N/A
-Decorator,N/A,N/A,N/A,N/A,N/A,N/A
-Facade,N/A,N/A,N/A,N/A,N/A,N/A
-Visitor,N/A,N/A,N/A,N/A,N/A,N/A
+Builder,-,-,-,-,-,-
+Observer,-,-,-,-,-,-
+Adapter,0.94,1.00,0.50,0.67,0.75,0.56
+Singleton,1.00,1.00,1.00,1.00,1.00,1.00
+Factory Method,-,-,-,-,-,-
+Memento,0.67,0.33,0.50,0.40,0.61,0.28
+Decorator,-,-,-,-,-,-
+Overall,0.87,0.78,0.67,0.69,0.79,0.61

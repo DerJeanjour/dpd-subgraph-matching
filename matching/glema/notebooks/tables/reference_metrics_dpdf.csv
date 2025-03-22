@@ -1,0 +1,12 @@
+Pattern,Precision,Recall
+Builder,0.775,0.8
+Observer,0.675,0.767
+Adapter,0.916,0.867
+Singleton,0.433,0.4
+Factory Method,0.567,0.633
+Memento,N/A,N/A
+Proxy,N/A,N/A
+Decorator,0.6,0.366
+Facade,N/A,N/A
+Visitor,0.96,0.933
+Abstract Factory,0.783,0.783

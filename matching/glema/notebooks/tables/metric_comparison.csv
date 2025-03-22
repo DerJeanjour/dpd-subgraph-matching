@@ -1,0 +1,9 @@
+Pattern,Recall (Own),Precision (Own),F1-Score (Own),Precision (DPDF),Recall (DPDF),F1-Score (DPDF),Precision (DPF GNN),Recall (DPF GNN),F1-Score (DPF GNN)
+Adapter,0.77,\textbf{1.00},0.87,0.92,\textbf{0.87},\textbf{0.89},0.89,0.82,0.85
+Builder,\textbf{0.87},0.77,\textbf{0.81},\textbf{0.78},0.80,0.79,-,-,-
+Decorator,0.33,0.20,0.25,\textbf{0.60},\textbf{0.37},\textbf{0.46},-,-,-
+Factory Method,\textbf{1.00},0.11,0.20,0.57,0.63,0.60,\textbf{0.66},0.73,\textbf{0.69}
+Memento,\textbf{0.50},\textbf{0.13},\textbf{0.21},-,-,-,-,-,-
+Observer,\textbf{1.00},\textbf{1.00},\textbf{1.00},0.68,0.77,0.72,0.91,0.89,0.90
+Singleton,\textbf{1.00},0.44,0.61,0.43,0.40,0.42,\textbf{0.83},0.92,\textbf{0.87}
+Overall,0.78,0.52,0.56,0.66,0.64,0.64,\textbf{0.82},\textbf{0.84},\textbf{0.83}

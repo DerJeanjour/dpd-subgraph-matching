@@ -7,6 +7,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
+    accuracy_score,
     balanced_accuracy_score,
     average_precision_score,
     f1_score,
@@ -58,6 +59,7 @@ def get_common_patterns_for_type( patterns_normalized_of_type: list[ nx.Graph ],
     # iteratively compute pairwise common graphs
     while len( common_patterns ) > max_graphs and i < max_iter:
         pairs = list( itertools.combinations( common_patterns, 2 ) )
+        common_patterns_temp = common_patterns
         common_patterns = [ ]
         for (G1, G2) in pairs:
             common_pattern = graph_utils.get_norm_graph_intersection( G1, G2 )
@@ -67,6 +69,9 @@ def get_common_patterns_for_type( patterns_normalized_of_type: list[ nx.Graph ],
             common_patterns.append( common_pattern )
         # filter by node size
         common_patterns = [ G for G in common_patterns if G.number_of_nodes() >= min_nodes ]
+        if len( common_patterns ) == 0:
+            common_patterns = common_patterns_temp
+            break
         print( f"Size after iter {i}: {len( common_patterns )}" )
         i += 1
     return common_patterns
@@ -359,16 +364,28 @@ def to_numeric_labels( true_labels: list[ str ], pred_labels: list[ str ] ) -> t
 
 def compute_metrics( x_labels: list[ int ], y_labels: list[ int ] ) -> dict[ str: float ]:
     metrics: dict[ str: float ] = { }
-    metrics[ "acc" ] = balanced_accuracy_score( y_labels, x_labels )
-    metrics[ "pre" ] = precision_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
-    metrics[ "rec" ] = recall_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
-    metrics[ "f1s" ] = f1_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
+    classes = sorted( set( [ *y_labels, *x_labels ] ) )
+    if len( classes ) > 2:
+        y_binarized = label_binarize( y_labels, classes=classes )
+        x_binarized = label_binarize( x_labels, classes=classes )
+        metrics[ "acc" ] = balanced_accuracy_score( y_labels, x_labels )
+        metrics[ "pre" ] = precision_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
+        metrics[ "rec" ] = recall_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
+        metrics[ "f1s" ] = f1_score( y_labels, x_labels, average="weighted", zero_division=np.nan )
+        metrics[ "roc" ] = roc_auc_score( y_binarized, x_binarized, average="weighted", multi_class="ovr" )
+        metrics[ "avp" ] = average_precision_score( y_binarized, x_binarized, average="weighted" )
+        return metrics
 
-    classes = sorted( set( y_labels ) )
-    y_binarized = label_binarize( y_labels, classes=classes )
-    x_binarized = label_binarize( x_labels, classes=classes )
-    metrics[ "roc" ] = roc_auc_score( y_binarized, x_binarized, average="weighted", multi_class="ovr" )
-    metrics[ "avp" ] = average_precision_score( y_binarized, x_binarized, average="weighted" )
+    label_mapping = { val: idx for idx, val in enumerate( sorted( set( y_labels ) ) ) }
+    x_labels_norm = [ label_mapping[ val ] for val in x_labels ]
+    y_labels_norm = [ label_mapping[ val ] for val in y_labels ]
+
+    metrics[ "acc" ] = accuracy_score( y_labels_norm, x_labels_norm )
+    metrics[ "pre" ] = precision_score( y_labels_norm, x_labels_norm, zero_division=np.nan )
+    metrics[ "rec" ] = recall_score( y_labels_norm, x_labels_norm, zero_division=np.nan )
+    metrics[ "f1s" ] = f1_score( y_labels_norm, x_labels_norm, zero_division=np.nan )
+    metrics[ "roc" ] = roc_auc_score( y_labels_norm, x_labels_norm )
+    metrics[ "avp" ] = average_precision_score( y_labels_norm, x_labels_norm )
     return metrics
 
 
@@ -438,27 +455,35 @@ def main( args, version, source_dataset ):
     model_name = model_utils.get_model_name( args, version )
     result_dir = os.path.join( args.result_dir, model_name )
     result_dir = io_utils.ensure_dir( result_dir )
-    """
     pattern_types = [
+        #cpg_const.DesignPatternType.ABSTRACT_FACTORY.value,
+        cpg_const.DesignPatternType.ADAPTER.value,
         cpg_const.DesignPatternType.BUILDER.value,
-        cpg_const.DesignPatternType.DECORATOR.value ]
-    """
-    pattern_types = None
+        # cpg_const.DesignPatternType.FACADE.value,
+        cpg_const.DesignPatternType.FACTORY_METHOD.value,
+        cpg_const.DesignPatternType.OBSERVER.value,
+        cpg_const.DesignPatternType.SINGLETON.value,
+        cpg_const.DesignPatternType.DECORATOR.value,
+        cpg_const.DesignPatternType.MEMENTO.value,
+        # cpg_const.DesignPatternType.PROXY.value,
+        # cpg_const.DesignPatternType.VISITOR.value
+    ]
 
     # initialize
     model = InferenceGNN( args )
     args.dataset = source_dataset
     dataset = DesignPatternDataset( args,
                                     max_pattern_examples=30,
-                                    query_pattern=False,
+                                    query_pattern=True,
                                     pattern_types=pattern_types )
 
+    max_norm_d = 7
     sources = dataset.get_sources()
-    sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=10 )
-    sources = normalize_sources( sources, max_distance=6 )
+    sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=50 )
+    sources = normalize_sources( sources, max_distance=max_norm_d )
 
     patterns = dataset.get_patterns()
-    patterns = get_common_patterns( patterns, max_node_distance=5 )
+    patterns = get_common_patterns( patterns, max_node_distance=max_norm_d )
 
     dataset.set_sources( sources )
     dataset.set_patterns( patterns )
@@ -472,17 +497,20 @@ def main( args, version, source_dataset ):
 
     # aggregate
     groups_by_source = group_by_source( metas )
-    source_preds = compute_source_preds( groups_by_source, preds, metas,
-                                         pred_aggregator=aggregate_preds_by_quantile,
-                                         q=0.99 )
-    source_types = compute_source_types( metas )
 
     # evaluate
-    target_conf = 0.2
+    target_conf = 0.3
     conf_steps = [ i / 10 for i in range( 1, 10 ) ]
     conf_metrics: list[ dict[ str, float ] ] = [ ]
     for conf_step in conf_steps:
+
+        source_preds = compute_source_preds( groups_by_source, preds, metas,
+                                             pred_aggregator=aggregate_preds_by_quantile,
+                                             q=0.95 )
+        source_types = compute_source_types( metas )
+
         true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
+        #true_labels, pred_labels, pred_scores = compute_labels_legacy( source_types, source_preds, conf=conf_step )
         if conf_step == target_conf:
             # save results
             result_df = get_result_df( groups_by_source, metas, true_labels, pred_labels, pred_scores )
@@ -511,7 +539,7 @@ def main( args, version, source_dataset ):
 if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "dpdf"
-    #args.dataset = "CPG_augm_large"
+    # args.dataset = "CPG_augm_large"
     args.directed = False
     args.anchored = True
     version = model_utils.get_latest_model_version( args )
