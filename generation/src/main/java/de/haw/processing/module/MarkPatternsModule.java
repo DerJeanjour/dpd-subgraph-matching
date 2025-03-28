@@ -24,7 +24,7 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
 
     private final GraphService GS = GraphService.instance();
 
-    private final boolean ONLY_MAJOR_PATTERN_ROLES = true;
+    private final boolean ONLY_MAJOR_PATTERN_ROLES = false;
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {
@@ -47,6 +47,7 @@ public class MarkPatternsModule<Target> extends PipeModule<Graph, Graph, Target>
             final List<DesignPattern> patterns = this.getPatterns( className, dps );
             patterns.forEach( dp -> {
                 this.GS.addLabel( node, dp.getType().name() );
+                node.setAttribute( CpgConst.NODE_ATTR_PATTERN_ID, dp.getId() );
                 this.incrementStat( stats, this.formatStatKey( dp ) );
                 this.incrementStat( stats, TOTAL_STAT );
             } );

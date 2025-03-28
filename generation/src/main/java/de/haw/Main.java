@@ -31,7 +31,7 @@ public class Main {
         MemoryUtils.logMemoryStats();
 
         //test();
-        convertDatasets( getDpdfRequests(), true, false );
+        convertDatasets( getPmartRequests() );
     }
 
     private static void convertDatasets( final List<TranslationRequest> translationRequests ) {

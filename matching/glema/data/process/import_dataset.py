@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import networkx as nx
 from tqdm import tqdm
@@ -6,6 +7,7 @@ from tqdm import tqdm
 import matching.glema.common.utils.arg_utils as arg_utils
 import matching.glema.common.utils.io_utils as io_utils
 import matching.glema.common.utils.misc_utils as misc_utils
+import matching.glema.common.utils.graph_utils as graph_utils
 import matching.misc.cpg_const as cpg_const
 
 
@@ -122,11 +124,14 @@ def add_graph_to( G_source: nx.DiGraph, G_target: nx.DiGraph,
         record_scope = node_data[ record_scope_attr ] if record_scope_attr in node_data else "None"
         record_dataset_attr = cpg_const.NodeAttr.DATASET.value
         record_dataset = node_data[ record_dataset_attr ] if record_dataset_attr in node_data else "None"
+        pattern_id_attr = cpg_const.NodeAttr.PATTERN_ID_NAME.value
+        pattern_id = node_data[ pattern_id_attr ] if pattern_id_attr in node_data else None
 
         G_target.add_node( node_id_mapping[ node_id_key ],
                            label=record_label_idx,
                            graph_idx=graph_idx,
                            pattern_types=pattern_types,
+                           pattern_id=pattern_id,
                            record_scope=record_scope,
                            record_dataset=record_dataset )
 
@@ -171,7 +176,10 @@ def write_files( args, G: nx.DiGraph, node_id_mapping: dict[ str, int ], anchor_
     record_scope_file = os.path.join( output_dir, f"{args.dataset}.record_scopes" )
     with open( record_scope_file, "w", encoding="utf-8" ) as file:
         for _, node_data in list( G.nodes( data=True ) ):
-            file.write( f"{node_data[ 'record_scope' ]}\n" )
+            record_scope = node_data[ 'record_scope' ]
+            # TODO pattern id currently encoded into the scope -> make own file for ids
+            record_scope = graph_utils.encode_pattern_id( record_scope, node_data.get( 'pattern_id', None ) )
+            file.write( f"{record_scope}\n" )
 
     record_dataset_file = os.path.join( output_dir, f"{args.dataset}.record_datasets" )
     with open( record_dataset_file, "w", encoding="utf-8" ) as file:
@@ -205,6 +213,8 @@ def get_design_pattern_types( node_data ) -> list[ str ]:
     for dp_type in cpg_const.DesignPatternType:
         if f"labels_{dp_type.value}" in node_data:
             types.append( dp_type.value )
+    if len( types ) > 2:
+        warnings.warn( f"Node has more then 2 design patterns associated!" )
     return types
 
 

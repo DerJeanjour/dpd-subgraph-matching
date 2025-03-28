@@ -26,13 +26,13 @@ public class PatternReaderCsv implements PatternReader {
         }
 
         final Map<String, DatasetDesignPatterns> datasetDesignPatterns = new HashMap<>();
-        entries.forEach( entry -> {
-
+        for ( int i = 0; i < entries.size(); i++ ) {
+            final CsvDesignPattern entry = entries.get( i );
             final Optional<Dataset> dataset = datasets.stream()
                     .filter( ds -> ds.getProjectName().equals( entry.getProjectName() ) )
                     .findFirst();
             if ( dataset.isEmpty() ) {
-                return;
+                continue;
             }
 
             if ( !datasetDesignPatterns.containsKey( dataset.get().getName() ) ) {
@@ -42,11 +42,12 @@ public class PatternReaderCsv implements PatternReader {
 
             final DesignPatternType type = this.mapPatternType( entry.getPatternName() );
             if ( type == null ) {
-                return;
+                continue;
             }
-            datasetPatterns.add( DesignPattern.of( type, entry.getClassName(), "instance", true ) );
-        } );
 
+            final String instanceId = String.valueOf( i );
+            datasetPatterns.add( DesignPattern.of( instanceId, type, entry.getClassName(), "instance", true ) );
+        }
 
         return datasetDesignPatterns.values().stream().toList();
     }

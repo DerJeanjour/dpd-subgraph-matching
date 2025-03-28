@@ -30,18 +30,18 @@ def process( args ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "dpdf"
-    args.import_prefix = "dpdf"
+    args.dataset = "pmart_all"
+    args.import_prefix = "p_mart"
     args.seed = 42
     # args.num_workers = 1
-    args.inference = False
+    args.inference = True
     args.split_data = False
     args.induced = True
     args.import_subgraph_radius = 5
     args.import_subgraph_max = 42
     args.import_subgraph_min = 7
-    args.num_subgraphs = 64
-    #args.num_subgraphs = 2
+    #args.num_subgraphs = 64
+    args.num_subgraphs = 2
     args.real = True
     args.testonly = False
     args.directed = False

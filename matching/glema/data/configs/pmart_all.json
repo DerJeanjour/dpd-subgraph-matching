@@ -1,0 +1,10 @@
+{
+    "number_source": 5068,
+    "avg_source_size": 21.50670876085241,
+    "std_source_size": 10.143123104379736,
+    "avg_degree": 2.227979099166862,
+    "std_degree": 0.4684083321397469,
+    "number_label_node": 6,
+    "number_label_edge": 1,
+    "number_subgraph_per_source": 2
+}

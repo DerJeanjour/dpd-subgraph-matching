@@ -74,6 +74,7 @@ def get_common_patterns_for_type( patterns_normalized_of_type: list[ nx.Graph ],
             break
         print( f"Size after iter {i}: {len( common_patterns )}" )
         i += 1
+    common_patterns = [ G for G in common_patterns if G.number_of_nodes() >= min_nodes ]
     return common_patterns
 
 

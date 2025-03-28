@@ -40,6 +40,8 @@ public class CpgConst {
 
     public static final String NODE_ATTR_IMPLICIT = "isImplicit";
 
+    public static final String NODE_ATTR_PATTERN_ID = "patternId";
+
     public static final String NODE_ATTR_INTERACTION_COUNT = "interactions";
 
     public static final String EDGE_ATTR_LABEL = "label";

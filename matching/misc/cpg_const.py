@@ -11,6 +11,7 @@ class NodeAttr( Enum ):
     DATASET = NODE_PREFIX + "dataset"
     FULL_NAME = NODE_PREFIX + "fullName"
     LOCAL_NAME = NODE_PREFIX + "localName"
+    PATTERN_ID_NAME = NODE_PREFIX + "patternId"
 
 
 class EdgeAttr( Enum ):
@@ -20,6 +21,7 @@ class EdgeAttr( Enum ):
 class EdgeType( Enum ):
     INTERACTS = "INTERACTS"
 
+
 class NodeLabel( Enum ):
     RECORD = "RecordDeclaration"
     KNOWS_RECORD = "KNOWS_RECORD"
@@ -28,7 +30,9 @@ class NodeLabel( Enum ):
     RETURNS_RECORD = "RETURNS_RECORD"
     CALLS_RECORD = "CALLS_RECORD"
 
+
 DEFAULT_INTERACTION_IDX = 1
+
 
 class DesignPatternType( Enum ):
     ABSTRACT_FACTORY = "ABSTRACT_FACTORY"

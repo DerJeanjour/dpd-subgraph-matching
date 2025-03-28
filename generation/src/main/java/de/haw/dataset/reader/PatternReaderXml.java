@@ -19,9 +19,9 @@ import java.util.*;
 @Slf4j
 @NoArgsConstructor( staticName = "instance" )
 public class PatternReaderXml implements PatternReader {
-    
+
     private final static Map<DesignPatternType, List<String>> ROLES_TO_COUNT = new HashMap<>() {{
-        put( DesignPatternType.ABSTRACT_FACTORY, Arrays.asList( "concreteFactory") );
+        put( DesignPatternType.ABSTRACT_FACTORY, Arrays.asList( "concreteFactory" ) );
         put( DesignPatternType.ADAPTER, Arrays.asList( "adapter" ) );
         put( DesignPatternType.BUILDER, Arrays.asList( "concreteBuilder" ) );
         put( DesignPatternType.FACADE, Arrays.asList( "facade" ) );
@@ -88,15 +88,16 @@ public class PatternReaderXml implements PatternReader {
             }
 
             for ( final Element patternInstance : getChilds( pattern, "microArchitecture" ) ) {
-                //final String instanceId = patternInstance.getAttribute( "number" );
-                this.getPatternsFromEntities( patternType.get(), getChilds( patternInstance, "entity" ) )
+                final String instanceId = patternInstance.getAttribute( "number" );
+                this.getPatternsFromEntities( patternType.get(), instanceId, getChilds( patternInstance, "entity" ) )
                         .forEach( datasetPatterns::add );
             }
 
         }
     }
 
-    private List<DesignPattern> getPatternsFromEntities( final DesignPatternType type, final List<Element> entities ) {
+    private List<DesignPattern> getPatternsFromEntities(
+            final DesignPatternType type, final String instanceId, final List<Element> entities ) {
         final List<DesignPattern> patterns = new ArrayList<>();
         for ( final Element entity : entities ) {
 
@@ -110,7 +111,7 @@ public class PatternReaderXml implements PatternReader {
 
             final boolean isMajor = ROLES_TO_COUNT.get( type ).isEmpty() || ROLES_TO_COUNT.get( type )
                     .contains( roleTag );
-            patterns.add( DesignPattern.of( type, className, roleTag, isMajor ) );
+            patterns.add( DesignPattern.of( instanceId, type, className, roleTag, isMajor ) );
         }
         return patterns;
     }

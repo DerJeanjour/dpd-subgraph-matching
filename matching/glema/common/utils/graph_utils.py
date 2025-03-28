@@ -661,3 +661,17 @@ def plot_interactions( args, model, src_idx, query_idx, threshold=0.5 ):
         title="Matching",
         with_label=True,
     )
+
+def encode_pattern_id( name: str, pid: str ):
+    if name == "None" or name is None or pid is None:
+        return name
+    return f"{name}#{pid}"
+
+
+def decode_pattern_id( name: str ):
+    if name is None:
+        return
+    parts = name.split( "#", 1 )
+    if len( parts ) < 2:
+        return None
+    return parts[ 1 ]

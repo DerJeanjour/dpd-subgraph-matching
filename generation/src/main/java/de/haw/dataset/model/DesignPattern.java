@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor( staticName = "of" )
 public class DesignPattern {
 
+    private final String id;
+
     private final DesignPatternType type;
 
     private final String className;
