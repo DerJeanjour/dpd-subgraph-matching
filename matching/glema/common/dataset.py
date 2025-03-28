@@ -149,12 +149,16 @@ class DesignPatternDataset( Dataset ):
         self.sources = self.load_sources( args, args.dataset, max_sources=max_sources, shuffle=True )
         self.source_patterns = self.load_source_patterns( args, args.dataset, self.sources )
         self.patterns = self.load_patterns( args, args.pattern_dataset, max_pattern_examples )
+
         self.source_record_scopes = self.load_record_scopes( args, args.dataset )
         self.source_graph_record_scopes = self.compute_source_graph_record_scopes()
+
         self.source_record_datasets = self.load_record_datasets( args, args.dataset )
         self.source_graph_record_datasets = self.compute_source_graph_record_datasets()
+
         self.pattern_record_scopes = self.load_record_scopes( args, args.pattern_dataset )
         self.pattern_record_datasets = self.load_record_datasets( args, args.pattern_dataset )
+
         self.samples = [ ]
         self.len = 0
 
@@ -183,6 +187,9 @@ class DesignPatternDataset( Dataset ):
     def get_source_record_scopes( self ) -> dict[ str, str ]:
         return self.__transform_record_scopes( self.source_record_scopes )
 
+    def get_source_graph_record_scopes( self ) -> dict[ int, str ]:
+        return self.source_graph_record_scopes
+
     def get_pattern_record_scopes( self ) -> dict[ str, str ]:
         return self.__transform_record_scopes( self.pattern_record_scopes )
 
@@ -197,17 +204,26 @@ class DesignPatternDataset( Dataset ):
 
     def construct_samples( self ):
         samples = [ ]
+        max_gidx = max( self.sources.keys() )
         for gidx, source in self.sources.items():
             source_type = self.source_patterns[ gidx ]
             record_scope = self.source_graph_record_scopes[ gidx ]
             record_dataset = self.source_graph_record_datasets[ gidx ]
+
+            pattern_id = graph_utils.decode_pattern_id( record_scope )
+            if pattern_id is None:
+                pattern_id = gidx
+            else:
+                pattern_id = int( pattern_id ) + max_gidx
+
             if record_scope == "None":
                 print( f"Undefined scope for gidx {gidx}" )
             for pattern_type, patterns in self.patterns.items():
                 for pattern in patterns:
                     samples.append( (source, source_type,
                                      pattern, pattern_type,
-                                     gidx, record_scope, record_dataset) )
+                                     gidx, record_scope, record_dataset,
+                                     pattern_id) )
         return samples
 
     def load_sources( self, args, dataset, max_sources=-1, shuffle=False ):
@@ -283,7 +299,8 @@ class DesignPatternDataset( Dataset ):
     def get_data( self, idx ):
         (source, source_type,
          pattern, pattern_type,
-         gidx, record_scope, record_dataset) = self.samples[ idx ]
+         gidx, record_scope, record_dataset,
+         pattern_id ) = self.samples[ idx ]
 
         target_source = source if self.query_pattern else pattern
         target_query = pattern if self.query_pattern else source
@@ -297,7 +314,8 @@ class DesignPatternDataset( Dataset ):
             "pattern_type": pattern_type,
             "gidx": gidx,
             "record_scope": record_scope,
-            "record_dataset": record_dataset
+            "record_dataset": record_dataset,
+            "pattern_id": pattern_id
         }
         return target_source, target_query, meta
 

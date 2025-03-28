@@ -136,7 +136,8 @@ def normalize_sources( sources: dict[ int, nx.Graph ], max_distance=8 ) -> dict[
     return norm_sources
 
 
-def filter_sources( sources: dict[ int, nx.Graph ], source_patterns: dict[ int, str ], max_sources_per_pattern=-1 ):
+def filter_sources( sources: dict[ int, nx.Graph ], source_patterns: dict[ int, str ],
+                    max_sources_per_pattern=-1, max_na_patterns=-1 ):
     print( "Filtering sources ..." )
     pattern_idxs = { }
     for gidx, source in tqdm( sources.items() ):
@@ -147,6 +148,9 @@ def filter_sources( sources: dict[ int, nx.Graph ], source_patterns: dict[ int, 
 
     if max_sources_per_pattern > 0:
         pattern_idxs = { p: idxs[ :max_sources_per_pattern ] for p, idxs in pattern_idxs.items() }
+
+    if max_na_patterns > 0 and cpg_const.NO_DESIGN_PATTERN in pattern_idxs:
+        pattern_idxs[ cpg_const.NO_DESIGN_PATTERN ] = pattern_idxs[ cpg_const.NO_DESIGN_PATTERN ][ :max_na_patterns ]
 
     filtered_sources = { }
     for idxs in pattern_idxs.values():
@@ -184,6 +188,23 @@ def sample_processor_k_normalized( source: nx.Graph, query: nx.Graph, meta: dict
     return sources, queries, metas
 
 
+def sample_processor_path_match_weighted( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
+    source_paths = set( [ path[ 1 ] for path in graph_utils.get_all_norm_paths( source ) ] )
+    query_paths = set( [ path[ 1 ] for path in graph_utils.get_all_norm_paths( query ) ] )
+    max_match = 0
+    for sp in source_paths:
+        for qp in query_paths:
+            for k in list( range( 1, min( len( sp ), len( qp ) ) + 1 ) ):
+                qpk = qp[ :k ]
+                if sp.startswith( qpk ) and len( qpk ) > max_match:
+                    max_match = len( qpk )
+
+    pred_w = max_match / max( [ len( p ) for p in source_paths ] )
+    _meta = meta.copy()
+    _meta[ "pred_w" ] = pred_w
+    return sample_processor_default( source, query, _meta )
+
+
 def sample_processor_subgraph_normalized( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
     combined, node_matches, _ = graph_utils.combine_normalized( source, query )
     n_match = [ nid for nid, match in zip( combined.nodes(), node_matches ) if match == 1 ]
@@ -218,7 +239,8 @@ def sample_processor_default( source: nx.Graph, query: nx.Graph, meta: dict ) ->
     return [ source ], [ query ], [ _meta ]
 
 
-def inference( model: InferenceGNN, dataset: DesignPatternDataset, args, collect_graphs=False,
+def inference( model: InferenceGNN, dataset: DesignPatternDataset, args,
+               collect_graphs=False, conf=0.5,
                sample_processor: Callable[
                    [ nx.Graph, nx.Graph, dict, dict ],
                    tuple[ list[ nx.Graph ], list[ nx.Graph ], list[ dict ] ]
@@ -237,7 +259,7 @@ def inference( model: InferenceGNN, dataset: DesignPatternDataset, args, collect
         if collect_graphs:
             all_source.extend( sources )
             all_queries.extend( queries )
-        query_preds, _ = model.predict_batch( sources, queries, bulk_size=args.batch_size )
+        query_preds, _ = model.predict_batch( sources, queries, conf=conf, bulk_size=args.batch_size )
         preds.extend( query_preds )
     preds = [ float( p ) for p in preds ]
     return preds, metas, all_source, all_queries
@@ -246,13 +268,25 @@ def inference( model: InferenceGNN, dataset: DesignPatternDataset, args, collect
 def print_pattern_counts( dataset: DesignPatternDataset ):
     # source patterns
     source_pattern_counts = { }
+    pattern_instance: dict[ str, set ] = { }
     for gidx, pattern in dataset.get_source_patterns().items():
         if gidx not in dataset.get_sources():
             continue
         if pattern not in source_pattern_counts:
             source_pattern_counts[ pattern ] = 0
+        if pattern not in pattern_instance:
+            pattern_instance[ pattern ] = set()
         source_pattern_counts[ pattern ] += 1
+
+        record_scope = dataset.get_source_graph_record_scopes()[ gidx ]
+        pattern_id = graph_utils.decode_pattern_id( record_scope )
+        if pattern_id is None:
+            pattern_id = gidx
+        pattern_instance[ pattern ].add( pattern_id )
+
     print( "source_pattern_counts:", misc_utils.sort_dict_by_key( source_pattern_counts ) )
+    pattern_instance_counts = { pattern: len( instances ) for pattern, instances in pattern_instance.items() }
+    print( "pattern_instance_counts:", misc_utils.sort_dict_by_key( pattern_instance_counts ) )
     # query patterns
     pattern_example_counts = { dp: len( l ) for dp, l in dataset.get_patterns().items() }
     print( "pattern_example_counts:", misc_utils.sort_dict_by_key( pattern_example_counts ) )
@@ -271,8 +305,25 @@ def group_by_source( metas ) -> dict[ int, dict[ str, list[ int ] ] ]:
     return groups_by_source
 
 
+def group_by_pattern_instance( metas ) -> dict[ int, dict[ str, list[ int ] ] ]:
+    groups: dict[ int, dict[ str, list[ int ] ] ] = { }
+    for idx, meta in enumerate( metas ):
+        pattern_id = meta[ "pattern_id" ]
+        pattern_type = meta[ "pattern_type" ]
+        if pattern_id not in groups:
+            groups[ pattern_id ] = { }
+        if pattern_type not in groups[ pattern_id ]:
+            groups[ pattern_id ][ pattern_type ] = [ ]
+        groups[ pattern_id ][ pattern_type ].append( idx )
+    return groups
+
+
 def aggregate_preds_mean( preds: list[ float ] ) -> float:
     return float( np.mean( preds ) )
+
+
+def aggregate_preds_max( preds: list[ float ] ) -> float:
+    return float( np.max( preds ) )
 
 
 def aggregate_preds_by_quantile( preds: list[ float ], q=0.8 ) -> float:
@@ -299,8 +350,15 @@ def compute_source_preds( groups_by_source: dict[ int, dict[ str, list[ float ] 
     return source_preds
 
 
-def compute_source_types( metas: list[ dict ] ) -> dict[ int, str ]:
-    return { m[ "gidx" ]: m[ "source_type" ] for m in metas }
+def compute_source_types( groups_by_source: dict[ int, dict[ str, list[ float ] ] ],
+                          metas: list[ dict ] ) -> dict[ int, str ]:
+    source_types = { }
+    for gidx, source_preds_idxs in groups_by_source.items():
+        for dp, idxs in source_preds_idxs.items():
+            for idx in idxs:
+                source_types[ gidx ] = metas[ idx ][ "source_type" ]
+                break
+    return source_types
 
 
 def compute_labels_legacy( source_types: dict[ int, str ],
@@ -351,6 +409,66 @@ def compute_labels( source_types: dict[ int, str ],
     return true_labels, pred_labels, pred_scores
 
 
+def compute_labels_by_instance( source_types: dict[ int, str ],
+                                source_preds: dict[ int, dict[ str, float ] ],
+                                groups_by_instance: dict[ int, dict[ str, list[ int ] ] ],
+                                metas, conf=0.5 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
+    true_labels, pred_labels, pred_scores = [ ], [ ], [ ]
+    true_labels_source, pred_labels_source, pred_scores_source = compute_labels_legacy( source_types,
+                                                                                        source_preds,
+                                                                                        conf=conf )
+
+    source_to_instance_mapping = get_source_to_pattern_instance_mapping( metas )
+    instance_pattern_true_labels: dict[ int, str ] = { }
+    instance_pattern_pred_labels: dict[ int, list[ tuple[ str, float ] ] ] = { }
+    for idx, (gidx, _) in enumerate( source_types.items() ):
+
+        pattern_id = source_to_instance_mapping[ gidx ]
+        true_label_source = true_labels_source[ idx ]
+        pred_label_source = pred_labels_source[ idx ]
+        pred_score_source = pred_scores_source[ idx ]
+
+        instance_pattern_true_labels[ pattern_id ] = true_label_source
+        if pattern_id not in instance_pattern_pred_labels:
+            instance_pattern_pred_labels[ pattern_id ] = [ ]
+        instance_pattern_pred_labels[ pattern_id ].append( (pred_label_source, pred_score_source) )
+
+    for pattern_id in list( groups_by_instance.keys() ):
+        true_label = instance_pattern_true_labels[ pattern_id ]
+        true_labels.append( true_label )
+
+        preds_by_label: [ str, list[ float ] ] = { }
+        for (pred_label_source, pred_score_source) in instance_pattern_pred_labels[ pattern_id ]:
+            if pred_label_source not in preds_by_label:
+                preds_by_label[ pred_label_source ] = [ ]
+            preds_by_label[ pred_label_source ].append( pred_score_source )
+
+        labels_pred: dict[ str, float ] = { label: max( preds ) for label, preds in preds_by_label.items() }
+        labels_count: dict[ str, int ] = { label: len( preds ) for label, preds in preds_by_label.items() }
+        if true_label in labels_pred:
+            pred_labels.append( true_label )
+            pred_scores.append( labels_pred[ true_label ] )
+            continue
+
+        best_label = cpg_const.NO_DESIGN_PATTERN
+        best_score = 0
+        for label, score in labels_pred.items():
+            # for label, score in labels_count.items():
+            if score > best_score:
+                best_label = label
+                best_score = labels_pred[ label ]
+        pred_labels.append( best_label )
+        pred_scores.append( best_score )
+
+    return true_labels, pred_labels, pred_scores
+
+def get_source_to_pattern_instance_mapping( metas ) -> dict[ int, int ]:
+    mapping: dict[ int, int ] = { }
+    for meta in metas:
+        mapping[ meta[ 'gidx' ] ] = meta[ 'pattern_id' ]
+    return mapping
+
+
 def to_numeric_labels( true_labels: list[ str ], pred_labels: list[ str ] ) -> tuple[ list[ int ], list[ int ] ]:
     def enum_to_numeric( value: str ) -> int:
         if value == cpg_const.NO_DESIGN_PATTERN:
@@ -377,7 +495,7 @@ def compute_metrics( x_labels: list[ int ], y_labels: list[ int ] ) -> dict[ str
         metrics[ "avp" ] = average_precision_score( y_binarized, x_binarized, average="weighted" )
         return metrics
 
-    label_mapping = { val: idx for idx, val in enumerate( sorted( set( y_labels ) ) ) }
+    label_mapping = { val: idx for idx, val in enumerate( sorted( set( [ *y_labels, *x_labels ] ) ) ) }
     x_labels_norm = [ label_mapping[ val ] for val in x_labels ]
     y_labels_norm = [ label_mapping[ val ] for val in y_labels ]
 
@@ -457,7 +575,7 @@ def main( args, version, source_dataset ):
     result_dir = os.path.join( args.result_dir, model_name )
     result_dir = io_utils.ensure_dir( result_dir )
     pattern_types = [
-        #cpg_const.DesignPatternType.ABSTRACT_FACTORY.value,
+        # cpg_const.DesignPatternType.ABSTRACT_FACTORY.value,
         cpg_const.DesignPatternType.ADAPTER.value,
         cpg_const.DesignPatternType.BUILDER.value,
         # cpg_const.DesignPatternType.FACADE.value,
@@ -475,16 +593,17 @@ def main( args, version, source_dataset ):
     args.dataset = source_dataset
     dataset = DesignPatternDataset( args,
                                     max_pattern_examples=30,
-                                    query_pattern=True,
+                                    query_pattern=False,
                                     pattern_types=pattern_types )
 
-    max_norm_d = 7
+    max_norm_d = 12
     sources = dataset.get_sources()
-    sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=50 )
+    sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=-1, max_na_patterns=5 )
     sources = normalize_sources( sources, max_distance=max_norm_d )
 
     patterns = dataset.get_patterns()
-    patterns = get_common_patterns( patterns, max_node_distance=max_norm_d )
+    patterns = normalize_patterns( patterns, max_distance=max_norm_d )
+    #patterns = get_common_patterns( patterns, max_node_distance=max_norm_d )
 
     dataset.set_sources( sources )
     dataset.set_patterns( patterns )
@@ -493,28 +612,60 @@ def main( args, version, source_dataset ):
     # inference
     preds, metas, _, _ = inference( model, dataset, args,
                                     # sample_processor=sample_processor_subgraph_normalized,
-                                    sample_processor=sample_processor_k_normalized,
-                                    min_d_offset=1, max_d_offset=5 )
+                                    #sample_processor=sample_processor_k_normalized,
+                                    #min_d_offset=1, max_d_offset=5,
+                                    collect_graphs=False )
 
     # aggregate
     groups_by_source = group_by_source( metas )
+    groups_by_instance = group_by_pattern_instance( metas )
+    # groups_by_source = epm.group_by_pattern_instance( metas )
 
     # evaluate
-    target_conf = 0.3
-    conf_steps = [ i / 10 for i in range( 1, 10 ) ]
+    #target_conf = 0.6
+    #conf_steps = [ i / 10 for i in range( 1, 10 ) ]
+    target_conf = 0.9
+    conf_steps = [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        0.91,
+        0.92,
+        0.93,
+        0.94,
+        0.95,
+        0.96,
+        0.97,
+        0.98,
+        0.99,
+        0.999,
+    ]
     conf_metrics: list[ dict[ str, float ] ] = [ ]
     for conf_step in conf_steps:
 
         source_preds = compute_source_preds( groups_by_source, preds, metas,
                                              pred_aggregator=aggregate_preds_by_quantile,
-                                             q=0.95 )
-        source_types = compute_source_types( metas )
+                                             q=conf_step )
+        source_types = compute_source_types( groups_by_source, metas )
 
-        true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
-        #true_labels, pred_labels, pred_scores = compute_labels_legacy( source_types, source_preds, conf=conf_step )
+        # true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
+        # true_labels, pred_labels, pred_scores = compute_labels_legacy( source_types, source_preds, conf=conf_step )
+        # groups = groups_by_source
+
+        true_labels, pred_labels, pred_scores = compute_labels_by_instance( source_types, source_preds,
+                                                                            groups_by_instance, metas,
+                                                                            conf=0.6 )
+        groups = groups_by_instance
+
         if conf_step == target_conf:
             # save results
-            result_df = get_result_df( groups_by_source, metas, true_labels, pred_labels, pred_scores )
+            result_df = get_result_df( groups, metas, true_labels, pred_labels, pred_scores )
             result_df.to_csv( os.path.join( result_dir, "result_pattern_matching_sources.csv" ), index=False )
             # evaluate
             compute_cm( true_labels, pred_labels, pred_scores, labels=pattern_types, include_na=True,
@@ -540,14 +691,13 @@ def main( args, version, source_dataset ):
 if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "dpdf"
-    # args.dataset = "CPG_augm_large"
-    args.directed = False
+    args.directed = True
     args.anchored = True
     version = model_utils.get_latest_model_version( args )
     model_name = model_utils.get_model_name( args, version )
     args = arg_utils.load_args( args, model_name )
 
-    source_dataset = "pmart"
+    source_dataset = "pmart_all"
     args.pattern_dataset = "dpdf"
     args.normalized = True
     args.test_data = True

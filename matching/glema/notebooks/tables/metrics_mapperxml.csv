@@ -1,9 +1,9 @@
 Pattern,Accuracy,Precision,Recall,F1-Score,ROC AUC,PR AUC
-Builder,-,-,-,-,-,-
-Observer,-,-,-,-,-,-
-Adapter,0.88,1.00,0.50,0.67,0.75,0.62
-Singleton,1.00,1.00,1.00,1.00,1.00,1.00
-Factory Method,-,-,-,-,-,-
-Memento,-,-,-,-,-,-
+Observer,0.80,-,0.00,0.00,0.50,0.20
+Factory Method,0.60,0.00,0.00,0.00,0.38,0.20
 Decorator,-,-,-,-,-,-
-Overall,0.94,1.00,0.75,0.83,0.88,0.81
+Builder,-,-,-,-,-,-
+Memento,-,-,-,-,-,-
+Singleton,0.80,-,0.00,0.00,0.50,0.20
+Adapter,0.60,-,0.00,0.00,0.50,0.40
+Overall,0.70,0.00,0.00,0.00,0.47,0.25
