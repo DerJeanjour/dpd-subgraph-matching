@@ -1,5 +1,6 @@
 import itertools
 import os
+import pickle
 from collections.abc import Callable
 
 import matplotlib.pyplot as plt
@@ -118,7 +119,8 @@ def normalize_patterns_by_presence( patterns_all: dict[ str, list[ nx.Graph ] ],
     return norm_pattern_graphs
 
 
-def normalize_patterns( patterns_all: dict[ str, list[ nx.Graph ] ], max_distance=8, min_nodes=-1 ) -> dict[ str, list[ nx.Graph ] ]:
+def normalize_patterns( patterns_all: dict[ str, list[ nx.Graph ] ], max_distance=8, min_nodes=-1 ) -> dict[
+    str, list[ nx.Graph ] ]:
     print( "Normalizing patterns ..." )
     patterns_all_norm = { }
     for dp_type, patterns in tqdm( patterns_all.items() ):
@@ -455,6 +457,7 @@ def compute_labels_by_instance( source_types: dict[ int, str ],
 
     return true_labels, pred_labels, pred_scores
 
+
 def get_source_to_pattern_instance_mapping( metas ) -> dict[ int, int ]:
     mapping: dict[ int, int ] = { }
     for meta in metas:
@@ -522,6 +525,67 @@ def get_result_df( source_groups, metas, true_labels, pred_labels, pred_scores )
     return pd.DataFrame( data, columns=[ "gidx", "dataset", "record", "true_type", "pred_type", "pred_score" ] )
 
 
+def get_matching_examples( pattern_types: list[ str ],
+                           model: InferenceGNN,
+                           sources: list[ nx.Graph ],
+                           queries: list[ nx.Graph ],
+                           preds: list[ float ],
+                           metas: list[ dict ],
+                           max_nodes=-1, min_nodes=-1,
+                           save_path=None ) -> dict[ tuple[ str, str ], dict[ str, any ] ]:
+    matching_examples: dict[ tuple[ str, str ], dict[ str, any ] ] = { }
+    for pattern_type in pattern_types:
+        pattern_sources = [ ]
+        pattern_queries = [ ]
+        pattern_preds = [ ]
+        pattern_idxs = [ ]
+        for idx, meta in enumerate( metas ):
+            if meta[ "source_type" ] == pattern_type and meta[ "pattern_type" ] == pattern_type:
+
+                if max_nodes > 0:
+                    if sources[ idx ].number_of_nodes() > max_nodes or queries[ idx ].number_of_nodes() > max_nodes:
+                        continue
+
+                if min_nodes > 0:
+                    if sources[ idx ].number_of_nodes() <= min_nodes or queries[
+                        idx ].number_of_nodes() <= min_nodes:
+                        continue
+
+                pattern_sources.append( sources[ idx ] )
+                pattern_queries.append( queries[ idx ] )
+                pattern_preds.append( preds[ idx ] )
+                pattern_idxs.append( idx )
+        if len( pattern_sources ) == 0:
+            continue
+        max_idx = int( np.argsort( pattern_preds )[ -1: ][ 0 ] )
+        matching_examples[ (pattern_type, pattern_type) ] = {
+            "source": pattern_sources[ max_idx ],
+            "query": pattern_queries[ max_idx ],
+            "pred": pattern_preds[ max_idx ],
+            "idx": pattern_idxs[ max_idx ]
+        }
+
+    for source_type in pattern_types:
+        for query_type in pattern_types:
+            if source_type == query_type:
+                continue
+            source_idx = matching_examples[ (source_type, source_type) ][ "idx" ]
+            query_idx = matching_examples[ (query_type, query_type) ][ "idx" ]
+            type_source = sources[ source_idx ]
+            type_query = queries[ query_idx ]
+            type_pred, _ = model.predict( type_source, type_query )
+            matching_examples[ (source_type, query_type) ] = {
+                "source": type_source,
+                "query": type_query,
+                "pred": type_pred
+            }
+
+    if save_path is not None:
+        with open( save_path, 'wb' ) as handle:
+            pickle.dump( matching_examples, handle, protocol=pickle.HIGHEST_PROTOCOL )
+    return matching_examples
+
+
 def compute_cm( true_labels: list[ str ], pred_labels: list[ str ], pred_scores: list[ float ],
                 save_path=None, labels=None, include_na=True ):
     if labels is None:
@@ -576,7 +640,7 @@ def main( args, version, source_dataset ):
         cpg_const.DesignPatternType.OBSERVER.value,
         cpg_const.DesignPatternType.SINGLETON.value,
         cpg_const.DesignPatternType.DECORATOR.value,
-        #cpg_const.DesignPatternType.MEMENTO.value,
+        # cpg_const.DesignPatternType.MEMENTO.value,
         # cpg_const.DesignPatternType.PROXY.value,
         # cpg_const.DesignPatternType.VISITOR.value
     ]
@@ -597,18 +661,18 @@ def main( args, version, source_dataset ):
 
     patterns = dataset.get_patterns()
     patterns = normalize_patterns( patterns, max_distance=max_norm_d, min_nodes=min_nodes )
-    #patterns = get_common_patterns( patterns, max_node_distance=max_norm_d )
+    # patterns = get_common_patterns( patterns, max_node_distance=max_norm_d )
 
     dataset.set_sources( sources )
     dataset.set_patterns( patterns )
     dataset.compute_samples()
 
     # inference
-    preds, metas, _, _ = inference( model, dataset, args,
-                                    # sample_processor=sample_processor_subgraph_normalized,
-                                    #sample_processor=sample_processor_k_normalized,
-                                    #min_d_offset=1, max_d_offset=5,
-                                    collect_graphs=False )
+    preds, metas, sources, queries = inference( model, dataset, args,
+                                                # sample_processor=sample_processor_subgraph_normalized,
+                                                # sample_processor=sample_processor_k_normalized,
+                                                # min_d_offset=1, max_d_offset=5,
+                                                collect_graphs=True )
 
     # aggregate
     by_source = False
@@ -619,8 +683,8 @@ def main( args, version, source_dataset ):
         groups_by_source = groups_by_instance
 
     # evaluate
-    #target_conf = 0.6
-    #conf_steps = [ i / 10 for i in range( 1, 10 ) ]
+    # target_conf = 0.6
+    # conf_steps = [ i / 10 for i in range( 1, 10 ) ]
     target_conf = 0.999
     conf_steps = [
         0.1,
@@ -652,7 +716,7 @@ def main( args, version, source_dataset ):
         source_types = compute_source_types( groups_by_source, metas )
 
         if by_source or by_grouped_instance:
-            #true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
+            # true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
             true_labels, pred_labels, pred_scores = compute_labels_legacy( source_types, source_preds, conf=0.8 )
             groups = groups_by_source
         else:
@@ -684,12 +748,15 @@ def main( args, version, source_dataset ):
         for row in result_rows:
             f.write( ",".join( [ str( x ) for x in row ] ) )
             f.write( "\n" )
+    get_matching_examples( pattern_types, model, sources, queries,
+                           preds, metas, min_nodes=10, max_nodes=30,
+                           save_path=os.path.join( result_dir, "matching_examples.pkl" ) )
 
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
     args.dataset = "CPG_augm_large"
-    #args.dataset = "CPG"
+    # args.dataset = "CPG"
     args.directed = True
     args.anchored = True
     version = model_utils.get_latest_model_version( args )

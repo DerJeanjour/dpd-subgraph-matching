@@ -8,18 +8,53 @@ import matching.misc.utils as utils
 
 
 def plot_graph(
-        graph: nx.Graph,
+        G: nx.Graph,
         nodeLabels=None,
         node_sizes=None,
+        edge_width=0.5,
         with_label=True,
         nodeColors=None,
         edgeColors=None,
         title=None,
-        pos=None
+        show_title=True,
+        pos=None,
+        figsize=(6, 4),
+        ax=None,
+        show=True
 ):
-    utils.plot_graph( graph, nodeLabels=nodeLabels, nodeSizes=node_sizes,
-                      with_label=with_label, nodeColors=nodeColors,
-                      edgeColors=edgeColors, title=title, pos=pos )
+    if ax is None:
+        fig, ax = plt.subplots( figsize=figsize )
+
+    if pos is None:
+        pos = nx.spring_layout( G, seed=42 )
+
+    if node_sizes is None:
+        node_sizes = 200
+    if not nodeColors:
+        nodeColors = "skyblue"
+    if not edgeColors:
+        edgeColors = "gray"
+
+    nx.draw( G,
+             pos=pos,
+             ax=ax,
+             with_labels=with_label,
+             labels=nodeLabels,
+             node_color=nodeColors,
+             node_size=node_sizes,
+             font_size=6,
+             font_color="black",
+             width=edge_width,
+             edge_color=edgeColors )
+
+    if title is None:
+        title = f"Graph with {len( G.nodes )} nodes and {len( G.edges )} edges"
+
+    if show_title:
+        ax.set_title( title, size=10 )
+    if show and ax is None:
+        plt.show()
+    return ax
 
 
 def save_graph_debug( G, file_name ):

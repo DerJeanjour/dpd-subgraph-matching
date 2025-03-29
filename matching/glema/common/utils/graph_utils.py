@@ -474,9 +474,9 @@ def get_node_labels( G, record_scopes=None, design_patterns=None ):
     return { node_id: map_node_label_idx( node_id, data, **label_args ) for node_id, data in G.nodes( data=True ) }
 
 
-def get_node_colors( G ):
+def get_node_colors( G, anchor_color="purple", node_color="grey" ):
     anchor = get_anchor( G )
-    colors = [ "purple" if n == anchor else "grey" for n in G.nodes() ]
+    colors = [ anchor_color if n == anchor else node_color for n in G.nodes() ]
     return colors
 
 
