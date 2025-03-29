@@ -118,20 +118,24 @@ def normalize_patterns_by_presence( patterns_all: dict[ str, list[ nx.Graph ] ],
     return norm_pattern_graphs
 
 
-def normalize_patterns( patterns_all: dict[ str, list[ nx.Graph ] ], max_distance=8 ) -> dict[ str, list[ nx.Graph ] ]:
+def normalize_patterns( patterns_all: dict[ str, list[ nx.Graph ] ], max_distance=8, min_nodes=-1 ) -> dict[ str, list[ nx.Graph ] ]:
     print( "Normalizing patterns ..." )
     patterns_all_norm = { }
     for dp_type, patterns in tqdm( patterns_all.items() ):
         norm_patterns = [ graph_utils.normalize_graph( dp, max_distance=max_distance )[ 0 ] for dp in patterns ]
+        if min_nodes > 0:
+            norm_patterns = [ pattern for pattern in norm_patterns if pattern.number_of_nodes() >= min_nodes ]
         patterns_all_norm[ dp_type ] = norm_patterns
     return patterns_all_norm
 
 
-def normalize_sources( sources: dict[ int, nx.Graph ], max_distance=8 ) -> dict[ int, nx.Graph ]:
+def normalize_sources( sources: dict[ int, nx.Graph ], max_distance=8, min_nodes=-1 ) -> dict[ int, nx.Graph ]:
     print( "Normalizing sources ..." )
     norm_sources = { }
     for gidx, source in tqdm( sources.items() ):
         norm_source, _ = graph_utils.normalize_graph( source, max_distance=max_distance )
+        if min_nodes > 0 and norm_source.number_of_nodes() < min_nodes:
+            continue
         norm_sources[ gidx ] = norm_source
     return norm_sources
 
@@ -225,17 +229,6 @@ def sample_processor_subgraph_normalized( source: nx.Graph, query: nx.Graph, met
 def sample_processor_default( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
     _meta = meta.copy()
     _meta[ "pred_w" ] = _meta.get( "pred_w", 1.0 )
-    # _meta[ "pred_w" ] = float( cpg_const.NO_DESIGN_PATTERN not in [ meta[ "source_type" ], meta[ "pattern_type" ] ] )
-    # _meta[ "pred_w" ] = float( meta[ "source_type" ] == meta[ "pattern_type" ] )
-    """
-    if cpg_const.NO_DESIGN_PATTERN in [ meta[ "source_type" ], meta[ "pattern_type" ] ]:
-        _meta[ "pred_w" ] *= 0.1
-    elif meta[ "source_type" ] != meta[ "pattern_type" ]:
-        _meta[ "pred_w" ] *= 0.99
-    elif meta[ "source_type" ] == meta[ "pattern_type" ]:
-        _meta[ "pred_w" ] = min( _meta[ "pred_w" ] * 3.0, 1.0 )
-        _meta[ "pred_r" ] = 0.9
-    """
     return [ source ], [ query ], [ _meta ]
 
 
@@ -583,7 +576,7 @@ def main( args, version, source_dataset ):
         cpg_const.DesignPatternType.OBSERVER.value,
         cpg_const.DesignPatternType.SINGLETON.value,
         cpg_const.DesignPatternType.DECORATOR.value,
-        cpg_const.DesignPatternType.MEMENTO.value,
+        #cpg_const.DesignPatternType.MEMENTO.value,
         # cpg_const.DesignPatternType.PROXY.value,
         # cpg_const.DesignPatternType.VISITOR.value
     ]
@@ -593,16 +586,17 @@ def main( args, version, source_dataset ):
     args.dataset = source_dataset
     dataset = DesignPatternDataset( args,
                                     max_pattern_examples=30,
-                                    query_pattern=False,
+                                    query_pattern=True,
                                     pattern_types=pattern_types )
 
+    min_nodes = 5
     max_norm_d = 12
     sources = dataset.get_sources()
     sources = filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=-1, max_na_patterns=5 )
-    sources = normalize_sources( sources, max_distance=max_norm_d )
+    sources = normalize_sources( sources, max_distance=max_norm_d, min_nodes=min_nodes )
 
     patterns = dataset.get_patterns()
-    patterns = normalize_patterns( patterns, max_distance=max_norm_d )
+    patterns = normalize_patterns( patterns, max_distance=max_norm_d, min_nodes=min_nodes )
     #patterns = get_common_patterns( patterns, max_node_distance=max_norm_d )
 
     dataset.set_sources( sources )
@@ -617,14 +611,17 @@ def main( args, version, source_dataset ):
                                     collect_graphs=False )
 
     # aggregate
+    by_source = False
+    by_grouped_instance = False
     groups_by_source = group_by_source( metas )
     groups_by_instance = group_by_pattern_instance( metas )
-    # groups_by_source = epm.group_by_pattern_instance( metas )
+    if by_grouped_instance:
+        groups_by_source = groups_by_instance
 
     # evaluate
     #target_conf = 0.6
     #conf_steps = [ i / 10 for i in range( 1, 10 ) ]
-    target_conf = 0.9
+    target_conf = 0.999
     conf_steps = [
         0.1,
         0.2,
@@ -654,14 +651,15 @@ def main( args, version, source_dataset ):
                                              q=conf_step )
         source_types = compute_source_types( groups_by_source, metas )
 
-        # true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
-        # true_labels, pred_labels, pred_scores = compute_labels_legacy( source_types, source_preds, conf=conf_step )
-        # groups = groups_by_source
-
-        true_labels, pred_labels, pred_scores = compute_labels_by_instance( source_types, source_preds,
-                                                                            groups_by_instance, metas,
-                                                                            conf=0.6 )
-        groups = groups_by_instance
+        if by_source or by_grouped_instance:
+            #true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
+            true_labels, pred_labels, pred_scores = compute_labels_legacy( source_types, source_preds, conf=0.8 )
+            groups = groups_by_source
+        else:
+            true_labels, pred_labels, pred_scores = compute_labels_by_instance( source_types, source_preds,
+                                                                                groups_by_instance, metas,
+                                                                                conf=0.8 )
+            groups = groups_by_instance
 
         if conf_step == target_conf:
             # save results
@@ -690,7 +688,8 @@ def main( args, version, source_dataset ):
 
 if __name__ == "__main__":
     args = arg_utils.parse_args()
-    args.dataset = "dpdf"
+    args.dataset = "CPG_augm_large"
+    #args.dataset = "CPG"
     args.directed = True
     args.anchored = True
     version = model_utils.get_latest_model_version( args )

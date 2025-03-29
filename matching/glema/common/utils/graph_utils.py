@@ -26,7 +26,7 @@ def subgraph( G, n, k: int ):
 
 def subgraph_from_anchor_of_size( G, max_n ):
     anchor = get_anchor( G )
-    bfs = nx.bfs_tree( G, source=anchor )
+    bfs = nx.bfs_tree( G.to_undirected(), source=anchor )
     subset = list( bfs.nodes )[ :max_n ]
     return G.subgraph( subset ).copy()
 
@@ -80,6 +80,9 @@ def max_spanning_radius( G, start_node ):
 
 
 def normalize_graph( G, max_distance=4, force_directed=False ):
+    if G.is_directed():
+        return normalize_di_graph( G, max_distance=max_distance )
+
     G_norm = nx.DiGraph() if G.is_directed() or force_directed else nx.Graph()
     anchor = get_anchor( G )
     paths = { }
@@ -116,6 +119,55 @@ def normalize_graph( G, max_distance=4, force_directed=False ):
             if child == parent_source:
                 continue
             stack.append( (child, (label_path, node_path), current_node_norm, current_node) )
+
+    return G_norm, furthest_distance
+
+
+def normalize_di_graph( G: nx.DiGraph, max_distance=4):
+    G_norm = nx.DiGraph()
+    anchor = get_anchor( G )
+    paths = { }
+    stack = [ (anchor, ("", [ ]), None, None, None) ]
+    furthest_distance = 0
+    while len( stack ) > 0:
+
+        current_node, (label_path, node_path), parent, parent_source, is_successor = stack.pop( 0 )
+        if (current_node == anchor and parent is not None) or len( label_path ) >= max_distance:
+            continue
+
+        current_node_norm = G_norm.number_of_nodes()
+        label_path += f"{'>' if is_successor else '<'}{str( G.nodes[ current_node ][ 'label' ] )}"
+        distance = (len( label_path ) / 2) - 1
+        if label_path not in paths.keys():
+            paths[ label_path ] = [ *node_path, current_node_norm ]
+            n_data: dict = G.nodes[ current_node ]
+            n_data[ "presence" ] = 0
+            n_data[ "distance" ] = distance
+            G_norm.add_node( current_node_norm, **n_data )
+            if parent is not None:
+                if is_successor:
+                    G_norm.add_edge( parent, current_node_norm )
+                else:
+                     G_norm.add_edge( current_node_norm, parent )
+        else:
+            current_node_norm = paths[ label_path ][ -1 ]
+
+        node_path = paths[ label_path ]
+        for n in node_path:
+            G_norm.nodes[ n ][ "presence" ] += 1
+
+        if distance > furthest_distance:
+            furthest_distance = distance
+
+        for successor in G.successors( current_node ):
+            if successor == parent_source:
+                continue
+            stack.append( (successor, (label_path, node_path), current_node_norm, current_node, True) )
+
+        for predecessor in G.predecessors( current_node ):
+            if predecessor == parent_source:
+                continue
+            stack.append( (predecessor, (label_path, node_path), current_node_norm, current_node, False) )
 
     return G_norm, furthest_distance
 
@@ -507,7 +559,7 @@ def combine_graph( source, query, anchor=None, matching_colors: dict[ int, str ]
 def get_all_norm_paths( graph ) -> list[ tuple[ list[ int ], str ] ]:
     paths = [ ]
     root = get_anchor( graph )
-    dfs_tree = nx.dfs_tree( graph, root )
+    dfs_tree = nx.dfs_tree( graph.to_undirected(), root )
 
     def dfs( node, path_ids, path_labels ):
         path_ids.append( node )
@@ -661,6 +713,7 @@ def plot_interactions( args, model, src_idx, query_idx, threshold=0.5 ):
         title="Matching",
         with_label=True,
     )
+
 
 def encode_pattern_id( name: str, pid: str ):
     if name == "None" or name is None or pid is None:
