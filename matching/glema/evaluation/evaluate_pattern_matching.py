@@ -539,6 +539,7 @@ def get_matching_examples( pattern_types: list[ str ],
         pattern_queries = [ ]
         pattern_preds = [ ]
         pattern_idxs = [ ]
+        pattern_match_factors = [ ]
         for idx, meta in enumerate( metas ):
             if meta[ "source_type" ] == pattern_type and meta[ "pattern_type" ] == pattern_type:
 
@@ -551,13 +552,25 @@ def get_matching_examples( pattern_types: list[ str ],
                         idx ].number_of_nodes() <= min_nodes:
                         continue
 
+                # combine graphs and count matched, calc match-factor
+                _, node_matching, _ = graph_utils.combine_normalized( sources[ idx ],queries[ idx ]  )
+                n_matches = len( [ n for n in node_matching if n == 1 ] )
+                n_not_matches = len( [ n for n in node_matching if n == -1 ] )
+                n_total = n_matches + n_not_matches
+                if n_total == 0 or n_matches < n_not_matches:
+                    continue
+                match_factor = n_matches / n_total
+
                 pattern_sources.append( sources[ idx ] )
                 pattern_queries.append( queries[ idx ] )
                 pattern_preds.append( preds[ idx ] )
                 pattern_idxs.append( idx )
+                pattern_match_factors.append( match_factor )
         if len( pattern_sources ) == 0:
             continue
-        max_idx = int( np.argsort( pattern_preds )[ -1: ][ 0 ] )
+        # use match-factor x pred to get the best example
+        pred_factored = [ p * f for (p, f) in zip( pattern_preds, pattern_match_factors ) ]
+        max_idx = int( np.argsort( pred_factored )[ -1: ][ 0 ] )
         matching_examples[ (pattern_type, pattern_type) ] = {
             "source": pattern_sources[ max_idx ],
             "query": pattern_queries[ max_idx ],
