@@ -2,6 +2,7 @@ import os
 
 import matplotlib.pyplot as plt
 import networkx as nx
+from matplotlib.patches import Patch
 
 import matching.glema.common.utils.io_utils as io_utils
 import matching.misc.utils as utils
@@ -20,7 +21,9 @@ def plot_graph(
         pos=None,
         figsize=(6, 4),
         ax=None,
-        show=True
+        show=True,
+        save_name=None,
+        color_legend=None
 ):
     if ax is None:
         fig, ax = plt.subplots( figsize=figsize )
@@ -47,13 +50,23 @@ def plot_graph(
              width=edge_width,
              edge_color=edgeColors )
 
+    # Create and display a legend at the top right of the whole plot.
+    if color_legend is not None:
+        legend_elements = [ Patch( facecolor=color, edgecolor='black', label=label )
+                            for color, label in color_legend.items() ]
+        ax.legend( handles=legend_elements, loc='upper right' )
+
     if title is None:
         title = f"Graph with {len( G.nodes )} nodes and {len( G.edges )} edges"
 
     if show_title:
         ax.set_title( title, size=10 )
-    if show and ax is None:
+    if show and ax is None and save_name is None:
         plt.show()
+
+    if save_name is not None:
+        plt.savefig( save_name, format='png', bbox_inches='tight' )
+
     return ax
 
 
