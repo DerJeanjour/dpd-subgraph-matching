@@ -55,17 +55,25 @@ public class DatasetFactory {
         return get( project.getType(), projectName );
     }
 
+    public static DatasetLanguage getLanguage( final DatasetType type ) {
+        return switch ( type ) {
+            case P_MART, SELF, DPDf, OWN, PATTERN_EXAMPLES, JAVA_PATTERNS -> DatasetLanguage.JAVA;
+            case CPP_PATTERNS -> DatasetLanguage.CPP;
+            case PYTHON_PATTERNS -> DatasetLanguage.PYTHON;
+        };
+    }
+
     public static Dataset get( final DatasetType type, final String projectName ) {
         if ( StringUtils.isBlank( projectName ) ) {
             throw new IllegalArgumentException( "Can't create dataset with empty project name!" );
         }
-        return Dataset.of( type, projectName );
+        return Dataset.of( getLanguage( type ), type, projectName );
     }
 
     public static List<Dataset> getAll( final DatasetType type ) {
         return FileUtils.getDirectoryNamesInDir( DatasetLoader.getDirOfDataset( type ) )
                 .stream()
-                .map( projectName -> Dataset.of( type, projectName ) )
+                .map( projectName -> Dataset.of( getLanguage( type ), type, projectName ) )
                 .toList();
     }
 

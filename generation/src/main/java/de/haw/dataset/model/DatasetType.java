@@ -5,5 +5,8 @@ public enum DatasetType {
     OWN,
     PATTERN_EXAMPLES,
     P_MART,
-    DPDf
+    DPDf,
+    JAVA_PATTERNS,
+    CPP_PATTERNS,
+    PYTHON_PATTERNS
 }

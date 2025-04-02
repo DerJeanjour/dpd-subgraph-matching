@@ -3,10 +3,7 @@ package de.haw;
 import de.haw.application.ConvertAndExportCpgDatasets;
 import de.haw.application.model.TranslationRequest;
 import de.haw.dataset.DesignPatternStatAggregator;
-import de.haw.dataset.model.Dataset;
-import de.haw.dataset.model.DatasetDesignPatterns;
-import de.haw.dataset.model.DatasetFactory;
-import de.haw.dataset.model.DatasetType;
+import de.haw.dataset.model.*;
 import de.haw.dataset.module.AttachPatternsToContext;
 import de.haw.dataset.module.LoadDatasetFileModule;
 import de.haw.dataset.scripts.DirectorySizeSummary;
@@ -15,6 +12,7 @@ import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import de.haw.misc.utils.MemoryUtils;
 import de.haw.processing.module.*;
+import de.haw.repository.model.CpgEdgeType;
 import de.haw.repository.module.PersistCpgModule;
 import de.haw.translation.module.GenerateCpgModule;
 import de.haw.translation.module.TranslationToGraphModule;
@@ -31,7 +29,7 @@ public class Main {
         MemoryUtils.logMemoryStats();
 
         //test();
-        convertDatasets( getPmartRequests() );
+        convertDatasets( getPatternRequests() );
     }
 
     private static void convertDatasets( final List<TranslationRequest> translationRequests ) {
@@ -43,6 +41,20 @@ public class Main {
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 7 );
         ConvertAndExportCpgDatasets.of( continueGen, clearRepo ).process( translationRequests, ctx );
+    }
+
+    private static List<TranslationRequest> getPatternRequests() {
+        final List<DatasetType> datasetTypes = Arrays.asList( DatasetType.CPP_PATTERNS, DatasetType.JAVA_PATTERNS );
+        final List<String> patterns = Arrays.asList(
+                "abstract-factory", "factory-method", "adapter", "observer", "builder", "decorator" );
+        final List<TranslationRequest> requests = new ArrayList<>();
+        for ( DatasetType type : datasetTypes ) {
+            for ( String pattern : patterns ) {
+                final Dataset dataset = Dataset.of( DatasetFactory.getLanguage( type ), type, pattern );
+                requests.add( TranslationRequest.of( dataset, 10 ) );
+            }
+        }
+        return requests;
     }
 
     private static List<TranslationRequest> getPmartRequests() {
@@ -85,7 +97,12 @@ public class Main {
 
     private static void test() {
         //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        final Dataset dataset = DatasetFactory.OBSERVER_EXAMPLE;
+        //final Dataset dataset = DatasetFactory.OBSERVER_EXAMPLE;
+
+        final Dataset dataset = Dataset.of( DatasetLanguage.JAVA, DatasetType.JAVA_PATTERNS, "abstract-factory" );
+        //final Dataset dataset = Dataset.of( DatasetLanguage.CPP, DatasetType.CPP_PATTERNS, "abstract-factory" );
+        //final Dataset dataset = Dataset.of( DatasetLanguage.PYTHON, DatasetType.PYTHON_PATTERNS, "abstract-factory" );
+
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_DATASET_KEY, dataset );
         ctx.set( PipeContext.CPG_DEPTH_KEY, 10 );
@@ -114,9 +131,9 @@ public class Main {
                 //.add( ComputeSSSPsModule.instance() )
                 .add( ComputeRecordPathsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
-                .add( MarkPatternsModule.instance() )
+                //.add( MarkPatternsModule.instance() )
                 //.add( IsolateMarkedPatternsModule.instance() )
-                //.add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
+                .add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
 
                 // visualize
                 /*

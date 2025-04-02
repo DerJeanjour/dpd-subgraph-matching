@@ -12,6 +12,10 @@ public class DatasetLoader {
 
     public static final String BASE_PATH_JAVA = "datasets/java/";
 
+    public static final String BASE_PATH_CPP = "datasets/cpp/";
+
+    public static final String BASE_PATH_PYTHON = "datasets/python/";
+
     public static final String BASE_PATH_TEST = BASE_PATH_JAVA + "test/";
 
     public static final String BASE_PATH_PATTERN_EXAMPLES = BASE_PATH_TEST + "patterns/";
@@ -19,6 +23,12 @@ public class DatasetLoader {
     public static final String BASE_PATH_P_MART = BASE_PATH_JAVA + "p-mart/";
 
     public static final String BASE_PATH_DPDf = BASE_PATH_JAVA + "dpdf/java_projects/";
+
+    public static final String BASE_PATH_CPP_PATTERNS = BASE_PATH_CPP + "patterns/";
+
+    public static final String BASE_PATH_PYTHON_PATTERNS = BASE_PATH_PYTHON + "patterns/";
+
+    public static final String BASE_PATH_JAVA_PATTERNS = BASE_PATH_JAVA + "patterns/";
 
     public static File load( final Dataset dataset ) {
         return FileUtils.get( getDirOfDataset( dataset.getType() ) + dataset.getProjectName() + "/" );
@@ -31,6 +41,9 @@ public class DatasetLoader {
             case PATTERN_EXAMPLES -> BASE_PATH_PATTERN_EXAMPLES;
             case P_MART -> BASE_PATH_P_MART;
             case DPDf -> BASE_PATH_DPDf;
+            case CPP_PATTERNS -> BASE_PATH_CPP_PATTERNS;
+            case PYTHON_PATTERNS -> BASE_PATH_PYTHON_PATTERNS;
+            case JAVA_PATTERNS -> BASE_PATH_JAVA_PATTERNS;
         };
     }
 

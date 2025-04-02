@@ -1,10 +1,13 @@
 package de.haw.translation.module;
 
 import de.fraunhofer.aisec.cpg.*;
+import de.fraunhofer.aisec.cpg.frontends.Language;
+import de.fraunhofer.aisec.cpg.frontends.cxx.CPPLanguage;
 import de.fraunhofer.aisec.cpg.frontends.java.JavaLanguage;
+import de.fraunhofer.aisec.cpg.frontends.python.PythonLanguage;
 import de.fraunhofer.aisec.cpg.passes.ControlDependenceGraphPass;
-import de.fraunhofer.aisec.cpg.passes.PrepareSerialization;
 import de.fraunhofer.aisec.cpg.passes.ProgramDependenceGraphPass;
+import de.haw.dataset.model.Dataset;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
 import kotlin.jvm.JvmClassMappingKt;
@@ -20,8 +23,9 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
     @Override
     protected TranslationResult processImpl( final File sourceFile, final PipeContext ctx ) {
 
-        log.info( "Translating source file {} of dataset {} ...", sourceFile.getName(),
-                ctx.get( PipeContext.CPG_DATASET_KEY ) );
+        final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
+                .orElseThrow( IllegalArgumentException::new );
+        log.info( "Translating source file {} of dataset {} ...", sourceFile.getName(), dataset );
 
         final InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder().enabled( true ).build();
         TranslationConfiguration translationConfiguration = null;
@@ -33,7 +37,7 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
                     .registerPass( JvmClassMappingKt.getKotlinClass( ControlDependenceGraphPass.class ) )
                     .registerPass( JvmClassMappingKt.getKotlinClass( ProgramDependenceGraphPass.class ) )
                     //.registerPass( JvmClassMappingKt.getKotlinClass( PrepareSerialization.class ) ) // AST but is expensive
-                    .registerLanguage( new JavaLanguage() )
+                    .registerLanguage( getLanguage( dataset ) )
                     .addIncludesToGraph( false )
                     .loadIncludes( false )
                     .sourceLocations( sourceFile )
@@ -81,6 +85,15 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
          */
 
         return result;
+    }
+
+    private static Language<?> getLanguage( final Dataset dataset ) {
+        return switch ( dataset.getLanguage() ) {
+            case JAVA -> new JavaLanguage();
+            case CPP -> new CPPLanguage();
+            case PYTHON -> new PythonLanguage();
+            default -> throw new IllegalArgumentException( "Unknown language: " + dataset.getLanguage() );
+        };
     }
 
 }

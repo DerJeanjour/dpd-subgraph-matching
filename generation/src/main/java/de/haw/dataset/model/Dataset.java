@@ -1,11 +1,13 @@
 package de.haw.dataset.model;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-@Getter
+@Data
 @RequiredArgsConstructor( staticName = "of" )
 public class Dataset {
+
+    private final DatasetLanguage language;
 
     private final DatasetType type;
 
