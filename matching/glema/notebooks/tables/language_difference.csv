@@ -1,0 +1,8 @@
+Measure,Abstract Factory (C++),Abstract Factory (Java),Abstract Factory (Diff),Builder (C++),Builder (Java),Builder (Diff),Factory Method (C++),Factory Method (Java),Factory Method (Diff),Decorator (C++),Decorator (Java),Decorator (Diff)
+Records (Total),9,9,0,4,4,0,6,6,0,5,5,0
+Interactions (Total),19,21,2,3,3,0,10,7,3,4,4,0
+Knows Record,4,7,3,1,1,0,2,0,2,1,1,0
+Calls Record,2,0,2,0,0,0,0,0,0,0,0,0
+Extended by Record,6,6,0,1,1,0,4,4,0,3,3,0
+Creates Record,1,2,1,1,1,0,2,0,2,0,0,0
+Returns Record,6,6,0,0,0,0,2,3,1,0,0,0

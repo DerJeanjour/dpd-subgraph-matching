@@ -2,10 +2,10 @@ import os
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 from matplotlib.patches import Patch
 
 import matching.glema.common.utils.io_utils as io_utils
-import matching.misc.utils as utils
 
 
 def plot_graph(
@@ -14,22 +14,28 @@ def plot_graph(
         node_sizes=None,
         edge_width=0.5,
         with_label=True,
+        edgeLabels=None,
         nodeColors=None,
         edgeColors=None,
         title=None,
         show_title=True,
         pos=None,
+        font_size=6,
         figsize=(6, 4),
         ax=None,
         show=True,
         save_name=None,
-        color_legend=None
+        color_legend=None,
+        scaling=None
 ):
     if ax is None:
         fig, ax = plt.subplots( figsize=figsize )
 
     if pos is None:
         pos = nx.spring_layout( G, seed=42 )
+
+    if scaling is not None:
+        pos = nx.rescale_layout_dict( pos, scaling )
 
     if node_sizes is None:
         node_sizes = 200
@@ -45,10 +51,13 @@ def plot_graph(
              labels=nodeLabels,
              node_color=nodeColors,
              node_size=node_sizes,
-             font_size=6,
+             font_size=font_size,
              font_color="black",
              width=edge_width,
              edge_color=edgeColors )
+
+    if edgeLabels is not None:
+        nx.draw_networkx_edge_labels( G, pos, ax=ax, edge_labels=edgeLabels, font_color="black" )
 
     # Create and display a legend at the top right of the whole plot.
     if color_legend is not None:
