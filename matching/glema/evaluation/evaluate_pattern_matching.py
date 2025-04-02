@@ -578,20 +578,25 @@ def get_matching_examples( pattern_types: list[ str ],
             "idx": pattern_idxs[ max_idx ]
         }
 
+    type_pairs = []
+    type_sources = []
+    type_queries = []
     for source_type in pattern_types:
         for query_type in pattern_types:
             if source_type == query_type:
                 continue
             source_idx = matching_examples[ (source_type, source_type) ][ "idx" ]
             query_idx = matching_examples[ (query_type, query_type) ][ "idx" ]
-            type_source = sources[ source_idx ]
-            type_query = queries[ query_idx ]
-            type_pred, _ = model.predict( type_source, type_query )
-            matching_examples[ (source_type, query_type) ] = {
-                "source": type_source,
-                "query": type_query,
-                "pred": type_pred
-            }
+            type_sources.append( sources[ source_idx ] )
+            type_queries.append( queries[ query_idx ] )
+            type_pairs.append( (source_type, query_type) )
+    type_preds, _ = model.predict_batch( type_sources, type_queries )
+    for i, type_pair in enumerate( type_pairs ):
+        matching_examples[ type_pair ] = {
+            "source": type_sources[ i ],
+            "query": type_queries[ i ],
+            "pred": type_preds[ i ]
+        }
 
     if save_path is not None:
         with open( save_path, 'wb' ) as handle:

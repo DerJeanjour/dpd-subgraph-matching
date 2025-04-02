@@ -561,19 +561,24 @@ def get_all_norm_paths( graph ) -> list[ tuple[ list[ int ], str ] ]:
     root = get_anchor( graph )
     dfs_tree = nx.dfs_tree( graph.to_undirected(), root )
 
-    def dfs( node, path_ids, path_labels ):
+    def dfs( node, parent, path_ids, path_labels ):
         path_ids.append( node )
-        path_labels.append( str( graph.nodes[ node ][ 'label' ] ) )
+
+        prefix = ""
+        if graph.is_directed() and parent is not None:
+            prefix = ">" if node in graph.successors( parent ) else "<"
+
+        path_labels.append( f"{prefix}{str( graph.nodes[ node ][ 'label' ] )}" )
         children = list( dfs_tree.successors( node ) )
         if not children:
             paths.append( (list( path_ids ), "".join( path_labels )) )
         else:
             for child in children:
-                dfs( child, path_ids, path_labels )
+                dfs( child, node, path_ids, path_labels )
         path_ids.pop()
         path_labels.pop()
 
-    dfs( root, [ ], [ ] )
+    dfs( root, None, [ ], [ ] )
     return paths
 
 
