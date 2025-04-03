@@ -1,4 +1,4 @@
-Language,Records (Total),Interactions (Total),Knows Record,Calls Record,Extended by Record,Creates Record,Returns Record
+Language,Records (Total),Interactions (Total),Knows,Calls,Extends,Creates,Returns
 C++,6,10,2,0,4,2,2
 Java,6,7,0,0,4,0,3
-Diff,0,3,2,0,0,2,1
+$|\Delta x|$,0,3,2,0,0,2,1

@@ -2,7 +2,6 @@ import os
 
 import matplotlib.pyplot as plt
 import networkx as nx
-import numpy as np
 from matplotlib.patches import Patch
 
 import matching.glema.common.utils.io_utils as io_utils
@@ -26,7 +25,7 @@ def plot_graph(
         show=True,
         save_name=None,
         color_legend=None,
-        scaling=None
+        margin=None
 ):
     if ax is None:
         fig, ax = plt.subplots( figsize=figsize )
@@ -34,8 +33,8 @@ def plot_graph(
     if pos is None:
         pos = nx.spring_layout( G, seed=42 )
 
-    if scaling is not None:
-        pos = nx.rescale_layout_dict( pos, scaling )
+    if margin is not None:
+        ax.margins( margin )
 
     if node_sizes is None:
         node_sizes = 200
@@ -63,13 +62,13 @@ def plot_graph(
     if color_legend is not None:
         legend_elements = [ Patch( facecolor=color, edgecolor='black', label=label )
                             for color, label in color_legend.items() ]
-        ax.legend( handles=legend_elements, loc='upper right' )
+        ax.legend( handles=legend_elements, loc='upper right', fontsize=font_size )
 
     if title is None:
         title = f"Graph with {len( G.nodes )} nodes and {len( G.edges )} edges"
 
     if show_title:
-        ax.set_title( title, size=10 )
+        ax.set_title( title, size=font_size + 4 )
     if show and ax is None and save_name is None:
         plt.show()
 
