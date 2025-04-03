@@ -114,6 +114,8 @@ class ColorScheme:
     SECONDARY_LIGHT_COMP: str = "#F3CBCE"
     SECONDARY_DARK: str = "#1B726A"
     HIGHLIGHT: str = "#69A9FF"
+    GREY: str = "grey"
+    GREY_LIGHT: str = "lightgrey"
 
     @staticmethod
     def all_high_contrast() -> list[ str ]:
