@@ -31,10 +31,6 @@ def subgraph_from_anchor_of_size( G, max_n ):
     return G.subgraph( subset ).copy()
 
 
-def inject_edge_errors( G, e: int = 1 ):
-    return utils.inject_edge_errors( G, e )
-
-
 def top_pr_ranked_node( G ):
     pr = nx.pagerank( G )
     pr = dict( sorted( pr.items(), key=lambda item: item[ 1 ], reverse=True ) )
