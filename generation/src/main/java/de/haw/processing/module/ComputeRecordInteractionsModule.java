@@ -88,7 +88,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
             iter++;
 
             final String recordScope = this.GS.getAttr( node, CpgConst.NODE_ATTR_NAME_SCOPED_RECORD );
-            if( StringUtils.isNotBlank( recordScope ) ) {
+            if ( StringUtils.isNotBlank( recordScope ) ) {
                 traversedRecordScopes.add( recordScope );
             }
 

@@ -39,8 +39,8 @@ public class FileLogger {
 
     public void write( final String line, final boolean addTimestamp ) {
         try ( BufferedWriter writer = new BufferedWriter( new FileWriter( fileName, true ) ) ) {
-            if( addTimestamp ) {
-                writer.write(  String.format( "[%s] %s", LocalDateTime.now().format( TIMESTAMP_FORMAT ), line ) );
+            if ( addTimestamp ) {
+                writer.write( String.format( "[%s] %s", LocalDateTime.now().format( TIMESTAMP_FORMAT ), line ) );
             } else {
                 writer.write( line );
             }

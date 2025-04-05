@@ -55,13 +55,13 @@ public class ComputeRecordPathsModule<Target> extends PipeModule<Graph, Graph, T
                     if ( toRemove == null ) {
                         //toRemove = edgePath.get( i % 2 == 0 ? ( edgePath.size() - 1 ) : 0 );
                     }
-                    if( toRemove != null ) {
+                    if ( toRemove != null ) {
                         recordNeighbourSubgraph.removeEdge( toRemove.getId() );
                         removed = true;
                     }
                 }
                 sssps.forEach( path -> recordPaths.add( source.getId(), path ) );
-                if( !removed ) {
+                if ( !removed ) {
                     break;
                 }
             }

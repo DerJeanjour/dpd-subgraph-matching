@@ -1,9 +1,9 @@
 package de.haw.processing.module;
 
 import de.haw.misc.pipe.PipeContext;
-import de.haw.repository.model.CpgEdgeType;
-import de.haw.processing.GraphService;
 import de.haw.misc.pipe.PipeModule;
+import de.haw.processing.GraphService;
+import de.haw.repository.model.CpgEdgeType;
 import de.haw.translation.CpgConst;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class CpgFilterEdgesModule<Target> extends PipeModule<Graph, Graph, Targe
 
     private final boolean autoConnect;
 
-    private final GraphService GS  = GraphService.instance();
+    private final GraphService GS = GraphService.instance();
 
     @Override
     protected Graph processImpl( final Graph graph, final PipeContext ctx ) {

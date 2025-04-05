@@ -1,6 +1,5 @@
 package de.haw.application;
 
-import de.haw.application.model.TranslationRequest;
 import de.haw.dataset.model.Dataset;
 import de.haw.dataset.module.AttachPatternsToContext;
 import de.haw.dataset.module.LoadDatasetFileModule;
@@ -44,8 +43,6 @@ public class ConvertAndExportCpgModule<Target> extends PipeModule<Dataset, Graph
                 .add( PropagateRecordScopeModule.instance() )
 
                 // simplify cpg
-                //.add( SimplifyCpgEdgesModule.instance() )
-                //.add( ComputeSSSPsModule.instance() )
                 .add( ComputeRecordPathsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
                 .add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )

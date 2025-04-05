@@ -45,7 +45,7 @@ public class ConvertAndExportCpgDatasets<Target> extends PipeModule<List<Transla
             fileLogger.clear();
         }
 
-        if( this.clearRepo ) {
+        if ( this.clearRepo ) {
             this.repository.clearAll();
         }
 

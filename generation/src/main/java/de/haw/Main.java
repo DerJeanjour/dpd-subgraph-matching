@@ -96,8 +96,6 @@ public class Main {
     }
 
     private static void test() {
-        //final Dataset dataset = DatasetFactory.get( DatasetType.DPDf, "magic-config" );
-        //final Dataset dataset = DatasetFactory.OBSERVER_EXAMPLE;
 
         final Dataset dataset = Dataset.of( DatasetLanguage.JAVA, DatasetType.JAVA_PATTERNS, "abstract-factory" );
         //final Dataset dataset = Dataset.of( DatasetLanguage.CPP, DatasetType.CPP_PATTERNS, "abstract-factory" );
@@ -116,31 +114,17 @@ public class Main {
 
                 // generate cpg
                 .add( GenerateCpgModule.instance() )
-                //.add( PersistTranslationModule.instance() )
                 .add( TranslationToGraphModule.instance() )
-                //.add( TranslationToGraphAlternative.instance() )
 
                 // prepare cpg
                 .add( RemoveBlacklistElementsModule.instance() )
                 .add( FilterInternalScopeModule.instance() )
                 .add( PropagateRecordScopeModule.instance() )
-                //.add( ComputePagerankModule.instance() )
 
                 // simplify cpg
-                //.add( SimplifyCpgEdgesModule.instance() )
-                //.add( ComputeSSSPsModule.instance() )
                 .add( ComputeRecordPathsModule.instance() )
                 .add( ComputeRecordInteractionsModule.instance() )
-                //.add( MarkPatternsModule.instance() )
-                //.add( IsolateMarkedPatternsModule.instance() )
                 .add( CpgFilterEdgesModule.byTypes( CpgEdgeType.OWN, false ) )
-
-                // visualize
-                /*
-                .add( CpgEdgeTypeVisualizeModule.instance() )
-                .add( CpgNodeTypeVisualizeModule.instance() )
-                .add( DisplayGraphModule.instance() )
-                 */
 
                 // persist
                 .add( PersistCpgModule.instance() )

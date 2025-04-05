@@ -23,7 +23,7 @@ public class RecordNeighbourSubgraphCopyTraverser extends GraphProcessTraverser<
     @Override
     protected OutputData<Void> process( final Node node, final Void data, final TraversalContext ctx ) {
 
-        if( ctx.getDepth() > this.maxDepth ) {
+        if ( ctx.getDepth() > this.maxDepth ) {
             return OutputData.of( null, false );
         }
 
