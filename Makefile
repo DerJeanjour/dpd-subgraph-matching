@@ -1,8 +1,8 @@
 build:
-	#cd generation && mvn clean package
 	cd generation && ./gradlew clean build
+
 run:
-	cd generation && java -jar build/libs/generation-develop.jar # not working ...
+	cd generation && java -jar build/libs/generation-develop.jar
 
 start-container:
 	docker-compose up -d
@@ -10,6 +10,6 @@ start-container:
 stop-container:
 	docker-compose down
 
-#run-docker:
-#	docker exec dynamicgraphs sh -c "java -jar target/generation-develop.jar"
+run-docker:
+	docker exec graph-generation sh -c "java -jar generation/build/libs/generation-develop.jar --source=datasets/java/patterns/adapter --language=java --neo4j-host=neo4j:"
 

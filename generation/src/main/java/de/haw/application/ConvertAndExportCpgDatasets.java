@@ -4,6 +4,7 @@ import de.haw.application.model.TranslationRequest;
 import de.haw.dataset.DesignPatternLoader;
 import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetType;
+import de.haw.misc.Args;
 import de.haw.misc.FileLogger;
 import de.haw.misc.pipe.PipeBenchmark;
 import de.haw.misc.pipe.PipeContext;
@@ -27,8 +28,6 @@ public class ConvertAndExportCpgDatasets<Target> extends PipeModule<List<Transla
 
     private final boolean clearRepo;
 
-    private final GraphRepository repository = GraphRepository.instance();
-
     private final static String CSV_FILE_NAME = "benchmark.csv";
 
     @Override
@@ -45,8 +44,11 @@ public class ConvertAndExportCpgDatasets<Target> extends PipeModule<List<Transla
             fileLogger.clear();
         }
 
+        final Args args = ctx.get( PipeContext.ARGS_KEY, Args.empty(), Args.class );
+        final GraphRepository repository = GraphRepository.instance( args );
+
         if ( this.clearRepo ) {
-            this.repository.clearAll();
+            repository.clearAll();
         }
 
         ctx.set( PipeContext.CPG_REPOSITORY_PURGE_KEY, false );

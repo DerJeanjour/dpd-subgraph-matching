@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+
   neo4j:
     image: neo4j:latest
     container_name: neo4j
@@ -14,6 +15,15 @@ services:
       - neo4j_logs:/logs
       - neo4j_import:/import
       - neo4j_plugins:/plugins
+
+  graph-generation:
+    build:
+      context: ./
+      dockerfile: ./generation/Dockerfile
+    stdin_open: true
+    volumes:
+      - ./:/usr/app/
+    container_name: graph-generation
 
 volumes:
   neo4j_data:

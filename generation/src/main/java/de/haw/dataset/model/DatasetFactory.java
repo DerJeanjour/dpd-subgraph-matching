@@ -60,6 +60,7 @@ public class DatasetFactory {
             case P_MART, SELF, DPDf, OWN, PATTERN_EXAMPLES, JAVA_PATTERNS -> DatasetLanguage.JAVA;
             case CPP_PATTERNS -> DatasetLanguage.CPP;
             case PYTHON_PATTERNS -> DatasetLanguage.PYTHON;
+            default -> throw new IllegalArgumentException( "Can't determine language for dataset: " + type );
         };
     }
 

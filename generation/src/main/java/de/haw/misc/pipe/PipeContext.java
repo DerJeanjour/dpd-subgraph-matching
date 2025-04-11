@@ -9,6 +9,8 @@ import java.util.Optional;
 @NoArgsConstructor( staticName = "empty" )
 public class PipeContext {
 
+    public static String ARGS_KEY = "args";
+
     public static String PROCESS_NAME = "process_name";
 
     public static String PIPE_BENCHMARKS = "pipe_benchmarks";

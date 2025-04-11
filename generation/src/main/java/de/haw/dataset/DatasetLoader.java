@@ -31,6 +31,9 @@ public class DatasetLoader {
     public static final String BASE_PATH_JAVA_PATTERNS = BASE_PATH_JAVA + "patterns/";
 
     public static File load( final Dataset dataset ) {
+        if ( dataset.isCustom() ) {
+            return FileUtils.get( dataset.getCustomPath() );
+        }
         return FileUtils.get( getDirOfDataset( dataset.getType() ) + dataset.getProjectName() + "/" );
     }
 
@@ -44,6 +47,7 @@ public class DatasetLoader {
             case CPP_PATTERNS -> BASE_PATH_CPP_PATTERNS;
             case PYTHON_PATTERNS -> BASE_PATH_PYTHON_PATTERNS;
             case JAVA_PATTERNS -> BASE_PATH_JAVA_PATTERNS;
+            default -> throw new IllegalArgumentException( "Can't determine directory of type: " + type );
         };
     }
 

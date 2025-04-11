@@ -7,6 +7,7 @@ import de.haw.dataset.model.*;
 import de.haw.dataset.module.AttachPatternsToContext;
 import de.haw.dataset.module.LoadDatasetFileModule;
 import de.haw.dataset.scripts.DirectorySizeSummary;
+import de.haw.misc.Args;
 import de.haw.misc.pipe.PipeBuilder;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
@@ -27,19 +28,31 @@ public class Main {
     public static void main( String[] args ) {
 
         MemoryUtils.logMemoryStats();
+        final Args arguments = Args.of( args );
+
+        if ( arguments.has( "source" ) ) {
+            final String path = arguments.get( "source" );
+            final DatasetLanguage language = DatasetLanguage.valueOf( arguments.get( "language" ).toUpperCase() );
+            final int depth = Integer.parseInt( arguments.getOrElse( "depth", "10" ) );
+            final TranslationRequest request = TranslationRequest.custom( path, language, depth );
+            convertDatasets( Collections.singletonList( request ), arguments );
+            return;
+        }
 
         //test();
-        convertDatasets( getPatternRequests() );
+        convertDatasets( getPatternRequests(), arguments );
     }
 
-    private static void convertDatasets( final List<TranslationRequest> translationRequests ) {
-        convertDatasets( translationRequests, false, true );
+    private static void convertDatasets( final List<TranslationRequest> translationRequests, final Args args ) {
+        convertDatasets( translationRequests, false, true, args );
     }
 
     private static void convertDatasets(
-            final List<TranslationRequest> translationRequests, final boolean continueGen, final boolean clearRepo ) {
+            final List<TranslationRequest> translationRequests, final boolean continueGen, final boolean clearRepo,
+            final Args args ) {
         final PipeContext ctx = PipeContext.empty();
         ctx.set( PipeContext.CPG_MIN_DEPTH_KEY, 7 );
+        ctx.set( PipeContext.ARGS_KEY, args );
         ConvertAndExportCpgDatasets.of( continueGen, clearRepo ).process( translationRequests, ctx );
     }
 

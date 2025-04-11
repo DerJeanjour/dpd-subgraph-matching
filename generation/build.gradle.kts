@@ -1,5 +1,11 @@
 plugins {
+    id("application")
     id("java")
+    id("com.github.johnrengelman.shadow") version "8.1.0"
+}
+
+application {
+    mainClass.set("de.haw.Main")
 }
 
 group = "de.haw"
@@ -58,4 +64,13 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.jar {
+    manifest.attributes["Main-Class"] = "de.haw.Main"
+}
+
+tasks.shadowJar {
+    isZip64 = true
+    archiveClassifier.set("")
 }

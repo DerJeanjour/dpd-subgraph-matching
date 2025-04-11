@@ -13,11 +13,17 @@ public class Dataset {
 
     private final String projectName;
 
+    private String customPath;
+
     public String getName() {
         return this.type.name().toLowerCase() + "-" + this.projectName.toLowerCase()
                 .replace( " ", "_" )
                 .replace( ".", "" )
                 .trim();
+    }
+
+    public boolean isCustom() {
+        return DatasetType.CUSTOM.equals( this.type );
     }
 
 }
