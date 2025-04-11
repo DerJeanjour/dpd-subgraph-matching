@@ -25,6 +25,15 @@ services:
       - ./:/usr/app/
     container_name: graph-generation
 
+  graph-matching:
+    build:
+      context: ./
+      dockerfile: ./matching/Dockerfile
+    stdin_open: true
+    volumes:
+      - ./:/usr/app/
+    container_name: graph-matching
+
 volumes:
   neo4j_data:
   neo4j_logs:

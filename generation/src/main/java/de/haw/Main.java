@@ -32,9 +32,10 @@ public class Main {
 
         if ( arguments.has( "source" ) ) {
             final String path = arguments.get( "source" );
+            final String projectName = arguments.get( "name" );
             final DatasetLanguage language = DatasetLanguage.valueOf( arguments.get( "language" ).toUpperCase() );
             final int depth = Integer.parseInt( arguments.getOrElse( "depth", "10" ) );
-            final TranslationRequest request = TranslationRequest.custom( path, language, depth );
+            final TranslationRequest request = TranslationRequest.custom( path, projectName, language, depth );
             convertDatasets( Collections.singletonList( request ), arguments );
             return;
         }

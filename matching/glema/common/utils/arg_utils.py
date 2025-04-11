@@ -9,6 +9,13 @@ import matching.glema.common.utils.model_utils as model_utils
 def parse_args( use_default=False ):
     parser = argparse.ArgumentParser()
 
+    # neo4j
+    parser.add_argument( "--neo4j_protocol", type=str, default="bolt://" )
+    parser.add_argument( "--neo4j_host", type=str, default="localhost:" )
+    parser.add_argument( "--neo4j_port", type=str, default="7687" )
+    parser.add_argument( "--neo4j_user", type=str, default="neo4j" )
+    parser.add_argument( "--neo4j_pw", type=str, default="password" )
+
     # general
     parser.add_argument( "--seed", help="seed",
                          type=int, default=42 )
@@ -102,6 +109,7 @@ def parse_args( use_default=False ):
                          type=str, default="datasets/" )
 
     # generating
+    parser.add_argument( "--name", type=str, default=None )
     parser.add_argument( "--inference", action="store_true", default=True,
                          help="Preprocess dataset for inference. If false, train and test data will be generated." )
     parser.add_argument( "--num_subgraphs", default=2000, type=int, help="Number of subgraphs" )
@@ -113,11 +121,11 @@ def parse_args( use_default=False ):
     parser.add_argument( "--import_prefix", help="Dataset prefix for import",
                          type=str, default=None )
     parser.add_argument( "--import_subgraph_radius", help="Radius of k neighbourhood for subgraph.",
-                         type=int, default=3 )
+                         type=int, default=5 )
     parser.add_argument( "--import_subgraph_max", help="Max number of nodes per subgraph.",
-                         type=int, default=40 )
+                         type=int, default=42 )
     parser.add_argument( "--import_subgraph_min", help="Min number of nodes per subgraph.",
-                         type=int, default=2 )
+                         type=int, default=7 )
     parser.add_argument( "--split_data",
                          help="If true, the dataset will be split into train and test without without generating train algorithmically.",
                          action="store_true", default=False )

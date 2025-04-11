@@ -18,12 +18,11 @@ public class TranslationRequest {
     }
 
     public static TranslationRequest custom(
-            final String customPath, final DatasetLanguage language, final int depth ) {
+            final String customPath, final String projectName, final DatasetLanguage language, final int depth ) {
         if ( StringUtils.isBlank( customPath ) ) {
             throw new IllegalArgumentException( "Can't process path: " + customPath );
         }
-        final String name = customPath.split( "/" )[customPath.split( "/" ).length - 1];
-        final Dataset dataset = Dataset.of( language, DatasetType.CUSTOM, name );
+        final Dataset dataset = Dataset.of( language, DatasetType.CUSTOM, projectName );
         dataset.setCustomPath( customPath );
         return new TranslationRequest( dataset, depth );
     }

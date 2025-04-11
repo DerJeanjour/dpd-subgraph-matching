@@ -3,16 +3,16 @@ import os
 import networkx as nx
 from neo4j import GraphDatabase
 
+import matching.glema.common.utils.arg_utils as arg_utils
 import matching.misc.utils as utils
 
-uri = "bolt://localhost:7687"
-username = "neo4j"
-password = "password"
 
-
-def import_dataset():
+def import_dataset( args ):
     print( "Importing datasets from neo4j ..." )
-    driver = GraphDatabase.driver( uri, auth=(username, password) )
+
+    uri = f"{args.neo4j_protocol}{args.neo4j_host}{args.neo4j_port}"
+
+    driver = GraphDatabase.driver( uri, auth=(args.neo4j_user, args.neo4j_pw) )
 
     graphs = { }
     with driver.session() as session:
@@ -109,4 +109,5 @@ def replace_dots( data ):
 
 
 if __name__ == "__main__":
-    import_dataset()
+    args = arg_utils.parse_args()
+    import_dataset( args )
