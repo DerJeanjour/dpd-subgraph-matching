@@ -141,7 +141,6 @@ class DesignPatternDataset( Dataset ):
 
         self.embedding_dim = args.embedding_dim
         self.anchored = args.anchored
-        self.normalized = args.normalized
         self.query_pattern = query_pattern
         self.pattern_types = pattern_types
         self.subgraph_relation = subgraph_relation

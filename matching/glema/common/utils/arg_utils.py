@@ -17,6 +17,10 @@ def parse_args( use_default=False ):
     parser.add_argument( "--neo4j_pw", type=str, default="password" )
 
     # general
+    parser.add_argument( "--model", help="Name of the model",
+                         type=str, default="CPG_augm_large" )
+    parser.add_argument( "--pattern_dataset", help="Name of the pattern dataset",
+                         type=str, default="dpdf" )
     parser.add_argument( "--seed", help="seed",
                          type=int, default=42 )
     parser.add_argument( "--lr", help="learning rate",
@@ -30,7 +34,7 @@ def parse_args( use_default=False ):
     parser.add_argument( "--directed", action="store_true", help="directed graph" )
     parser.add_argument( "--iso", action="store_true", help="wheather using iso/noniso" )
     parser.add_argument( "--anchored", action="store_true",
-                         default=False, help="wheather embeddings of graphs are anchored" )
+                         default=True, help="wheather embeddings of graphs are anchored" )
     parser.add_argument( "--device", help="torch device",
                          type=str, default=str( model_utils.get_device() ) )
 

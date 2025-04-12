@@ -1,8 +1,8 @@
 {
-    "number_source": 36,
-    "avg_source_size": 23.0,
+    "number_source": 24,
+    "avg_source_size": 13.0,
     "std_source_size": 0.0,
-    "avg_degree": 2.9565217391304346,
+    "avg_degree": 2.4615384615384617,
     "std_degree": 0.0,
     "number_label_node": 5,
     "number_label_edge": 1,

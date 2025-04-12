@@ -434,6 +434,8 @@ def get_design_patterns( args ) -> dict[ str, str ]:
     pattern_type_filepath = io_utils.get_abs_file_path( pattern_type_filepath )
     pattern_type_file = open( pattern_type_filepath, "r" )
     for row in list( pattern_type_file.read().strip().split( "\n" ) ):
+        if len( row.split( " " ) ) < 2:
+            continue
         node_id = row.split( " " )[ 0 ]
         pattern_type = row.split( " " )[ 1 ]
         design_patterns[ str( int( node_id ) ) ] = pattern_type
