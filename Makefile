@@ -11,4 +11,4 @@ run-matching:
 	docker exec graph-matching sh -c "python matching/main.py --name=factory-method --directed --neo4j_host=neo4j:"
 
 run:
-	python cli.py --name=factory-method --language=java --source=datasets/java/patterns/factory-method
+	python run.py --name=factory-method --language=java --source=datasets/java/patterns/factory-method
