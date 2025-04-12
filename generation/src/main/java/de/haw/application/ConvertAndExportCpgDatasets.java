@@ -5,7 +5,6 @@ import de.haw.dataset.DesignPatternLoader;
 import de.haw.dataset.model.Dataset;
 import de.haw.dataset.model.DatasetType;
 import de.haw.misc.Args;
-import de.haw.misc.FileLogger;
 import de.haw.misc.pipe.PipeBenchmark;
 import de.haw.misc.pipe.PipeContext;
 import de.haw.misc.pipe.PipeModule;
@@ -24,8 +23,6 @@ import java.util.Optional;
 @RequiredArgsConstructor( staticName = "of" )
 public class ConvertAndExportCpgDatasets<Target> extends PipeModule<List<TranslationRequest>, Void, Target> {
 
-    private final boolean continueGen;
-
     private final boolean clearRepo;
 
     private final static String CSV_FILE_NAME = "benchmark.csv";
@@ -33,16 +30,7 @@ public class ConvertAndExportCpgDatasets<Target> extends PipeModule<List<Transla
     @Override
     protected Void processImpl( final List<TranslationRequest> translationRequests, final PipeContext ctx ) {
 
-        final FileLogger fileLogger = FileLogger.of( "generation/gen_data.txt" );
         List<TranslationRequest> requests = translationRequests;
-        if ( this.continueGen ) {
-            final List<String> generatedData = fileLogger.readContent();
-            requests = requests.stream()
-                    .filter( r -> !generatedData.contains( r.getDataset().getProjectName() ) )
-                    .toList();
-        } else {
-            fileLogger.clear();
-        }
 
         final Args args = ctx.get( PipeContext.ARGS_KEY, Args.empty(), Args.class );
         final GraphRepository repository = GraphRepository.instance( args );
@@ -56,17 +44,12 @@ public class ConvertAndExportCpgDatasets<Target> extends PipeModule<List<Transla
         for ( final TranslationRequest translationRequest : requests ) {
             final Dataset dataset = translationRequest.getDataset();
             log.info( "Start processing dataset: {}", dataset.getProjectName() );
-            fileLogger.write( "Starting: " + dataset.getProjectName() );
             ctx.set( PipeContext.CPG_DEPTH_KEY, translationRequest.getDepth() );
             try {
                 ConvertAndExportCpgModule.instance().process( dataset, ctx );
-                fileLogger.clearLastLine();
             } catch ( Exception e ) {
                 log.error( "Couldn't convert dataset {} ...", e.getMessage(), e );
-                fileLogger.write( "Failed: " + dataset.getProjectName() + " (" + e.getMessage() + ")" );
             }
-
-            fileLogger.write( dataset.getProjectName() );
             writeBenchmarks( ctx );
         }
 

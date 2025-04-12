@@ -16,10 +16,6 @@ public class CsvUtils {
 
     protected static final char DEFAULT_SEPARATOR = ',';
 
-    /**
-     * Custom csv mapping strategy to allow @CsvBindByName and @CsvBindByPosition annotation of csv model in parallel.
-     * <a href="https://stackoverflow.com/a/58833974">Source</a>
-     */
     private static class CsvMappingStrategy<T> extends ColumnPositionMappingStrategy<T> {
 
         @Override
