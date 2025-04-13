@@ -72,7 +72,7 @@ public class ComputeRecordPathsModule<Target> extends PipeModule<Graph, Graph, T
         return graph;
     }
 
-    private List<CpgPath> getShortestPaths( final Graph graph, final Node source ) {
+    public List<CpgPath> getShortestPaths( final Graph graph, final Node source ) {
 
         final List<Node> recordNodes = this.getRecordNodes( graph );
 
@@ -89,19 +89,19 @@ public class ComputeRecordPathsModule<Target> extends PipeModule<Graph, Graph, T
                 .toList();
     }
 
-    private Graph getRecordNeighbourSubgraph( final Node source ) {
+    public Graph getRecordNeighbourSubgraph( final Node source ) {
         final Graph subgraph = this.GS.getEmptyGraph( source.getGraph() );
         RecordNeighbourSubgraphCopyTraverser.of( subgraph, MAX_PATH_DISTANCE ).traverse( source );
         return subgraph;
     }
 
-    private List<Node> getRecordNodes( final Graph graph ) {
+    public List<Node> getRecordNodes( final Graph graph ) {
         return graph.nodes()
                 .filter( node -> this.GS.hasLabel( node, CpgConst.NODE_LABEL_DECLARATION_RECORD ) )
                 .toList();
     }
 
-    private Edge getPivotEdge( final List<Edge> edges ) {
+    public Edge getPivotEdge( final List<Edge> edges ) {
         int order = RecordInteractionDescriptor.KNOWS_INTERACTION.getOrder();
         Edge pivot = null;
         for ( RecordInteractionDescriptor descriptor : RecordInteractionDescriptor.ALL ) {

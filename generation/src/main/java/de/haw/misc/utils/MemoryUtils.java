@@ -27,7 +27,7 @@ public class MemoryUtils {
         // Thread stack memory stats (approximation)
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         int threadCount = threadMXBean.getThreadCount();
-        long approximateStackMemory = threadCount * ( 512 * 1024 ); // Assuming 512 KB per thread
+        long approximateStackMemory = threadCount * ( 512 * 1024 );
 
         // Logging all memory stats
         log.info( "==== Memory Statistics ====" );

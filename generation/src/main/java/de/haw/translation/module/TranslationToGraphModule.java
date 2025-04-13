@@ -58,7 +58,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
         throw new IllegalStateException( "Couldn't parse CPG results with min depth of " + minDepth );
     }
 
-    private Graph translateGraph( final TranslationResult result, final PipeContext ctx, final int depth ) {
+    public Graph translateGraph( final TranslationResult result, final PipeContext ctx, final int depth ) {
         log.info( "Converting CPG result to graph with depth {} ...", depth );
         final Application neo4j = new Application();
         ReflectionUtils.setInt( neo4j, "depth", depth );
@@ -72,7 +72,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
         return graph;
     }
 
-    private Graph toGraph( final JsonGraph json, final PipeContext ctx ) {
+    public Graph toGraph( final JsonGraph json, final PipeContext ctx ) {
 
         final Dataset dataset = ctx.get( PipeContext.CPG_DATASET_KEY, Dataset.class )
                 .orElseThrow( IllegalStateException::new );
@@ -117,7 +117,7 @@ public class TranslationToGraphModule<Target> extends PipeModule<TranslationResu
         return graph;
     }
 
-    private boolean graphIsEmpty( final Graph graph ) {
+    public boolean graphIsEmpty( final Graph graph ) {
         return graph == null || graph.getNodeCount() == 0;
     }
 

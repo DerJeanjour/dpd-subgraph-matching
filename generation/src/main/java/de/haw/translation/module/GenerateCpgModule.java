@@ -62,28 +62,6 @@ public class GenerateCpgModule<Target> extends PipeModule<File, TranslationResul
             }
         }
 
-        /*
-        Map<String, Integer> nextCDGsCounts = new HashMap<>();
-        Map<String, Integer> nextEOGsCounts = new HashMap<>();
-        Map<String, Integer> nextDFGsCounts = new HashMap<>();
-        Map<String, Integer> nextPDGsCounts = new HashMap<>();
-        Map<String, Integer> nextASTsCounts = new HashMap<>();
-        for( final TranslationUnitDeclaration unitDeclaration : result.getComponents().get( 0 ).getTranslationUnits() ) {
-            final String name = unitDeclaration.getLocation().toString();
-            final List<PropertyEdge<Node>> nextCDGs = unitDeclaration.getNextCDGEdges();
-            nextCDGsCounts.put( name, nextCDGs.size() );
-            final List<PropertyEdge<Node>> nextEOGs = unitDeclaration.getNextEOGEdges();
-            nextEOGsCounts.put( name, nextEOGs.size() );
-            final Set<Node> nextDFGs = unitDeclaration.getNextDFG();
-            nextDFGsCounts.put( name, nextDFGs.size() );
-            final Set<Node> nextPDGs = unitDeclaration.getNextPDG();
-            nextPDGsCounts.put( name, nextPDGs.size() );
-            final List<Node> nextASTs = unitDeclaration.getAstChildren();
-            nextASTsCounts.put( name, nextASTs.size() );
-        }
-
-         */
-
         return result;
     }
 

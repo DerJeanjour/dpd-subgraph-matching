@@ -70,11 +70,11 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         return graph;
     }
 
-    private CpgNodePaths getPaths( final PipeContext ctx ) {
+    public CpgNodePaths getPaths( final PipeContext ctx ) {
         return ctx.get( PipeContext.RECORD_PATHS, CpgNodePaths.class ).orElseThrow( IllegalStateException::new );
     }
 
-    private boolean isValidPath( final CpgPath recordPath ) {
+    public boolean isValidPath( final CpgPath recordPath ) {
 
         // validate path distance
         if ( recordPath.getPath().empty() ) {
@@ -135,7 +135,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         return interactionNode;
     }
 
-    private void addEdgeForInteraction(
+    public void addEdgeForInteraction(
             final Graph graph, final Node source, final Node target, final RecordInteraction interaction,
             final boolean applyPathAttrs ) {
 
@@ -159,7 +159,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
 
     }
 
-    private RecordInteraction getPathInteraction( final CpgPath recordPath ) {
+    public RecordInteraction getPathInteraction( final CpgPath recordPath ) {
 
         final List<CpgEdgeType> pathTypes = PathUtils.getTypes( recordPath.getPath() );
         final Node pathSource = PathUtils.getFirstNode( recordPath.getPath() );
@@ -176,7 +176,7 @@ public class ComputeRecordInteractionsModule<Target> extends PipeModule<Graph, G
         return RecordInteraction.of( matchedDescriptor.getType(), source, target, recordPath );
     }
 
-    private List<RecordInteraction> reduceSourceInteractions( final List<RecordInteraction> interactions ) {
+    public List<RecordInteraction> reduceSourceInteractions( final List<RecordInteraction> interactions ) {
         final Map<String, List<RecordInteraction>> interactionsByTarget = new HashMap<>();
         final Map<String, List<RecordInteractionType>> allowedTypesByTarget = new HashMap<>();
         for ( final RecordInteraction interaction : interactions ) {

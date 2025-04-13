@@ -35,30 +35,15 @@ public class PatternReaderXml implements PatternReader {
         put( DesignPatternType.VISITOR, Arrays.asList( "concreteVisitor" ) );
     }};
 
-    /*
-    private final static Map<DesignPatternType, List<String>> ROLES_TO_COUNT = new HashMap<>() {{
-        put( DesignPatternType.ABSTRACT_FACTORY, Collections.emptyList() );
-        put( DesignPatternType.ADAPTER, Collections.emptyList() );
-        put( DesignPatternType.BUILDER, Collections.emptyList() );
-        put( DesignPatternType.FACADE, Collections.emptyList() );
-        put( DesignPatternType.FACTORY_METHOD, Collections.emptyList() );
-        put( DesignPatternType.OBSERVER, Collections.emptyList() );
-        put( DesignPatternType.SINGLETON, Collections.emptyList() );
-        put( DesignPatternType.DECORATOR, Collections.emptyList() );
-        put( DesignPatternType.MEMENTO, Collections.emptyList() );
-        put( DesignPatternType.PROTOTYPE, Collections.emptyList() );
-        put( DesignPatternType.PROXY, Collections.emptyList() );
-        put( DesignPatternType.VISITOR, Collections.emptyList() );
-    }};
-
-     */
-
     @Override
     public List<DatasetDesignPatterns> read( final List<Dataset> datasets, final File file ) {
 
-        final List<DatasetDesignPatterns> datasetsPatterns = new ArrayList<>();
-
         final Document xml = this.readFile( file );
+        return this.read( datasets, xml );
+    }
+
+    public List<DatasetDesignPatterns> read( final List<Dataset> datasets, final Document xml ) {
+        final List<DatasetDesignPatterns> datasetsPatterns = new ArrayList<>();
         for ( final Element program : getChilds( xml.getDocumentElement(), "program" ) ) {
             final String programName = program.getElementsByTagName( "name" ).item( 0 ).getTextContent();
 
@@ -78,7 +63,7 @@ public class PatternReaderXml implements PatternReader {
         return datasetsPatterns;
     }
 
-    private void findPatternsFor( final DatasetDesignPatterns datasetPatterns, final Element program ) {
+    public void findPatternsFor( final DatasetDesignPatterns datasetPatterns, final Element program ) {
         for ( final Element pattern : getChilds( program, "designPattern" ) ) {
 
             final String patternName = pattern.getAttribute( "name" );
@@ -96,7 +81,7 @@ public class PatternReaderXml implements PatternReader {
         }
     }
 
-    private List<DesignPattern> getPatternsFromEntities(
+    public List<DesignPattern> getPatternsFromEntities(
             final DesignPatternType type, final String instanceId, final List<Element> entities ) {
         final List<DesignPattern> patterns = new ArrayList<>();
         for ( final Element entity : entities ) {
@@ -116,7 +101,7 @@ public class PatternReaderXml implements PatternReader {
         return patterns;
     }
 
-    private List<Element> getChilds( final Element element, final String tag ) {
+    public List<Element> getChilds( final Element element, final String tag ) {
         final List<Element> nodes = new ArrayList<>();
         final NodeList childs = element.getElementsByTagName( tag );
         for ( int i = 0; i < childs.getLength(); i++ ) {
@@ -125,7 +110,7 @@ public class PatternReaderXml implements PatternReader {
         return nodes;
     }
 
-    private Optional<DesignPatternType> mapPatternType( final String patternName ) {
+    public Optional<DesignPatternType> mapPatternType( final String patternName ) {
         return Arrays.stream( DesignPatternType.values() )
                 .filter( dpt -> dpt.getName().equals( patternName ) )
                 .findFirst();

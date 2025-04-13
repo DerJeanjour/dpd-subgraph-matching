@@ -30,6 +30,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    testImplementation("org.mockito:mockito-core:5.3.1")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.3.1")
+
     implementation( "org.jetbrains.kotlin:kotlin-stdlib" )
 
     val cpgVersion = "8.3.0"
