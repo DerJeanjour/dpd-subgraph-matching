@@ -13,8 +13,6 @@ import torch
 
 def get_abs_file_path( project_file_path: str ) -> str:
     abs_path: Path = get_project_root() / project_file_path
-    # if not abs_path.exists():
-    #    raise FileNotFoundError( f"The file '{abs_path}' does not exist." )
     return str( abs_path )
 
 

@@ -78,11 +78,6 @@ def train( args ):
                                  max_size=max_train_data_size )
     test_dataset = BaseDataset( test_keys, args, max_size=max_test_data_size )
 
-    # num_train_iso = len([0 for k in train_keys if 'iso' in k])
-    # num_train_non = len([0 for k in train_keys if 'non' in k])
-    # train_weights = [1/num_train_iso if 'iso' in k else 1/num_train_non for k in train_keys]
-    # train_sampler = UnderSampler(train_weights, len(train_weights), replacement=True)
-
     train_dataloader = DataLoader(
         train_dataset,
         args.batch_size,

@@ -4,9 +4,7 @@ import pickle
 import random
 
 import networkx as nx
-import numpy as np
 from torch.utils.data import Dataset
-from torch.utils.data.sampler import Sampler
 
 import matching.glema.common.utils.graph_utils as graph_utils
 import matching.glema.common.utils.io_utils as io_utils
@@ -299,7 +297,7 @@ class DesignPatternDataset( Dataset ):
         (source, source_type,
          pattern, pattern_type,
          gidx, record_scope, record_dataset,
-         pattern_id ) = self.samples[ idx ]
+         pattern_id) = self.samples[ idx ]
 
         target_source = source if self.query_pattern else pattern
         target_query = pattern if self.query_pattern else source
@@ -322,23 +320,3 @@ class DesignPatternDataset( Dataset ):
         source, query, meta = self.get_data( idx )
         return encode_sample( query, source, self.embedding_dim,
                               anchored=self.anchored, key=meta, is_custom_key=True )
-
-
-class UnderSampler( Sampler ):
-    def __init__( self, weights, num_samples, replacement=True ):
-        weights = np.array( weights ) / np.sum( weights )
-        self.weights = weights
-        self.num_samples = num_samples
-        self.replacement = replacement
-
-    def __iter__( self ):
-        retval = np.random.choice(
-            len( self.weights ),
-            self.num_samples,
-            replace=self.replacement,
-            p=self.weights,
-        )
-        return iter( retval.tolist() )
-
-    def __len__( self ):
-        return self.num_samples
