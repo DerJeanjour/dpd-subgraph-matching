@@ -3,7 +3,6 @@ import os
 import pickle
 from collections.abc import Callable
 
-import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -16,7 +15,6 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.preprocessing import label_binarize
 from tqdm import tqdm
 
@@ -79,46 +77,6 @@ def get_common_patterns_for_type( patterns_normalized_of_type: list[ nx.Graph ],
     return common_patterns
 
 
-def normalize_pattern_to_connected( patterns_all: dict[ str, list[ nx.Graph ] ],
-                                    max_distance=8 ) -> dict[ str, nx.Graph ]:
-    print( "Normalizing patterns to connected ..." )
-    norm_connected_pattern_graphs = { }
-    for pattern_type in tqdm( patterns_all.keys() ):
-        patterns = patterns_all[ pattern_type ]
-        connected = graph_utils.connect_graphs_at_anchor( patterns, keep_radius=max_distance )
-        normalized, _ = graph_utils.normalize_graph( connected, max_distance=max_distance )
-        norm_connected_pattern_graphs[ pattern_type ] = normalized
-    return norm_connected_pattern_graphs
-
-
-def filter_normalized_by_presence( norm_connected_pattern_graphs: dict[ str, nx.Graph ],
-                                   num_graphs=1, n_start=12, n_decay=2 ):
-    print( "Filter connected patterns by presence ..." )
-    norm_pattern_graphs = { }
-    for pattern_type in tqdm( norm_connected_pattern_graphs.keys() ):
-        normalized = norm_connected_pattern_graphs[ pattern_type ]
-        norm_pattern_graphs[ pattern_type ] = [ ]
-        top_n = n_start
-        while len( norm_pattern_graphs[ pattern_type ] ) < num_graphs:
-            n_presence = [ data[ "presence" ] for n, data in normalized.nodes( data=True ) ]
-            presence_thresh = min( sorted( n_presence )[ -top_n: ] )
-            n_keep = [ nid for nid, data in normalized.nodes( data=True ) if data[ "presence" ] >= presence_thresh ]
-            filtered = normalized.subgraph( n_keep )
-            norm_pattern_graphs[ pattern_type ].append( filtered )
-            top_n -= n_decay
-    return norm_pattern_graphs
-
-
-def normalize_patterns_by_presence( patterns_all: dict[ str, list[ nx.Graph ] ],
-                                    num_graphs=1, max_distance=8,
-                                    n_start=12, n_decay=2 ) -> dict[ str, list[ nx.Graph ] ]:
-    norm_connected_pattern_graphs = normalize_pattern_to_connected( patterns_all,
-                                                                    max_distance=max_distance )
-    norm_pattern_graphs = filter_normalized_by_presence( norm_connected_pattern_graphs, num_graphs=num_graphs,
-                                                         n_start=n_start, n_decay=n_decay )
-    return norm_pattern_graphs
-
-
 def normalize_patterns( patterns_all: dict[ str, list[ nx.Graph ] ], max_distance=8, min_nodes=-1 ) -> dict[
     str, list[ nx.Graph ] ]:
     print( "Normalizing patterns ..." )
@@ -163,69 +121,6 @@ def filter_sources( sources: dict[ int, nx.Graph ], source_patterns: dict[ int, 
         for gidx in idxs:
             filtered_sources[ gidx ] = sources[ gidx ]
     return filtered_sources
-
-
-def sample_processor_k_normalized( source: nx.Graph, query: nx.Graph, meta: dict,
-                                   min_d_offset=1, max_d_offset=5 ) -> tuple[ list, list, list ]:
-    sources, queries, metas = [ ], [ ], [ ]
-    source, source_d = graph_utils.normalize_graph( source, max_distance=8 )
-    if source_d < 3:
-        return sources, queries, metas
-
-    start_d = source_d
-    last_d = -1
-    for i in list( range( min_d_offset, max_d_offset + 1 ) ):
-        query_max_d = start_d - i
-        if query_max_d < 2:
-            continue
-        query, query_d = graph_utils.normalize_graph( query, max_distance=query_max_d + 1 )
-        if last_d == query_d:
-            continue
-        last_d = query_d
-        query = graph_utils.subgraph_from_anchor_of_size( query, source.number_of_nodes() - 1 )
-        queries.append( query )
-        sources.append( source )
-        # pred_w = query_d / source_d
-        # TODO weight the relation to the original size of the query instead to the source
-        pred_w = query.number_of_nodes() / source.number_of_nodes()
-        _meta = meta.copy()
-        _meta[ "pred_w" ] = pred_w
-        metas.append( _meta )
-    return sources, queries, metas
-
-
-def sample_processor_path_match_weighted( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
-    source_paths = set( [ path[ 1 ] for path in graph_utils.get_all_norm_paths( source ) ] )
-    query_paths = set( [ path[ 1 ] for path in graph_utils.get_all_norm_paths( query ) ] )
-    max_match = 0
-    for sp in source_paths:
-        for qp in query_paths:
-            for k in list( range( 1, min( len( sp ), len( qp ) ) + 1 ) ):
-                qpk = qp[ :k ]
-                if sp.startswith( qpk ) and len( qpk ) > max_match:
-                    max_match = len( qpk )
-
-    pred_w = max_match / max( [ len( p ) for p in source_paths ] )
-    _meta = meta.copy()
-    _meta[ "pred_w" ] = pred_w
-    return sample_processor_default( source, query, _meta )
-
-
-def sample_processor_subgraph_normalized( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
-    combined, node_matches, _ = graph_utils.combine_normalized( source, query )
-    n_match = [ nid for nid, match in zip( combined.nodes(), node_matches ) if match == 1 ]
-    n_not_match = [ nid for nid, match in zip( combined.nodes(), node_matches ) if match < 0 ]
-
-    _meta = meta.copy()
-    _meta[ "n_match" ] = len( n_match )
-    _meta[ "n_not_match" ] = len( n_not_match )
-    if len( n_match ) == 0:
-        _meta[ "pred_w" ] = 0.0
-    else:
-        _meta[ "pred_w" ] = max( len( n_match ) - len( n_not_match ), 0 ) / len( n_match )
-        _meta[ "pred_w" ] = _meta[ "pred_w" ] * (3 / 4) + (1 / 4)
-
-    return sample_processor_default( source, query, _meta )
 
 
 def sample_processor_default( source: nx.Graph, query: nx.Graph, meta: dict ) -> tuple[ list, list, list ]:
@@ -356,9 +251,9 @@ def compute_source_types( groups_by_source: dict[ int, dict[ str, list[ float ] 
     return source_types
 
 
-def compute_labels_legacy( source_types: dict[ int, str ],
-                           source_preds: dict[ int, dict[ str, float ] ],
-                           conf=0.5, top_k=1 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
+def compute_labels( source_types: dict[ int, str ],
+                    source_preds: dict[ int, dict[ str, float ] ],
+                    conf=0.5, top_k=1 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
     true_labels = [ ]
     pred_labels = [ ]
     pred_scores = [ ]
@@ -377,41 +272,14 @@ def compute_labels_legacy( source_types: dict[ int, str ],
     return true_labels, pred_labels, pred_scores
 
 
-def compute_labels( source_types: dict[ int, str ],
-                    source_preds: dict[ int, dict[ str, float ] ],
-                    conf=0.5 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
-    true_labels = [ ]
-    pred_labels = [ ]
-    pred_scores = [ ]
-    for gidx, source_type in source_types.items():
-        source_pattern_preds = source_preds[ gidx ]
-        source_pred_type = cpg_const.NO_DESIGN_PATTERN
-        source_pred_score = 0.0
-        for dp_type, dp_pred in source_pattern_preds.items():
-            if dp_pred > conf:
-                if dp_pred > source_pred_score:
-                    source_pred_score = dp_pred
-                    source_pred_type = dp_type
-                if source_type == dp_type:
-                    source_pred_type = dp_type
-                    source_pred_score = dp_pred
-                    break
-
-        true_labels.append( source_type )
-        pred_labels.append( source_pred_type )
-        pred_scores.append( source_pred_score )
-
-    return true_labels, pred_labels, pred_scores
-
-
 def compute_labels_by_instance( source_types: dict[ int, str ],
                                 source_preds: dict[ int, dict[ str, float ] ],
                                 groups_by_instance: dict[ int, dict[ str, list[ int ] ] ],
                                 metas, conf=0.5 ) -> tuple[ list[ str ], list[ str ], list[ float ] ]:
     true_labels, pred_labels, pred_scores = [ ], [ ], [ ]
-    true_labels_source, pred_labels_source, pred_scores_source = compute_labels_legacy( source_types,
-                                                                                        source_preds,
-                                                                                        conf=conf )
+    true_labels_source, pred_labels_source, pred_scores_source = compute_labels( source_types,
+                                                                                 source_preds,
+                                                                                 conf=conf )
 
     source_to_instance_mapping = get_source_to_pattern_instance_mapping( metas )
     instance_pattern_true_labels: dict[ int, str ] = { }
@@ -553,7 +421,7 @@ def get_matching_examples( pattern_types: list[ str ],
                         continue
 
                 # combine graphs and count matched, calc match-factor
-                _, node_matching, _ = graph_utils.combine_normalized( sources[ idx ],queries[ idx ]  )
+                _, node_matching, _ = graph_utils.combine_normalized( sources[ idx ], queries[ idx ] )
                 n_matches = len( [ n for n in node_matching if n == 1 ] )
                 n_not_matches = len( [ n for n in node_matching if n == -1 ] )
                 n_total = n_matches + n_not_matches
@@ -578,9 +446,9 @@ def get_matching_examples( pattern_types: list[ str ],
             "idx": pattern_idxs[ max_idx ]
         }
 
-    type_pairs = []
-    type_sources = []
-    type_queries = []
+    type_pairs = [ ]
+    type_sources = [ ]
+    type_queries = [ ]
     for source_type in pattern_types:
         for query_type in pattern_types:
             if source_type == query_type:
@@ -602,46 +470,6 @@ def get_matching_examples( pattern_types: list[ str ],
         with open( save_path, 'wb' ) as handle:
             pickle.dump( matching_examples, handle, protocol=pickle.HIGHEST_PROTOCOL )
     return matching_examples
-
-
-def compute_cm( true_labels: list[ str ], pred_labels: list[ str ], pred_scores: list[ float ],
-                save_path=None, labels=None, include_na=True ):
-    if labels is None:
-        labels = [ dp.value for dp in cpg_const.DesignPatternType ]
-    if include_na:
-        labels = [ *labels, cpg_const.NO_DESIGN_PATTERN ]
-    cm = confusion_matrix( true_labels, pred_labels, labels=labels )
-
-    confidence_matrix = np.zeros_like( cm, dtype=float )
-    count_matrix = np.zeros_like( cm, dtype=int )
-    for true, pred, score in zip( true_labels, pred_labels, pred_scores ):
-        i = labels.index( true )
-        j = labels.index( pred )
-        confidence_matrix[ i, j ] += score
-        count_matrix[ i, j ] += 1
-    average_confidence = np.divide( confidence_matrix, count_matrix,
-                                    out=np.zeros_like( confidence_matrix ),
-                                    where=count_matrix != 0 )
-
-    fig, ax = plt.subplots( figsize=(6, 6) )
-    disp = ConfusionMatrixDisplay( confusion_matrix=cm, display_labels=labels )
-    disp.plot( cmap=plt.cm.Blues, ax=ax, colorbar=False )
-
-    for i in range( len( labels ) ):
-        for j in range( len( labels ) ):
-            if cm[ i, j ] > 0:
-                ax.text( j, i + 0.3, f"⌀={average_confidence[ i, j ]:.2f}",
-                         ha='center', va='center',
-                         color='black', fontsize=8 )
-
-    plt.title( "Confusion Matrix", fontsize=16 )
-    plt.xlabel( "Predicted Labels", fontsize=14 )
-    plt.ylabel( "True Labels", fontsize=14 )
-    plt.xticks( fontsize=10, rotation=90 )
-    plt.yticks( fontsize=10 )
-
-    if save_path is not None:
-        plt.savefig( save_path, bbox_inches='tight' )
 
 
 def main( args, version, source_dataset ):
@@ -687,9 +515,6 @@ def main( args, version, source_dataset ):
 
     # inference
     preds, metas, sources, queries = inference( model, dataset, args,
-                                                # sample_processor=sample_processor_subgraph_normalized,
-                                                # sample_processor=sample_processor_k_normalized,
-                                                # min_d_offset=1, max_d_offset=5,
                                                 collect_graphs=True )
 
     # aggregate
@@ -734,8 +559,7 @@ def main( args, version, source_dataset ):
         source_types = compute_source_types( groups_by_source, metas )
 
         if by_source or by_grouped_instance:
-            # true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=conf_step )
-            true_labels, pred_labels, pred_scores = compute_labels_legacy( source_types, source_preds, conf=0.8 )
+            true_labels, pred_labels, pred_scores = compute_labels( source_types, source_preds, conf=0.8 )
             groups = groups_by_source
         else:
             true_labels, pred_labels, pred_scores = compute_labels_by_instance( source_types, source_preds,
@@ -747,9 +571,6 @@ def main( args, version, source_dataset ):
             # save results
             result_df = get_result_df( groups, metas, true_labels, pred_labels, pred_scores )
             result_df.to_csv( os.path.join( result_dir, "result_pattern_matching_sources.csv" ), index=False )
-            # evaluate
-            compute_cm( true_labels, pred_labels, pred_scores, labels=pattern_types, include_na=True,
-                        save_path=os.path.join( result_dir, "result_pattern_matching_cm.png" ) )
         # compute metrics
         x_labels, y_labels = to_numeric_labels( true_labels, pred_labels )
         metrics = compute_metrics( x_labels, y_labels )
