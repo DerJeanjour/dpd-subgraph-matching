@@ -14,6 +14,7 @@ import matching.glema.common.utils.misc_utils as misc_utils
 import matching.misc.cpg_const as cpg_const
 from matching.glema.common.dataset import DesignPatternDataset
 from matching.glema.common.model import InferenceGNN
+import matching.glema.common.utils.io_utils as io_utils
 
 
 def detect_patterns( args, model_name, source_dataset, pattern_dataset ):
@@ -50,8 +51,7 @@ def detect_patterns( args, model_name, source_dataset, pattern_dataset ):
     min_nodes = 5
     max_norm_d = 12
     sources = dataset.get_sources()
-    sources = epm.filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=-1,
-                                  max_na_patterns=5 )
+    # sources = epm.filter_sources( sources, dataset.get_source_patterns(), max_sources_per_pattern=-1, max_na_patterns=5 )
     sources = epm.normalize_sources( sources, max_distance=max_norm_d, min_nodes=min_nodes )
 
     patterns = dataset.get_patterns()
@@ -87,8 +87,8 @@ def detect_patterns( args, model_name, source_dataset, pattern_dataset ):
         record_dataset = meta[ "record_dataset" ]
         record_scope = meta[ "record_scope" ]
         source_pred = misc_utils.sort_dict_by_value( source_preds[ gidx ], reverse=True )
-        source_pred = { pt: pred for pt, pred in source_pred.items() if pred >= conf }
-        print( f"{record_dataset}::{record_scope} = {source_pred}" )
+        source_pred = { pt: f"{pred:.3f}" for pt, pred in source_pred.items() if pred >= conf }
+        print( f"{record_dataset.replace( 'custom-', '' )}::{record_scope} = {source_pred}" )
 
 
 if __name__ == "__main__":
@@ -99,9 +99,15 @@ if __name__ == "__main__":
     args.dataset = args.name
     args.num_subgraphs = 2
 
-    data_importer.import_dataset( args )
-    data_processor.clean_up( args )
-    data_processor.process( args )
+    import_dir = io_utils.get_abs_file_path( args.import_dir, with_subproject=False )
+    cached_imports = io_utils.get_filenames_in_dir( import_dir )
+    use_cache = args.use_cache and any( cache.startswith( args.import_prefix ) for cache in cached_imports )
+    if not use_cache:
+        data_importer.import_dataset( args )
+        data_processor.clean_up( args )
+        data_processor.process( args )
+    else:
+        print( f"Use cache for dataset {args.dataset}" )
 
     source_dataset = args.name
     pattern_dataset = args.pattern_dataset

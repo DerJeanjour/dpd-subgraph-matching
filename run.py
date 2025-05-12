@@ -2,27 +2,27 @@ import argparse
 import subprocess
 import time
 
-start = time.time()
-print( "hello" )
-end = time.time()
-print( end - start )
-
+DOCKER_QUOTE = '\"'
 
 def process( args ):
     print( args )
 
     generation_start = time.time()
-    generation_cmd = (f'docker exec graph-generation sh -c "java -jar generation/build/libs/generation-develop.jar '
-                      f'--source={args.source} --name={args.name} --language={args.language} --depth={args.depth} '
-                      f'--neo4j-host={args.neo4j_host}"')
+    generation_cmd = (
+        f'{f"docker exec graph-generation sh -c {DOCKER_QUOTE}" if not args.local else ""}java -jar generation/build/libs/generation-develop.jar '
+        f'--source="{args.source}" --name="{args.name}" --language={args.language} --depth={args.depth} '
+        f'--neo4j-host={"localhost:" if args.local else args.neo4j_host}{f"{DOCKER_QUOTE}" if not args.local else ""}')
+    print( generation_cmd )
     p_generation = subprocess.Popen( generation_cmd, shell=True )
     p_generation.wait()
     generation_time = time.time() - generation_start
 
     matching_start = time.time()
-    matching_cmd = (f'docker exec graph-matching sh -c "python matching/main.py --name={args.name} '
-                    f'--pattern_dataset={args.patterns} --model={args.model} {"--directed" if args.directed else ""} '
-                    f'--neo4j_host={args.neo4j_host}"')
+    matching_cmd = (
+        f'{f"docker exec graph-matching sh -c {DOCKER_QUOTE}python matching/main.py" if not args.local else "matching/venv/bin/python matching/main.py"} --name="{args.name}" '
+        f'--pattern_dataset={args.patterns} --model={args.model} {"--directed" if args.directed else ""} {"--use_cache" if args.use_cache else ""} '
+        f'--neo4j_host={"localhost:" if args.local else args.neo4j_host}{f"{DOCKER_QUOTE}" if not args.local else ""}')
+    print( matching_cmd )
     p_matching = subprocess.Popen( matching_cmd, shell=True )
     p_matching.wait()
     matching_time = time.time() - matching_start
@@ -41,6 +41,9 @@ if __name__ == "__main__":
     parser.add_argument( "--neo4j_host",
                          help="Name of the project.",
                          type=str, default="neo4j:" )
+    parser.add_argument( "--local",
+                         help="If the services should run locally.",
+                         action="store_true", default=False )
 
     # generation
     parser.add_argument( "--source",
@@ -54,6 +57,9 @@ if __name__ == "__main__":
                          type=int, default=10 )
 
     # matching
+    parser.add_argument( "--use_cache",
+                         help="Used cache generated data.",
+                         action="store_true", default=False )
     parser.add_argument( "--model",
                          help="The training model.",
                          type=str, default="CPG_augm_large" )

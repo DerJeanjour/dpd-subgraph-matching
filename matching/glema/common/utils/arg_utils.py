@@ -136,6 +136,7 @@ def parse_args( use_default=False ):
     parser.add_argument( "--induced",
                          help="Generate induced subgraphs. An induced subgraph S of G preserves all edges between the nodes of the graph G",
                          action="store_true", default=True )
+    parser.add_argument( "--use_cache", action="store_true", default=False )
 
     return parser.parse_args( "" ) if use_default else parser.parse_args()
 
